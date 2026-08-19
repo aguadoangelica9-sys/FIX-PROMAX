@@ -1,5 +1,175 @@
 [
   {
+    "id": "mt06dmaceevy",
+    "ts": "2026-08-19T14:16:50.964Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_reject",
+    "targetId": "msti84a936r6",
+    "targetEmail": "aguadoangelica9@gmail.com",
+    "detail": "pago:mszgtrrjotcz"
+  },
+  {
+    "id": "mt06dkqnx46i",
+    "ts": "2026-08-19T14:16:48.959Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_reject",
+    "targetId": "msti84a936r6",
+    "targetEmail": "aguadoangelica9@gmail.com",
+    "detail": "pago:mszgtrsqurs4"
+  },
+  {
+    "id": "mt06dilefmvb",
+    "ts": "2026-08-19T14:16:46.178Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_reject",
+    "targetId": "msti84a936r6",
+    "targetEmail": "aguadoangelica9@gmail.com",
+    "detail": "pago:mszgtrtrtaip"
+  },
+  {
+    "id": "mt06dg0wb68e",
+    "ts": "2026-08-19T14:16:42.848Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_reject",
+    "targetId": "msti84a936r6",
+    "targetEmail": "aguadoangelica9@gmail.com",
+    "detail": "pago:mszi4yjkez0t"
+  },
+  {
+    "id": "mt06dea5w6vk",
+    "ts": "2026-08-19T14:16:40.589Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_reject",
+    "targetId": "msti84a936r6",
+    "targetEmail": "aguadoangelica9@gmail.com",
+    "detail": "pago:mszi4yknnckb"
+  },
+  {
+    "id": "mt06dc1z2ffu",
+    "ts": "2026-08-19T14:16:37.703Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_reject",
+    "targetId": "msti84a936r6",
+    "targetEmail": "aguadoangelica9@gmail.com",
+    "detail": "pago:mszi4yln76e0"
+  },
+  {
+    "id": "mt06d9vjvdw0",
+    "ts": "2026-08-19T14:16:34.879Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_reject",
+    "targetId": "msuuifzwc1tx",
+    "targetEmail": "isuzuimport2025@gmail.com",
+    "detail": "pago:mszi4ymqdsvn"
+  },
+  {
+    "id": "mt06d7t1ycdw",
+    "ts": "2026-08-19T14:16:32.198Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_reject",
+    "targetId": "msti84a936r6",
+    "targetEmail": "aguadoangelica9@gmail.com",
+    "detail": "pago:mszi5lb74atv"
+  },
+  {
+    "id": "mt06d6cc595x",
+    "ts": "2026-08-19T14:16:30.300Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_reject",
+    "targetId": "msti84a936r6",
+    "targetEmail": "aguadoangelica9@gmail.com",
+    "detail": "pago:mszgtgw7iro3"
+  },
+  {
+    "id": "mt06d4t3gcsc",
+    "ts": "2026-08-19T14:16:28.312Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_reject",
+    "targetId": "msti84a936r6",
+    "targetEmail": "aguadoangelica9@gmail.com",
+    "detail": "pago:mszgtgsmnhmh"
+  },
+  {
+    "id": "mt06d0pt4nk9",
+    "ts": "2026-08-19T14:16:23.009Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_reject",
+    "targetId": "msti84a936r6",
+    "targetEmail": "aguadoangelica9@gmail.com",
+    "detail": "pago:mszgtgo4n22i"
+  },
+  {
+    "id": "mt06czahnjvd",
+    "ts": "2026-08-19T14:16:21.162Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_reject",
+    "targetId": "msti84a936r6",
+    "targetEmail": "aguadoangelica9@gmail.com",
+    "detail": "pago:mszgrs57qal7"
+  },
+  {
+    "id": "mt06cxfpkm7p",
+    "ts": "2026-08-19T14:16:18.757Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_reject",
+    "targetId": "msti84a936r6",
+    "targetEmail": "aguadoangelica9@gmail.com",
+    "detail": "pago:mszgrs4hmr57"
+  },
+  {
+    "id": "mt06cvps6470",
+    "ts": "2026-08-19T14:16:16.528Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_reject",
+    "targetId": "msti84a936r6",
+    "targetEmail": "aguadoangelica9@gmail.com",
+    "detail": "pago:mszgrs2ypw6j"
+  },
+  {
+    "id": "mt06cu1zp5nt",
+    "ts": "2026-08-19T14:16:14.376Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_reject",
+    "targetId": "msti84a936r6",
+    "targetEmail": "aguadoangelica9@gmail.com",
+    "detail": "pago:mszgr9gar1j0"
+  },
+  {
+    "id": "mt06cs3szgi0",
+    "ts": "2026-08-19T14:16:11.848Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_reject",
+    "targetId": "msti84a936r6",
+    "targetEmail": "aguadoangelica9@gmail.com",
+    "detail": "pago:mszgr9esluu6"
+  },
+  {
+    "id": "mt06clx7ckmm",
+    "ts": "2026-08-19T14:16:03.835Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_reject",
+    "targetId": "msti84a936r6",
+    "targetEmail": "aguadoangelica9@gmail.com",
+    "detail": "pago:mszgqpfn2a3s"
+  },
+  {
     "id": "msziti83f1fr",
     "ts": "2026-08-19T03:17:21.411Z",
     "adminId": "msuuifzwc1tx",

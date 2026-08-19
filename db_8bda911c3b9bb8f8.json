@@ -5343,24 +5343,6 @@
   ],
   "exchangeRates": [
     {
-      "id": "msxx1xsyenci",
-      "fromCurrency": "EUR",
-      "toCurrency": "VES",
-      "rate": 894.49018618,
-      "date": "2026-08-17",
-      "rawDate": "2026-08-17",
-      "effectiveDate": "2026-08-17",
-      "sourceUpdatedAt": "2026-08-14T20:54:18.553782+00:00",
-      "createdAt": "2026-08-18T00:20:17.121Z",
-      "updatedAt": "2026-08-18T00:20:17.121Z",
-      "createdBy": "inicio-servidor",
-      "notes": "ðŸ¤– AutomÃ¡tica â€” BCV Today (primary)",
-      "source": "BCV (bcv.today)",
-      "sourceName": "BCV Today (primary)",
-      "updateType": "auto",
-      "isActive": false
-    },
-    {
       "id": "msxx1xtxgi3e",
       "fromCurrency": "EUR",
       "toCurrency": "VES",
@@ -5371,24 +5353,6 @@
       "sourceUpdatedAt": "2026-08-14T20:54:18.553782+00:00",
       "createdAt": "2026-08-18T00:20:17.156Z",
       "updatedAt": "2026-08-18T00:20:17.156Z",
-      "createdBy": "inicio-servidor",
-      "notes": "ðŸ¤– AutomÃ¡tica â€” BCV Today (primary)",
-      "source": "BCV (bcv.today)",
-      "sourceName": "BCV Today (primary)",
-      "updateType": "auto",
-      "isActive": false
-    },
-    {
-      "id": "msxx1xwjuwtl",
-      "fromCurrency": "USD",
-      "toCurrency": "VES",
-      "rate": 772.5441,
-      "date": "2026-08-17",
-      "rawDate": "2026-08-17",
-      "effectiveDate": "2026-08-17",
-      "sourceUpdatedAt": "2026-08-14T20:54:18.553782+00:00",
-      "createdAt": "2026-08-18T00:20:17.251Z",
-      "updatedAt": "2026-08-18T00:20:17.251Z",
       "createdBy": "inicio-servidor",
       "notes": "ðŸ¤– AutomÃ¡tica â€” BCV Today (primary)",
       "source": "BCV (bcv.today)",
@@ -7478,7 +7442,7 @@
       "source": "BCV (bcv.today)",
       "sourceName": "BCV Today (primary)",
       "updateType": "manual",
-      "isActive": true
+      "isActive": false
     },
     {
       "id": "mszfgu1ijtzk",
@@ -7496,6 +7460,42 @@
       "source": "BCV (bcv.today)",
       "sourceName": "BCV Today (primary)",
       "updateType": "manual",
+      "isActive": false
+    },
+    {
+      "id": "mt06bffrx6hk",
+      "fromCurrency": "USD",
+      "toCurrency": "VES",
+      "rate": 775.3356,
+      "date": "2026-08-19",
+      "rawDate": "2026-08-19",
+      "effectiveDate": "2026-08-19",
+      "sourceUpdatedAt": "2026-08-18T21:18:35.818589+00:00",
+      "createdAt": "2026-08-19T14:15:08.775Z",
+      "updatedAt": "2026-08-19T14:15:08.835Z",
+      "createdBy": "inicio-servidor",
+      "notes": "🤖 Automática — BCV Today (primary)",
+      "source": "BCV (bcv.today)",
+      "sourceName": "BCV Today (primary)",
+      "updateType": "auto",
+      "isActive": true
+    },
+    {
+      "id": "mt06bffrkmnf",
+      "fromCurrency": "EUR",
+      "toCurrency": "VES",
+      "rate": 897.82311808,
+      "date": "2026-08-19",
+      "rawDate": "2026-08-19",
+      "effectiveDate": "2026-08-19",
+      "sourceUpdatedAt": "2026-08-18T21:18:35.818589+00:00",
+      "createdAt": "2026-08-19T14:15:08.775Z",
+      "updatedAt": "2026-08-19T14:15:08.835Z",
+      "createdBy": "inicio-servidor",
+      "notes": "🤖 Automática — BCV Today (primary)",
+      "source": "BCV (bcv.today)",
+      "sourceName": "BCV Today (primary)",
+      "updateType": "auto",
       "isActive": true
     }
   ]

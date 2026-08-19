@@ -114,10 +114,12 @@
     "amount": 25,
     "currency": "USD",
     "method": "PAGO_MOVIL",
-    "status": "pending",
+    "status": "failed",
     "source": "PAGO_MOVIL",
     "orderId": null,
-    "note": "Verificación pendiente"
+    "note": "Rechazado por administrador",
+    "rejectedBy": "aguadoangelica9@gmail.com",
+    "rejectedAt": "2026-08-19T14:16:32.184Z"
   },
   {
     "id": "mszi4ymqdsvn",
@@ -129,10 +131,12 @@
     "amount": 25,
     "currency": "USD",
     "method": "PAGO_MOVIL",
-    "status": "pending",
+    "status": "failed",
     "source": "PAGO_MOVIL",
     "orderId": null,
-    "note": "Verificación pendiente"
+    "note": "Rechazado por administrador",
+    "rejectedBy": "aguadoangelica9@gmail.com",
+    "rejectedAt": "2026-08-19T14:16:34.862Z"
   },
   {
     "id": "mszi4yln76e0",
@@ -144,10 +148,12 @@
     "amount": 25,
     "currency": "USD",
     "method": "USDT",
-    "status": "pending",
+    "status": "failed",
     "source": "USDT",
     "orderId": null,
-    "note": "Verificación pendiente"
+    "note": "Rechazado por administrador",
+    "rejectedBy": "aguadoangelica9@gmail.com",
+    "rejectedAt": "2026-08-19T14:16:37.690Z"
   },
   {
     "id": "mszi4yknnckb",
@@ -159,10 +165,12 @@
     "amount": 25,
     "currency": "USD",
     "method": "ZELLE",
-    "status": "pending",
+    "status": "failed",
     "source": "ZELLE",
     "orderId": null,
-    "note": "Verificación pendiente"
+    "note": "Rechazado por administrador",
+    "rejectedBy": "aguadoangelica9@gmail.com",
+    "rejectedAt": "2026-08-19T14:16:40.575Z"
   },
   {
     "id": "mszi4yjkez0t",
@@ -174,10 +182,12 @@
     "amount": 25,
     "currency": "USD",
     "method": "PAGO_MOVIL",
-    "status": "pending",
+    "status": "failed",
     "source": "PAGO_MOVIL",
     "orderId": null,
-    "note": "Verificación pendiente"
+    "note": "Rechazado por administrador",
+    "rejectedBy": "aguadoangelica9@gmail.com",
+    "rejectedAt": "2026-08-19T14:16:42.831Z"
   },
   {
     "id": "mszgtrtrtaip",
@@ -189,10 +199,12 @@
     "amount": 25,
     "currency": "USD",
     "method": "USDT",
-    "status": "pending",
+    "status": "failed",
     "source": "USDT",
     "orderId": null,
-    "note": "Verificación pendiente"
+    "note": "Rechazado por administrador",
+    "rejectedBy": "aguadoangelica9@gmail.com",
+    "rejectedAt": "2026-08-19T14:16:46.159Z"
   },
   {
     "id": "mszgtrsqurs4",
@@ -204,10 +216,12 @@
     "amount": 25,
     "currency": "USD",
     "method": "ZELLE",
-    "status": "pending",
+    "status": "failed",
     "source": "ZELLE",
     "orderId": null,
-    "note": "Verificación pendiente"
+    "note": "Rechazado por administrador",
+    "rejectedBy": "aguadoangelica9@gmail.com",
+    "rejectedAt": "2026-08-19T14:16:48.946Z"
   },
   {
     "id": "mszgtrrjotcz",
@@ -219,10 +233,12 @@
     "amount": 25,
     "currency": "USD",
     "method": "PAGO_MOVIL",
-    "status": "pending",
+    "status": "failed",
     "source": "PAGO_MOVIL",
     "orderId": null,
-    "note": "Verificación pendiente"
+    "note": "Rechazado por administrador",
+    "rejectedBy": "aguadoangelica9@gmail.com",
+    "rejectedAt": "2026-08-19T14:16:50.950Z"
   },
   {
     "id": "mszgtgw7iro3",
@@ -234,10 +250,12 @@
     "amount": 25,
     "currency": "USD",
     "method": "USDT",
-    "status": "pending",
+    "status": "failed",
     "source": "USDT",
     "orderId": null,
-    "note": "Verificación pendiente"
+    "note": "Rechazado por administrador",
+    "rejectedBy": "aguadoangelica9@gmail.com",
+    "rejectedAt": "2026-08-19T14:16:30.285Z"
   },
   {
     "id": "mszgtgsmnhmh",
@@ -249,10 +267,12 @@
     "amount": 25,
     "currency": "USD",
     "method": "ZELLE",
-    "status": "pending",
+    "status": "failed",
     "source": "ZELLE",
     "orderId": null,
-    "note": "Verificación pendiente"
+    "note": "Rechazado por administrador",
+    "rejectedBy": "aguadoangelica9@gmail.com",
+    "rejectedAt": "2026-08-19T14:16:28.295Z"
   },
   {
     "id": "mszgtgo4n22i",
@@ -264,10 +284,12 @@
     "amount": 25,
     "currency": "USD",
     "method": "PAGO_MOVIL",
-    "status": "pending",
+    "status": "failed",
     "source": "PAGO_MOVIL",
     "orderId": null,
-    "note": "Verificación pendiente"
+    "note": "Rechazado por administrador",
+    "rejectedBy": "aguadoangelica9@gmail.com",
+    "rejectedAt": "2026-08-19T14:16:22.994Z"
   },
   {
     "id": "mszgrs57qal7",
@@ -279,10 +301,12 @@
     "amount": 25,
     "currency": "USD",
     "method": "ZELLE",
-    "status": "pending",
+    "status": "failed",
     "source": "ZELLE",
     "orderId": null,
-    "note": "Verificación pendiente"
+    "note": "Rechazado por administrador",
+    "rejectedBy": "aguadoangelica9@gmail.com",
+    "rejectedAt": "2026-08-19T14:16:21.144Z"
   },
   {
     "id": "mszgrs4hmr57",
@@ -294,10 +318,12 @@
     "amount": 25,
     "currency": "USD",
     "method": "USDT",
-    "status": "pending",
+    "status": "failed",
     "source": "USDT",
     "orderId": null,
-    "note": "Verificación pendiente"
+    "note": "Rechazado por administrador",
+    "rejectedBy": "aguadoangelica9@gmail.com",
+    "rejectedAt": "2026-08-19T14:16:18.742Z"
   },
   {
     "id": "mszgrs2ypw6j",
@@ -309,10 +335,12 @@
     "amount": 25,
     "currency": "USD",
     "method": "PAGO_MOVIL",
-    "status": "pending",
+    "status": "failed",
     "source": "PAGO_MOVIL",
     "orderId": null,
-    "note": "Verificación pendiente"
+    "note": "Rechazado por administrador",
+    "rejectedBy": "aguadoangelica9@gmail.com",
+    "rejectedAt": "2026-08-19T14:16:16.514Z"
   },
   {
     "id": "mszgr9gar1j0",
@@ -324,10 +352,12 @@
     "amount": 25,
     "currency": "USD",
     "method": "USDT",
-    "status": "pending",
+    "status": "failed",
     "source": "USDT",
     "orderId": null,
-    "note": "Verificación pendiente"
+    "note": "Rechazado por administrador",
+    "rejectedBy": "aguadoangelica9@gmail.com",
+    "rejectedAt": "2026-08-19T14:16:14.360Z"
   },
   {
     "id": "mszgr9esluu6",
@@ -339,10 +369,12 @@
     "amount": 25,
     "currency": "USD",
     "method": "PAGO_MOVIL",
-    "status": "pending",
+    "status": "failed",
     "source": "PAGO_MOVIL",
     "orderId": null,
-    "note": "Verificación pendiente"
+    "note": "Rechazado por administrador",
+    "rejectedBy": "aguadoangelica9@gmail.com",
+    "rejectedAt": "2026-08-19T14:16:11.830Z"
   },
   {
     "id": "mszgqpfn2a3s",
@@ -354,10 +386,12 @@
     "amount": 15,
     "currency": "USD",
     "method": "PAGO_MOVIL",
-    "status": "pending",
+    "status": "failed",
     "source": "PAGO_MOVIL",
     "orderId": null,
-    "note": "Verificación pendiente"
+    "note": "Rechazado por administrador",
+    "rejectedBy": "aguadoangelica9@gmail.com",
+    "rejectedAt": "2026-08-19T14:16:03.817Z"
   },
   {
     "id": "mszc8u0v19nd",
