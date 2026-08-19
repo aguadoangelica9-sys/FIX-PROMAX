@@ -4,7 +4,7 @@
  * Permite uso offline completo una vez cargado.
  */
 
-const CACHE_NAME   = 'fixpromax-v3-responsive';
+const CACHE_NAME   = 'fixpromax-v4-utf8';
 const API_BASE     = '/api/';
 
 // Recursos que se cachean en la instalación
