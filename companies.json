@@ -1,0 +1,182 @@
+﻿[
+    {
+        "id":  "aa620ebd1a414c83",
+        "name":  "Kims Style C.A.",
+        "createdAt":  "2026-08-14T22:14:06.513Z",
+        "createdBy":  "msti84a936r6",
+        "status":  "active",
+        "subscriptionPlan":  null,
+        "subscriptionStatus":  "trial",
+        "subscriptionEnd":  null,
+        "maxUsers":  5,
+        "currentUsers":  2,
+        "settings":  {
+                         "currency":  "USD",
+                         "language":  "es",
+                         "timezone":  "America/Caracas",
+                         "invoicePrefix":  "FIX",
+                         "taxRate":  16
+                     },
+        "contact":  {
+                        "email":  "aguadoangelica9@gmail.com",
+                        "phone":  "",
+                        "address":  "",
+                        "website":  ""
+                    },
+        "metadata":  {
+                         "industry":  "retail",
+                         "size":  "small",
+                         "planTier":  "basic"
+                     }
+    },
+    {
+        "id":  "dc3448974e4563bf",
+        "name":  "Emprendimientos C.A.",
+        "createdAt":  "2026-08-14T23:14:26.513Z",
+        "createdBy":  "mstkdpg4kut6",
+        "status":  "active",
+        "subscriptionPlan":  null,
+        "subscriptionStatus":  "trial",
+        "subscriptionEnd":  null,
+        "maxUsers":  5,
+        "currentUsers":  1,
+        "settings":  {
+                         "currency":  "USD",
+                         "language":  "es",
+                         "timezone":  "America/Caracas",
+                         "invoicePrefix":  "EMP",
+                         "taxRate":  16
+                     },
+        "contact":  {
+                        "email":  "juniorjs@gmail.com",
+                        "phone":  "",
+                        "address":  "",
+                        "website":  ""
+                    },
+        "metadata":  {
+                         "industry":  "services",
+                         "size":  "micro",
+                         "planTier":  "basic"
+                     }
+    },
+    {
+        "id":  "446372909e8e879a",
+        "name":  "todo uso C.A.",
+        "createdAt":  "2026-08-15T12:41:43.259Z",
+        "createdBy":  "msud7viyi059",
+        "status":  "active",
+        "subscriptionPlan":  null,
+        "subscriptionStatus":  "trial",
+        "subscriptionEnd":  null,
+        "maxUsers":  5,
+        "currentUsers":  1,
+        "settings":  {
+                         "currency":  "USD",
+                         "language":  "es",
+                         "timezone":  "America/Caracas",
+                         "invoicePrefix":  "TODO",
+                         "taxRate":  16
+                     },
+        "contact":  {
+                        "email":  "kimberlinblanco@gmail.com",
+                        "phone":  "",
+                        "address":  "",
+                        "website":  ""
+                    },
+        "metadata":  {
+                         "industry":  "retail",
+                         "size":  "small",
+                         "planTier":  "basic"
+                     }
+    },
+    {
+        "id":  "43f4a1724e34d707",
+        "name":  "soportes.C.A.",
+        "createdAt":  "2026-08-15T14:27:57.204Z",
+        "createdBy":  "msuh0hp0h4i7",
+        "status":  "active",
+        "subscriptionPlan":  null,
+        "subscriptionStatus":  "trial",
+        "subscriptionEnd":  null,
+        "maxUsers":  5,
+        "currentUsers":  1,
+        "settings":  {
+                         "currency":  "USD",
+                         "language":  "es",
+                         "timezone":  "America/Caracas",
+                         "invoicePrefix":  "SOP",
+                         "taxRate":  16
+                     },
+        "contact":  {
+                        "email":  "juanoropeza23@gmail.com",
+                        "phone":  "",
+                        "address":  "",
+                        "website":  ""
+                    },
+        "metadata":  {
+                         "industry":  "services",
+                         "size":  "micro",
+                         "planTier":  "basic"
+                     }
+    },
+    {
+        "id":  "8bda911c3b9bb8f8",
+        "name":  "familia C.A.",
+        "createdAt":  "2026-08-15T15:39:05.614Z",
+        "createdBy":  "msujjz7xyibo",
+        "status":  "active",
+        "subscriptionPlan":  null,
+        "subscriptionStatus":  "trial",
+        "subscriptionEnd":  null,
+        "maxUsers":  5,
+        "currentUsers":  1,
+        "settings":  {
+                         "currency":  "USD",
+                         "language":  "es",
+                         "timezone":  "America/Caracas",
+                         "invoicePrefix":  "FAM",
+                         "taxRate":  16
+                     },
+        "contact":  {
+                        "email":  "familiaaguado07@gmail.com",
+                        "phone":  "",
+                        "address":  "",
+                        "website":  ""
+                    },
+        "metadata":  {
+                         "industry":  "retail",
+                         "size":  "small",
+                         "planTier":  "basic"
+                     }
+    },
+    {
+        "id":  "8defc0952f47c9c6855a479",
+        "name":  "Repuestos Encava Parts",
+        "createdAt":  "2026-08-15T20:45:49.821Z",
+        "createdBy":  "msuuifzwc1tx",
+        "status":  "active",
+        "subscriptionPlan":  "pro",
+        "subscriptionStatus":  "active",
+        "subscriptionEnd":  "2026-11-15T20:45:49.821Z",
+        "maxUsers":  3,
+        "currentUsers":  1,
+        "settings":  {
+                         "currency":  "USD",
+                         "language":  "es",
+                         "timezone":  "America/Caracas",
+                         "invoicePrefix":  "REP",
+                         "taxRate":  16
+                     },
+        "contact":  {
+                        "email":  "isuzuimport2025@gmail.com",
+                        "phone":  "",
+                        "address":  "",
+                        "website":  ""
+                    },
+        "metadata":  {
+                         "industry":  "retail",
+                         "size":  "small",
+                         "planTier":  "pro"
+                     }
+    }
+]

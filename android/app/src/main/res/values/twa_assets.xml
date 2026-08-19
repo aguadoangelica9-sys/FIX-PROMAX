@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- URL principal de la app — REEMPLAZAR con tu dominio real -->
+    <string name="twa_url" translatable="false">https://tu-dominio.com/</string>
+    <string name="twa_package_name" translatable="false">com.fixpromax.erp</string>
+</resources>

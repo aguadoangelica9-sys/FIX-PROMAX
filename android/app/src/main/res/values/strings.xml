@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FIX PRO MAX</string>
+
+    <!-- Digital Asset Links — reemplazar con tu SHA256 real y dominio -->
+    <string name="asset_statements" translatable="false">
+        [{
+            \"relation\": [\"delegate_permission/common.handle_all_urls\"],
+            \"target\": {
+                \"namespace\": \"web\",
+                \"site\": \"https://tu-dominio.com\"
+            }
+        }]
+    </string>
+</resources>

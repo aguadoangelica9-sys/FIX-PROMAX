@@ -1,0 +1,52 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.fixpromax.erp'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId      "com.fixpromax.erp"
+        minSdk             21          // Android 5.0+
+        targetSdk          34
+        versionCode        1
+        versionName        "1.0.0"
+
+        // Nombre visible en la Play Store
+        resValue "string", "app_name", "FIX PRO MAX"
+    }
+
+    signingConfigs {
+        // PRODUCCIÓN: reemplazar con tu keystore real
+        release {
+            // storeFile     file("../fixpromax.keystore")
+            // storePassword "TU_STORE_PASSWORD"
+            // keyAlias      "fixpromax"
+            // keyPassword   "TU_KEY_PASSWORD"
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled   true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // signingConfig signingConfigs.release
+        }
+        debug {
+            applicationIdSuffix ".debug"
+            versionNameSuffix   "-debug"
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    // TWA library — Trusted Web Activity
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+}

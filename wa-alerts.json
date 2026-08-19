@@ -1,0 +1,330 @@
+[
+  {
+    "id": "mszi5xnmtcue",
+    "ts": "2026-08-19T02:59:02.689Z",
+    "message": "🟡 PAGO PENDIENTE - FIX PRO MAX\n👤 Usuario: Repuestos Encava Parts\n🏢 Empresa: Repuestos Encava Parts\n📦 Plan: Plan Pro\n💰 Monto: $25.00\n📅 Fecha: 18/08/2026, 10:59 p. m.\n⏳ Estado: PENDIENTE DE VERIFICACION",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszi5xmd0dxn",
+    "ts": "2026-08-19T02:59:02.551Z",
+    "message": "🟡 PAGO PENDIENTE - FIX PRO MAX\n👤 Usuario: angelica\n🏢 Empresa: Kims Style C.A.\n📦 Plan: Plan Pro\n💰 Monto: $25.00\n📅 Fecha: 18/08/2026, 10:59 p. m.\n⏳ Estado: PENDIENTE DE VERIFICACION",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszi5xk7nr6n",
+    "ts": "2026-08-19T02:59:02.476Z",
+    "message": "🟡 PAGO PENDIENTE - FIX PRO MAX\n👤 Usuario: angelica\n🏢 Empresa: Kims Style C.A.\n📦 Plan: Plan Pro\n💰 Monto: $25.00\n📅 Fecha: 18/08/2026, 10:59 p. m.\n⏳ Estado: PENDIENTE DE VERIFICACION",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszi5xl1j3ia",
+    "ts": "2026-08-19T02:59:02.439Z",
+    "message": "🟡 PAGO PENDIENTE - FIX PRO MAX\n👤 Usuario: angelica\n🏢 Empresa: Kims Style C.A.\n📦 Plan: Plan Pro\n💰 Monto: $25.00\n📅 Fecha: 18/08/2026, 10:59 p. m.\n⏳ Estado: PENDIENTE DE VERIFICACION",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszi5lf05897",
+    "ts": "2026-08-19T02:58:46.633Z",
+    "message": "🟡 PAGO PENDIENTE - FIX PRO MAX\n👤 Usuario: Repuestos Encava Parts\n🏢 Empresa: Repuestos Encava Parts\n📦 Plan: Plan Pro\n💰 Monto: $25.00\n📅 Fecha: 18/08/2026, 10:58 p. m.\n⏳ Estado: PENDIENTE DE VERIFICACION",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszi5ldzx6uy",
+    "ts": "2026-08-19T02:58:46.562Z",
+    "message": "🟡 PAGO PENDIENTE - FIX PRO MAX\n👤 Usuario: angelica\n🏢 Empresa: Kims Style C.A.\n📦 Plan: Plan Pro\n💰 Monto: $25.00\n📅 Fecha: 18/08/2026, 10:58 p. m.\n⏳ Estado: PENDIENTE DE VERIFICACION",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszi5lcu8d81",
+    "ts": "2026-08-19T02:58:46.544Z",
+    "message": "🟡 PAGO PENDIENTE - FIX PRO MAX\n👤 Usuario: angelica\n🏢 Empresa: Kims Style C.A.\n📦 Plan: Plan Pro\n💰 Monto: $25.00\n📅 Fecha: 18/08/2026, 10:58 p. m.\n⏳ Estado: PENDIENTE DE VERIFICACION",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszi5lbd8hqz",
+    "ts": "2026-08-19T02:58:46.518Z",
+    "message": "🟡 PAGO PENDIENTE - FIX PRO MAX\n👤 Usuario: angelica\n🏢 Empresa: Kims Style C.A.\n📦 Plan: Plan Pro\n💰 Monto: $25.00\n📅 Fecha: 18/08/2026, 10:58 p. m.\n⏳ Estado: PENDIENTE DE VERIFICACION",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszi4ylqoaus",
+    "ts": "2026-08-19T02:58:17.580Z",
+    "message": "🟡 PAGO PENDIENTE - FIX PRO MAX\n👤 Usuario: angelica\n🏢 Empresa: Kims Style C.A.\n📦 Plan: Plan Pro\n💰 Monto: $25.00\n📅 Fecha: 18/08/2026, 10:58 p. m.\n⏳ Estado: PENDIENTE DE VERIFICACION",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszi4ykrd9mj",
+    "ts": "2026-08-19T02:58:17.552Z",
+    "message": "🟡 PAGO PENDIENTE - FIX PRO MAX\n👤 Usuario: angelica\n🏢 Empresa: Kims Style C.A.\n📦 Plan: Plan Pro\n💰 Monto: $25.00\n📅 Fecha: 18/08/2026, 10:58 p. m.\n⏳ Estado: PENDIENTE DE VERIFICACION",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszi4ymtyen3",
+    "ts": "2026-08-19T02:58:17.533Z",
+    "message": "🟡 PAGO PENDIENTE - FIX PRO MAX\n👤 Usuario: Repuestos Encava Parts\n🏢 Empresa: Repuestos Encava Parts\n📦 Plan: Plan Pro\n💰 Monto: $25.00\n📅 Fecha: 18/08/2026, 10:58 p. m.\n⏳ Estado: PENDIENTE DE VERIFICACION",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszi4yjot8u9",
+    "ts": "2026-08-19T02:58:17.500Z",
+    "message": "🟡 PAGO PENDIENTE - FIX PRO MAX\n👤 Usuario: angelica\n🏢 Empresa: Kims Style C.A.\n📦 Plan: Plan Pro\n💰 Monto: $25.00\n📅 Fecha: 18/08/2026, 10:58 p. m.\n⏳ Estado: PENDIENTE DE VERIFICACION",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszgtrssze3a",
+    "ts": "2026-08-19T02:21:35.611Z",
+    "message": "🟡 PAGO PENDIENTE - FIX PRO MAX\n👤 Usuario: angelica\n🏢 Empresa: Kims Style C.A.\n📦 Plan: Plan Pro\n💰 Monto: $25.00\n📅 Fecha: 18/08/2026, 10:21 p. m.\n⏳ Estado: PENDIENTE DE VERIFICACION",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszgtrttc8k7",
+    "ts": "2026-08-19T02:21:35.555Z",
+    "message": "🟡 PAGO PENDIENTE - FIX PRO MAX\n👤 Usuario: angelica\n🏢 Empresa: Kims Style C.A.\n📦 Plan: Plan Pro\n💰 Monto: $25.00\n📅 Fecha: 18/08/2026, 10:21 p. m.\n⏳ Estado: PENDIENTE DE VERIFICACION",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszgtrrle44y",
+    "ts": "2026-08-19T02:21:35.547Z",
+    "message": "🟡 PAGO PENDIENTE - FIX PRO MAX\n👤 Usuario: angelica\n🏢 Empresa: Kims Style C.A.\n📦 Plan: Plan Pro\n💰 Monto: $25.00\n📅 Fecha: 18/08/2026, 10:21 p. m.\n⏳ Estado: PENDIENTE DE VERIFICACION",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszgtgwdy5hq",
+    "ts": "2026-08-19T02:21:21.726Z",
+    "message": "🟡 PAGO PENDIENTE - FIX PRO MAX\n👤 Usuario: angelica\n🏢 Empresa: Kims Style C.A.\n📦 Plan: Plan Pro\n💰 Monto: $25.00\n📅 Fecha: 18/08/2026, 10:21 p. m.\n⏳ Estado: PENDIENTE DE VERIFICACION",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszgtgsqzwid",
+    "ts": "2026-08-19T02:21:21.633Z",
+    "message": "🟡 PAGO PENDIENTE - FIX PRO MAX\n👤 Usuario: angelica\n🏢 Empresa: Kims Style C.A.\n📦 Plan: Plan Pro\n💰 Monto: $25.00\n📅 Fecha: 18/08/2026, 10:21 p. m.\n⏳ Estado: PENDIENTE DE VERIFICACION",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszgtgok0vmh",
+    "ts": "2026-08-19T02:21:21.575Z",
+    "message": "🟡 PAGO PENDIENTE - FIX PRO MAX\n👤 Usuario: angelica\n🏢 Empresa: Kims Style C.A.\n📦 Plan: Plan Pro\n💰 Monto: $25.00\n📅 Fecha: 18/08/2026, 10:21 p. m.\n⏳ Estado: PENDIENTE DE VERIFICACION",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszgrs596z9j",
+    "ts": "2026-08-19T02:20:02.942Z",
+    "message": "🟡 PAGO PENDIENTE - FIX PRO MAX\n👤 Usuario: angelica\n🏢 Empresa: Kims Style C.A.\n📦 Plan: Plan Pro\n💰 Monto: $25.00\n📅 Fecha: 18/08/2026, 10:20 p. m.\n⏳ Estado: PENDIENTE DE VERIFICACION",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszgrs33tw2n",
+    "ts": "2026-08-19T02:20:02.589Z",
+    "message": "🟡 PAGO PENDIENTE - FIX PRO MAX\n👤 Usuario: angelica\n🏢 Empresa: Kims Style C.A.\n📦 Plan: Plan Pro\n💰 Monto: $25.00\n📅 Fecha: 18/08/2026, 10:20 p. m.\n⏳ Estado: PENDIENTE DE VERIFICACION",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszgrs4llgag",
+    "ts": "2026-08-19T02:20:02.522Z",
+    "message": "🟡 PAGO PENDIENTE - FIX PRO MAX\n👤 Usuario: angelica\n🏢 Empresa: Kims Style C.A.\n📦 Plan: Plan Pro\n💰 Monto: $25.00\n📅 Fecha: 18/08/2026, 10:20 p. m.\n⏳ Estado: PENDIENTE DE VERIFICACION",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszgr9eva1fu",
+    "ts": "2026-08-19T02:19:38.728Z",
+    "message": "🟡 PAGO PENDIENTE - FIX PRO MAX\n👤 Usuario: angelica\n🏢 Empresa: Kims Style C.A.\n📦 Plan: Plan Pro\n💰 Monto: $25.00\n📅 Fecha: 18/08/2026, 10:19 p. m.\n⏳ Estado: PENDIENTE DE VERIFICACION",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszgr9gc9sad",
+    "ts": "2026-08-19T02:19:38.378Z",
+    "message": "🟡 PAGO PENDIENTE - FIX PRO MAX\n👤 Usuario: angelica\n🏢 Empresa: Kims Style C.A.\n📦 Plan: Plan Pro\n💰 Monto: $25.00\n📅 Fecha: 18/08/2026, 10:19 p. m.\n⏳ Estado: PENDIENTE DE VERIFICACION",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszgqpfvy0uc",
+    "ts": "2026-08-19T02:19:12.922Z",
+    "message": "🟡 PAGO PENDIENTE - FIX PRO MAX\n👤 Usuario: angelica\n🏢 Empresa: Kims Style C.A.\n📦 Plan: Plan Básico\n💰 Monto: $15.00\n📅 Fecha: 18/08/2026, 10:19 p. m.\n⏳ Estado: PENDIENTE DE VERIFICACION",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszc9nna71m4",
+    "ts": "2026-08-19T00:13:58.599Z",
+    "message": "🔄 SUSCRIPCION CANCELADA - FIX PRO MAX\n👤 Usuario: familia aguado\n🏢 Empresa: familia C.A.\n📦 Plan: Plan Básico\n📅 Fecha: 18/08/2026, 08:13 p. m.\nEstado: CANCELADA",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszc8u0v19nd",
+    "ts": "2026-08-19T00:13:36.369Z",
+    "message": "🔔 NUEVO PAGO - FIX PRO MAX\n👤 Usuario: familia aguado\n🏢 Empresa: familia C.A.\n📦 Plan: Plan Básico\n💰 Monto: $15.00 USD\n💳 Método: PAGO_MOVIL\n📅 Fecha: 18/08/2026, 08:13 p. m.\n🧾 ID: mszc8u0v19nd\n✅ Estado: PAGO CONFIRMADO",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszc8u0z3fs3",
+    "ts": "2026-08-19T00:13:20.589Z",
+    "message": "🟡 PAGO PENDIENTE - FIX PRO MAX\n👤 Usuario: familia aguado\n🏢 Empresa: familia C.A.\n📦 Plan: Plan Básico\n💰 Monto: $15.00\n📅 Fecha: 18/08/2026, 08:13 p. m.\n⏳ Estado: PENDIENTE DE VERIFICACION",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszc7xc2i7p9",
+    "ts": "2026-08-19T00:12:37.899Z",
+    "message": "🔄 SUSCRIPCION CANCELADA - FIX PRO MAX\n👤 Usuario: familia aguado\n🏢 Empresa: familia C.A.\n📦 Plan: manual\n📅 Fecha: 18/08/2026, 08:12 p. m.\nEstado: CANCELADA",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszc7el44en7",
+    "ts": "2026-08-19T00:12:13.933Z",
+    "message": "🔔 NUEVA SUSCRIPCION - FIX PRO MAX\n👤 Usuario: familia aguado\n🏢 Empresa: familia C.A.\n📦 Plan: manual\n💰 Precio: $0.00\n📅 Fecha: 18/08/2026, 08:12 p. m.\n✅ Estado: ACTIVA",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszasgef1se8",
+    "ts": "2026-08-18T23:32:36.776Z",
+    "message": "🔔 NUEVA SUSCRIPCION - FIX PRO MAX\n👤 Usuario: familia aguado\n🏢 Empresa: familia C.A.\n📦 Plan: Plan Semestral\n💰 Precio: $35.00\n📅 Fecha: 18/08/2026, 07:32 p. m.\n✅ Estado: ACTIVA",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszaroin9ptu",
+    "ts": "2026-08-18T23:32:00.777Z",
+    "message": "🔔 NUEVA SUSCRIPCION - FIX PRO MAX\n👤 Usuario: familia aguado\n🏢 Empresa: familia C.A.\n📦 Plan: Plan Semestral\n💰 Precio: $35.00\n📅 Fecha: 18/08/2026, 07:31 p. m.\n✅ Estado: ACTIVA",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "TKT-MSZAOQMO",
+    "ts": "2026-08-18T23:29:43.464Z",
+    "message": "🚨 NUEVO TICKET DE SOPORTE - FIX PRO MAX\n👤 Usuario: familia aguado\n🏢 Empresa: familia C.A.\n📂 Categoria: Problema de pago\n📝 Titulo: no me abre la seccion despues de haber pagado\n🔴 Prioridad: ALTA\n📅 Fecha: 18/08/2026, 07:29 p. m.\n🆔 ID: TKT-MSZAOQMO",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "mszaifmz5eyu",
+    "ts": "2026-08-18T23:24:49.231Z",
+    "message": "🔔 NUEVA SUSCRIPCION - FIX PRO MAX\n👤 Usuario: familia aguado\n🏢 Empresa: familia C.A.\n📦 Plan: Plan Básico\n💰 Precio: $15.00\n📅 Fecha: 18/08/2026, 07:24 p. m.\n✅ Estado: ACTIVA",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "msz6vvkhsfqm",
+    "ts": "2026-08-18T21:43:18.063Z",
+    "message": "✅ TEST FIX PRO MAX\nNotificaciones WhatsApp activas y funcionando correctamente.\n📅 18/08/2026, 05:43 p. m.",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "msz677fprrkk",
+    "ts": "2026-08-18T21:24:06.997Z",
+    "message": "✅ TEST FIX PRO MAX\nNotificaciones WhatsApp activas y funcionando correctamente.\n📅 18/08/2026, 05:24 p. m.",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "msz5v0sanujp",
+    "ts": "2026-08-18T21:14:38.464Z",
+    "message": "✅ TEST FIX PRO MAX\nNotificaciones WhatsApp activas y funcionando correctamente.\n📅 18/08/2026, 05:14 p. m.",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "msz1mcmhusow",
+    "ts": "2026-08-18T19:15:55.488Z",
+    "message": "🔔 NUEVA SUSCRIPCION - FIX PRO MAX\n👤 Usuario: Repuestos Encava Parts\n🏢 Empresa: Repuestos Encava Parts\n📦 Plan: Plan Básico\n💰 Precio: $12.99\n📅 Fecha: 18/08/2026, 03:15 p. m.\n✅ Estado: ACTIVA",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "msz1mckttwmz",
+    "ts": "2026-08-18T19:15:55.426Z",
+    "message": "🔔 NUEVA SUSCRIPCION - FIX PRO MAX\n👤 Usuario: Repuestos Encava Parts\n🏢 Empresa: Repuestos Encava Parts\n📦 Plan: Plan Pro\n💰 Precio: $25.00\n📅 Fecha: 18/08/2026, 03:15 p. m.\n✅ Estado: ACTIVA",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "msz1mcnglgxn",
+    "ts": "2026-08-18T19:15:55.391Z",
+    "message": "🔄 SUSCRIPCION CANCELADA - FIX PRO MAX\n👤 Usuario: Repuestos Encava Parts\n🏢 Empresa: Repuestos Encava Parts\n📦 Plan: Plan Básico\n📅 Fecha: 18/08/2026, 03:15 p. m.\nEstado: CANCELADA",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "msyypigstm0t",
+    "ts": "2026-08-18T17:54:23.849Z",
+    "message": "✅ TEST FIX PRO MAX\nNotificaciones WhatsApp activas y funcionando correctamente.\n📅 18/08/2026, 01:54 p. m.",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  },
+  {
+    "id": "msyyoxczx7px",
+    "ts": "2026-08-18T17:53:56.902Z",
+    "message": "✅ TEST FIX PRO MAX\nNotificaciones WhatsApp activas y funcionando correctamente.\n📅 18/08/2026, 01:53 p. m.",
+    "status": "sent",
+    "error": null,
+    "retries": 0
+  }
+]

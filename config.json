@@ -1,0 +1,201 @@
+{
+  "paymentMethods": [
+    {
+      "id": "CASH",
+      "label": "Efectivo",
+      "icon": "💵",
+      "active": true,
+      "type": "pos",
+      "isManual": false,
+      "paymentData": {
+        "extra": ""
+      }
+    },
+    {
+      "id": "CREDIT_CARD",
+      "label": "Tarjeta Crédito",
+      "icon": "💳",
+      "active": true,
+      "type": "pos",
+      "isManual": false,
+      "paymentData": {
+        "extra": ""
+      }
+    },
+    {
+      "id": "DEBIT_CARD",
+      "label": "Tarjeta Débito",
+      "icon": "💳",
+      "active": false,
+      "type": "pos",
+      "isManual": false,
+      "paymentData": {
+        "extra": ""
+      },
+      "info": ""
+    },
+    {
+      "id": "ZELLE",
+      "label": "Zelle",
+      "icon": "⚡",
+      "active": false,
+      "type": "both",
+      "isManual": true,
+      "paymentData": {
+        "account": "",
+        "name": "",
+        "extra": ""
+      }
+    },
+    {
+      "id": "USDT",
+      "label": "USDT / Cripto",
+      "icon": "🟡",
+      "active": true,
+      "type": "both",
+      "isManual": true,
+      "paymentData": {
+        "address": "1183080311",
+        "network": "USDT / TRC20 o BEP20",
+        "extra": ""
+      },
+      "info": ""
+    },
+    {
+      "id": "BANK_TRANSFER",
+      "label": "Transferencia bancaria",
+      "icon": "🏦",
+      "active": true,
+      "type": "both",
+      "isManual": false,
+      "paymentData": {
+        "bank": "Mercantil",
+        "account": "01050162871162066784",
+        "name": "Angelica",
+        "cedula": "",
+        "extra": ""
+      },
+      "info": ""
+    },
+    {
+      "id": "PAGO_MOVIL",
+      "label": "Pago Móvil",
+      "icon": "📱",
+      "active": true,
+      "type": "both",
+      "isManual": true,
+      "paymentData": {
+        "bank": "Mercantil",
+        "phone": "0412-566-9426",
+        "cedula": "V-32.003.088",
+        "name": "FIX PRO MAX",
+        "extra": ""
+      },
+      "info": ""
+    },
+    {
+      "id": "PAYPAL",
+      "label": "PayPal",
+      "icon": "🅿️",
+      "active": false,
+      "type": "sub",
+      "isManual": false,
+      "paymentData": {
+        "email": "",
+        "name": "",
+        "extra": ""
+      }
+    }
+  ],
+  "plansOverride": {
+    "basic": {
+      "name": "Plan Básico",
+      "description": "Perfecto para empezar. Acceso completo para 1 usuario.",
+      "price": 15,
+      "duration": 30,
+      "period": "1 mes",
+      "maxUsers": 1,
+      "maxProducts": 100,
+      "multiUser": false,
+      "recommended": false,
+      "badge": "",
+      "active": true,
+      "features": [
+        "1 usuario",
+        "Inventario (hasta 100 productos)",
+        "Ventas ilimitadas",
+        "Facturas ilimitadas",
+        "Gastos",
+        "Reportes básicos"
+      ],
+      "notIncluded": [
+        "Multiusuario",
+        "Contabilidad",
+        "Finanzas P&L",
+        "Cuentas por cobrar/pagar",
+        "AI Copilot",
+        "Soporte prioritario"
+      ]
+    },
+    "pro": {
+      "name": "Plan Pro",
+      "description": "Para negocios en crecimiento. Multiusuario habilitado.",
+      "price": 25,
+      "duration": 90,
+      "period": "3 meses",
+      "maxUsers": 3,
+      "maxProducts": 500,
+      "multiUser": true,
+      "recommended": true,
+      "badge": "⭐ RECOMENDADO",
+      "active": true,
+      "features": [
+        "Hasta 3 usuarios",
+        "👥 Multiusuario + permisos por rol",
+        "Inventario (hasta 500 productos)",
+        "Ventas ilimitadas",
+        "Contabilidad completa",
+        "Finanzas P&L",
+        "AI Copilot"
+      ],
+      "notIncluded": [
+        "Inventario ilimitado",
+        "Soporte prioritario"
+      ]
+    },
+    "semestral": {
+      "name": "Plan Semestral",
+      "description": "El mayor valor. 6 meses con todas las funciones.",
+      "price": 35,
+      "duration": 180,
+      "period": "6 meses",
+      "maxUsers": 5,
+      "maxProducts": -1,
+      "multiUser": true,
+      "recommended": false,
+      "badge": "👑 MEJOR VALOR",
+      "active": true,
+      "features": [
+        "Hasta 5 usuarios",
+        "👥 Multiusuario + permisos por rol",
+        "Inventario ilimitado",
+        "Todo el Plan Pro",
+        "ventas ilimitadas",
+        "Soporte prioritario",
+        "6 meses de acceso"
+      ],
+      "notIncluded": []
+    }
+  },
+  "updatedAt": "2026-08-19T02:59:01.682Z",
+  "whatsappPhone": "584125669426",
+  "ultramsgInstance": "instance188835",
+  "ultramsgToken": "jtbkmtfrblss1utf",
+  "globalSettings": {
+    "trialDays": 3,
+    "appName": "FIX PRO MAX",
+    "supportEmail": "aguadoangelica9@gmail.com",
+    "maintenanceMode": false,
+    "registrationOpen": true
+  }
+}

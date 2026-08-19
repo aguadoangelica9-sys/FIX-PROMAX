@@ -1,0 +1,542 @@
+[
+  {
+    "id": "msziti83f1fr",
+    "ts": "2026-08-19T03:17:21.411Z",
+    "adminId": "msuuifzwc1tx",
+    "adminEmail": "isuzuimport2025@gmail.com",
+    "action": "remove_employee",
+    "targetId": "msziti74pe0s",
+    "targetEmail": "emptest_del@test.com",
+    "detail": ""
+  },
+  {
+    "id": "msziti77zkvv",
+    "ts": "2026-08-19T03:17:21.379Z",
+    "adminId": "msuuifzwc1tx",
+    "adminEmail": "isuzuimport2025@gmail.com",
+    "action": "invite_employee",
+    "targetId": "msziti74pe0s",
+    "targetEmail": "emptest_del@test.com",
+    "detail": ""
+  },
+  {
+    "id": "mszi5xo7oa38",
+    "ts": "2026-08-19T02:59:01.687Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "global_settings_update",
+    "targetId": null,
+    "targetEmail": null,
+    "detail": "cambios: {\"trialDays\":3,\"appName\":\"FIX PRO MAX\",\"registrationOpen\":true,\"maintenanceMode\":false}"
+  },
+  {
+    "id": "mszi5lfja8vn",
+    "ts": "2026-08-19T02:58:45.823Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "global_settings_update",
+    "targetId": null,
+    "targetEmail": null,
+    "detail": "cambios: {\"trialDays\":3,\"appName\":\"FIX PRO MAX\",\"registrationOpen\":true,\"maintenanceMode\":false}"
+  },
+  {
+    "id": "mszi4yndlwwd",
+    "ts": "2026-08-19T02:58:16.297Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "global_settings_update",
+    "targetId": null,
+    "targetEmail": null,
+    "detail": "cambios: {\"trialDays\":3,\"appName\":\"FIX PRO MAX\",\"registrationOpen\":true,\"maintenanceMode\":false}"
+  },
+  {
+    "id": "mszgtrur6gfw",
+    "ts": "2026-08-19T02:21:34.659Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "global_settings_update",
+    "targetId": null,
+    "targetEmail": null,
+    "detail": "cambios: {\"trialDays\":3,\"appName\":\"FIX PRO MAX\",\"registrationOpen\":true,\"maintenanceMode\":false}"
+  },
+  {
+    "id": "mszgtgyr9aw8",
+    "ts": "2026-08-19T02:21:20.547Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "global_settings_update",
+    "targetId": null,
+    "targetEmail": null,
+    "detail": "cambios: {\"trialDays\":3,\"appName\":\"FIX PRO MAX\",\"registrationOpen\":true,\"maintenanceMode\":false}"
+  },
+  {
+    "id": "mszflfctzfb2",
+    "ts": "2026-08-19T01:47:05.597Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_method_update",
+    "targetId": null,
+    "targetEmail": null,
+    "detail": "método:BANK_TRANSFER → {\"label\":\"Transferencia bancaria\",\"icon\":\"🏦\",\"type\":\"both\",\"isManual\":false,\"info\":\"\",\"paymentData\":{\"bank\":\"Mercantil\",\"account\":\"01050162871162066784\",\"name\":\"Angelica\",\"cedula\":\"\",\"extra\":\"\"}}"
+  },
+  {
+    "id": "mszfk97aka8w",
+    "ts": "2026-08-19T01:46:10.966Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_method_update",
+    "targetId": null,
+    "targetEmail": null,
+    "detail": "método:DEBIT_CARD → {\"active\":false}"
+  },
+  {
+    "id": "mszfk5od1ihr",
+    "ts": "2026-08-19T01:46:06.397Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_method_update",
+    "targetId": null,
+    "targetEmail": null,
+    "detail": "método:DEBIT_CARD → {\"label\":\"Tarjeta Débito\",\"icon\":\"💳\",\"type\":\"pos\",\"isManual\":false,\"info\":\"\",\"paymentData\":{\"extra\":\"\"}}"
+  },
+  {
+    "id": "mszfk1f2x930",
+    "ts": "2026-08-19T01:46:00.878Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_method_update",
+    "targetId": null,
+    "targetEmail": null,
+    "detail": "método:ZELLE → {\"active\":false}"
+  },
+  {
+    "id": "mszfk0hj5kaz",
+    "ts": "2026-08-19T01:45:59.671Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_method_update",
+    "targetId": null,
+    "targetEmail": null,
+    "detail": "método:PAYPAL → {\"active\":false}"
+  },
+  {
+    "id": "mszfjzs41t26",
+    "ts": "2026-08-19T01:45:58.756Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_method_update",
+    "targetId": null,
+    "targetEmail": null,
+    "detail": "método:PAYPAL → {\"active\":true}"
+  },
+  {
+    "id": "mszfjz3cx6w3",
+    "ts": "2026-08-19T01:45:57.864Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_method_update",
+    "targetId": null,
+    "targetEmail": null,
+    "detail": "método:ZELLE → {\"active\":true}"
+  },
+  {
+    "id": "mszfjw63q4zi",
+    "ts": "2026-08-19T01:45:54.075Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_method_update",
+    "targetId": null,
+    "targetEmail": null,
+    "detail": "método:ZELLE → {\"active\":false}"
+  },
+  {
+    "id": "mszfjr7e5drj",
+    "ts": "2026-08-19T01:45:47.642Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_method_update",
+    "targetId": null,
+    "targetEmail": null,
+    "detail": "método:USDT → {\"label\":\"USDT / Cripto\",\"icon\":\"🟡\",\"type\":\"both\",\"isManual\":true,\"info\":\"\",\"paymentData\":{\"address\":\"1183080311\",\"network\":\"USDT / TRC20 o BEP20\",\"extra\":\"\"}}"
+  },
+  {
+    "id": "mszfis51tq4r",
+    "ts": "2026-08-19T01:45:02.197Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_method_update",
+    "targetId": null,
+    "targetEmail": null,
+    "detail": "método:BANK_TRANSFER → {\"label\":\"Transferencia bancaria\",\"icon\":\"🏦\",\"type\":\"pos\",\"isManual\":false,\"info\":\"\",\"paymentData\":{\"bank\":\"Mercantil\",\"account\":\"01050162871162066784\",\"name\":\"Angelica\",\"cedula\":\"\",\"extra\":\"\"}}"
+  },
+  {
+    "id": "mszfh9quogce",
+    "ts": "2026-08-19T01:43:51.702Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_method_update",
+    "targetId": null,
+    "targetEmail": null,
+    "detail": "método:PAGO_MOVIL → {\"label\":\"Pago Móvil\",\"icon\":\"📱\",\"type\":\"both\",\"isManual\":true,\"info\":\"\",\"paymentData\":{\"bank\":\"Mercantil\",\"phone\":\"0412-566-9426\",\"cedula\":\"V-32.003.088\",\"name\":\"FIX PRO MAX\",\"extra\":\"\"}}"
+  },
+  {
+    "id": "mszfgu264miv",
+    "ts": "2026-08-19T01:43:31.374Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "admin_bcv_fetch",
+    "targetId": null,
+    "targetEmail": null,
+    "detail": "USD=773.3125 EUR=896.02946062"
+  },
+  {
+    "id": "mszdds2go4ln",
+    "ts": "2026-08-19T00:45:09.592Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_method_update",
+    "targetId": null,
+    "targetEmail": null,
+    "detail": "método:PAGO_MOVIL → {\"label\":\"Pago Móvil\",\"icon\":\"📱\",\"type\":\"both\",\"isManual\":true,\"info\":\"\",\"paymentData\":{\"bank\":\"Mercantil\",\"phone\":\"0412-566-9426\",\"cedula\":\"V-32.003.088\",\"name\":\"FIX PRO MAX\",\"extra\":\"\"}}"
+  },
+  {
+    "id": "mszdd8uhhomo",
+    "ts": "2026-08-19T00:44:44.681Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_method_update",
+    "targetId": null,
+    "targetEmail": null,
+    "detail": "método:PAGO_MOVIL → {\"label\":\"Pago Móvil\",\"icon\":\"📱\",\"type\":\"both\",\"isManual\":true,\"info\":\"\",\"paymentData\":{\"bank\":\"Mercantil\",\"phone\":\"0412-566-9426\",\"cedula\":\"V-32.003.088\",\"name\":\"FIX PRO MAX\",\"extra\":\"\"}}"
+  },
+  {
+    "id": "mszcv5qdxsbv",
+    "ts": "2026-08-19T00:30:40.837Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "grant_access",
+    "targetId": "msujjz7xyibo",
+    "targetEmail": "familiaaguado07@gmail.com",
+    "detail": ""
+  },
+  {
+    "id": "mszcav7ea80p",
+    "ts": "2026-08-19T00:14:54.074Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "user_deleted",
+    "targetId": "mszaw7l5l5jz",
+    "targetEmail": "1ng3l2c1@gmail.com",
+    "detail": "Eliminado por admin. Sesiones cerradas: 0"
+  },
+  {
+    "id": "mszc9nn4rhwv",
+    "ts": "2026-08-19T00:13:57.616Z",
+    "adminId": "msujjz7xyibo",
+    "adminEmail": "familiaaguado07@gmail.com",
+    "action": "subscription_cancel_self",
+    "targetId": "msujjz7xyibo",
+    "targetEmail": "familiaaguado07@gmail.com",
+    "detail": "plan:basic"
+  },
+  {
+    "id": "mszc96jz1ddb",
+    "ts": "2026-08-19T00:13:35.471Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "payment_confirm",
+    "targetId": "msujjz7xyibo",
+    "targetEmail": "familiaaguado07@gmail.com",
+    "detail": "pago:mszc8u0v19nd plan:basic"
+  },
+  {
+    "id": "mszc7xbvhm9r",
+    "ts": "2026-08-19T00:12:36.859Z",
+    "adminId": "msujjz7xyibo",
+    "adminEmail": "familiaaguado07@gmail.com",
+    "action": "subscription_cancel_self",
+    "targetId": "msujjz7xyibo",
+    "targetEmail": "familiaaguado07@gmail.com",
+    "detail": "plan:manual"
+  },
+  {
+    "id": "mszc7ekyggdo",
+    "ts": "2026-08-19T00:12:12.562Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "subscription_activate",
+    "targetId": "msujjz7xyibo",
+    "targetEmail": "familiaaguado07@gmail.com",
+    "detail": "manual"
+  },
+  {
+    "id": "mszc672rw5bq",
+    "ts": "2026-08-19T00:11:16.179Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "user_deleted",
+    "targetId": "msuh0hp0h4i7",
+    "targetEmail": "juanoropeza23@gmail.com",
+    "detail": "Eliminado por admin. Sesiones cerradas: 0"
+  },
+  {
+    "id": "mszc650ggzf3",
+    "ts": "2026-08-19T00:11:13.504Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "user_deleted",
+    "targetId": "msud7viyi059",
+    "targetEmail": "kimberlinblanco@gmail.com",
+    "detail": "Eliminado por admin. Sesiones cerradas: 0"
+  },
+  {
+    "id": "mszc62avkzjd",
+    "ts": "2026-08-19T00:11:09.991Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "user_deleted",
+    "targetId": "mstkdpg4kut6",
+    "targetEmail": "juniorjs@gmail.com",
+    "detail": "Eliminado por admin. Sesiones cerradas: 0"
+  },
+  {
+    "id": "mszaw7lhua5t",
+    "ts": "2026-08-18T23:35:30.677Z",
+    "adminId": "msujjz7xyibo",
+    "adminEmail": "familiaaguado07@gmail.com",
+    "action": "invite_employee",
+    "targetId": "mszaw7l5l5jz",
+    "targetEmail": "1ng3l2c1@gmail.com",
+    "detail": ""
+  },
+  {
+    "id": "mszatpt45gnv",
+    "ts": "2026-08-18T23:33:34.312Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "plan_update",
+    "targetId": null,
+    "targetEmail": null,
+    "detail": "plan:semestral → {\"name\":\"Plan Semestral\",\"description\":\"El mayor valor. 6 meses con todas las funciones.\",\"price\":35,\"duration\":180,\"period\":\"6 meses\",\"maxUsers\":5,\"maxProducts\":-1,\"multiUser\":true,\"recommended\":false,\"badge\":\"👑 MEJOR VALOR\",\"active\":true,\"features\":[\"Hasta 5 usuarios\",\"👥 Multiusuario + permisos por rol\",\"Inventario ilimitado\",\"Todo el Plan Pro\",\"ventas ilimitadas\",\"Soporte prioritario\",\"6 meses de acceso\"],\"notIncluded\":[]}"
+  },
+  {
+    "id": "mszasge5tq30",
+    "ts": "2026-08-18T23:32:35.453Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "subscription_activate",
+    "targetId": "msujjz7xyibo",
+    "targetEmail": "familiaaguado07@gmail.com",
+    "detail": "semestral"
+  },
+  {
+    "id": "mszaroib831i",
+    "ts": "2026-08-18T23:31:59.315Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "subscription_activate",
+    "targetId": "msujjz7xyibo",
+    "targetEmail": "familiaaguado07@gmail.com",
+    "detail": "semestral"
+  },
+  {
+    "id": "mszakm1pm5j1",
+    "ts": "2026-08-18T23:26:29.533Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "reactivate",
+    "targetId": "msujjz7xyibo",
+    "targetEmail": "familiaaguado07@gmail.com",
+    "detail": ""
+  },
+  {
+    "id": "mszak98d66t7",
+    "ts": "2026-08-18T23:26:12.925Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "suspend",
+    "targetId": "msujjz7xyibo",
+    "targetEmail": "familiaaguado07@gmail.com",
+    "detail": ""
+  },
+  {
+    "id": "mszaj6l8pqi6",
+    "ts": "2026-08-18T23:25:22.844Z",
+    "adminId": "msujjz7xyibo",
+    "adminEmail": "familiaaguado07@gmail.com",
+    "action": "exchange_rate_manual_update",
+    "targetId": null,
+    "targetEmail": null,
+    "detail": "USD=773.3125 EUR=896.02946062 fuente=BCV Today (primary)"
+  },
+  {
+    "id": "mszaifmtbhze",
+    "ts": "2026-08-18T23:24:47.909Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "subscription_activate",
+    "targetId": "msujjz7xyibo",
+    "targetEmail": "familiaaguado07@gmail.com",
+    "detail": "basic"
+  },
+  {
+    "id": "mszahg9u84nk",
+    "ts": "2026-08-18T23:24:02.082Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "plan_update",
+    "targetId": null,
+    "targetEmail": null,
+    "detail": "plan:pro → {\"name\":\"Plan Pro\",\"description\":\"Para negocios en crecimiento. Multiusuario habilitado.\",\"price\":25,\"duration\":90,\"period\":\"3 meses\",\"maxUsers\":3,\"maxProducts\":500,\"multiUser\":true,\"recommended\":true,\"badge\":\"⭐ RECOMENDADO\",\"active\":true,\"features\":[\"Hasta 3 usuarios\",\"👥 Multiusuario + permisos por rol\",\"Inventario (hasta 500 productos)\",\"Ventas ilimitadas\",\"Contabilidad completa\",\"Finanzas P&L\",\"AI Copilot\"],\"notIncluded\":[\"Inventario ilimitado\",\"Soporte prioritario\"]}"
+  },
+  {
+    "id": "msza9180e1s5",
+    "ts": "2026-08-18T23:17:29.328Z",
+    "adminId": "msuuifzwc1tx",
+    "adminEmail": "isuzuimport2025@gmail.com",
+    "action": "exchange_rate_manual_update",
+    "targetId": null,
+    "targetEmail": null,
+    "detail": "USD=773.3125 EUR=896.02946062 fuente=BCV Today (primary)"
+  },
+  {
+    "id": "msz89sdjfgrq",
+    "ts": "2026-08-18T22:22:05.287Z",
+    "adminId": "msuuifzwc1tx",
+    "adminEmail": "isuzuimport2025@gmail.com",
+    "action": "force_logout_device",
+    "targetId": "msuuifzwc1tx",
+    "targetEmail": null,
+    "detail": ""
+  },
+  {
+    "id": "msz7r73tl0a7",
+    "ts": "2026-08-18T22:07:37.913Z",
+    "adminId": "msuuifzwc1tx",
+    "adminEmail": "isuzuimport2025@gmail.com",
+    "action": "remove_employee",
+    "targetId": "msz7r710scwj",
+    "targetEmail": "test_emp_1787090857800@test.com",
+    "detail": ""
+  },
+  {
+    "id": "msz7r73fethf",
+    "ts": "2026-08-18T22:07:37.899Z",
+    "adminId": "msuuifzwc1tx",
+    "adminEmail": "isuzuimport2025@gmail.com",
+    "action": "force_logout",
+    "targetId": "msz7r710scwj",
+    "targetEmail": "test_emp_1787090857800@test.com",
+    "detail": ""
+  },
+  {
+    "id": "msz7r72wr4jy",
+    "ts": "2026-08-18T22:07:37.880Z",
+    "adminId": "msuuifzwc1tx",
+    "adminEmail": "isuzuimport2025@gmail.com",
+    "action": "reactivate",
+    "targetId": "msz7r710scwj",
+    "targetEmail": "test_emp_1787090857800@test.com",
+    "detail": ""
+  },
+  {
+    "id": "msz7r72hevcw",
+    "ts": "2026-08-18T22:07:37.865Z",
+    "adminId": "msuuifzwc1tx",
+    "adminEmail": "isuzuimport2025@gmail.com",
+    "action": "suspend",
+    "targetId": "msz7r710scwj",
+    "targetEmail": "test_emp_1787090857800@test.com",
+    "detail": ""
+  },
+  {
+    "id": "msz7r71za5oh",
+    "ts": "2026-08-18T22:07:37.847Z",
+    "adminId": "msuuifzwc1tx",
+    "adminEmail": "isuzuimport2025@gmail.com",
+    "action": "update_permissions",
+    "targetId": "msz7r710scwj",
+    "targetEmail": "test_emp_1787090857800@test.com",
+    "detail": ""
+  },
+  {
+    "id": "msz7r713wb42",
+    "ts": "2026-08-18T22:07:37.815Z",
+    "adminId": "msuuifzwc1tx",
+    "adminEmail": "isuzuimport2025@gmail.com",
+    "action": "invite_employee",
+    "targetId": "msz7r710scwj",
+    "targetEmail": "test_emp_1787090857800@test.com",
+    "detail": ""
+  },
+  {
+    "id": "msz6u8wewkub",
+    "ts": "2026-08-18T21:42:00.590Z",
+    "adminId": "msuuifzwc1tx",
+    "adminEmail": "isuzuimport2025@gmail.com",
+    "action": "exchange_rate_manual_update",
+    "targetId": null,
+    "targetEmail": null,
+    "detail": "USD=773.3125 EUR=896.02946062 fuente=BCV Today (primary)"
+  },
+  {
+    "id": "msz6lg9ew4qd",
+    "ts": "2026-08-18T21:35:10.226Z",
+    "adminId": "msuuifzwc1tx",
+    "adminEmail": "isuzuimport2025@gmail.com",
+    "action": "exchange_rate_manual_update",
+    "targetId": null,
+    "targetEmail": null,
+    "detail": "USD=773.3125 EUR=896.02946062 fuente=BCV Today (primary)"
+  },
+  {
+    "id": "msz6cxbxv3wt",
+    "ts": "2026-08-18T21:28:32.445Z",
+    "adminId": "msuuifzwc1tx",
+    "adminEmail": "isuzuimport2025@gmail.com",
+    "action": "exchange_rate_manual_update",
+    "targetId": null,
+    "targetEmail": null,
+    "detail": "USD=773.3125 EUR=896.02946062 fuente=BCV Today (primary)"
+  },
+  {
+    "id": "msz69c4gwq51",
+    "ts": "2026-08-18T21:25:44.992Z",
+    "adminId": "msuuifzwc1tx",
+    "adminEmail": "isuzuimport2025@gmail.com",
+    "action": "exchange_rate_manual_update",
+    "targetId": null,
+    "targetEmail": null,
+    "detail": "USD=773.3125 EUR=896.02946062 fuente=BCV Today (primary)"
+  },
+  {
+    "id": "msz4i3xnvtmi",
+    "ts": "2026-08-18T20:36:35.051Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "grant_access",
+    "targetId": "msujjz7xyibo",
+    "targetEmail": "familiaaguado07@gmail.com",
+    "detail": ""
+  },
+  {
+    "id": "msz497d4gvic",
+    "ts": "2026-08-18T20:29:39.592Z",
+    "adminId": "msti84a936r6",
+    "adminEmail": "aguadoangelica9@gmail.com",
+    "action": "global_settings_update",
+    "targetId": null,
+    "targetEmail": null,
+    "detail": "cambios: {\"trialDays\":3,\"appName\":\"FIX PRO MAX\",\"supportEmail\":\"aguadoangelica9@gmail.com\",\"registrationOpen\":true,\"maintenanceMode\":false}"
+  },
+  {
+    "id": "msz40jph14v1",
+    "ts": "2026-08-18T20:22:55.685Z",
+    "adminId": "msuuifzwc1tx",
+    "adminEmail": "isuzuimport2025@gmail.com",
+    "action": "exchange_rate_manual_update",
+    "targetId": null,
+    "targetEmail": null,
+    "detail": "USD=773.3125 EUR=896.02946062 fuente=BCV Today (primary)"
+  }
+]

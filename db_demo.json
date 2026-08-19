@@ -1,0 +1,469 @@
+{
+  "products": [
+    {
+      "id": "pd1",
+      "name": "Filtro de aceite",
+      "sku": "FILT-001",
+      "price": 1200,
+      "cost": 800,
+      "stock": 50,
+      "minStock": 10,
+      "categoryId": "cat-d1",
+      "supplierId": "sup-d1",
+      "warehouseId": "wh-d1",
+      "currency": "VES",
+      "status": "activo",
+      "createdAt": "2026-08-18T17:36:40.322Z",
+      "updatedAt": "2026-08-18T17:36:40.322Z"
+    },
+    {
+      "id": "pd2",
+      "name": "Bujía NGK",
+      "sku": "BUJN-001",
+      "price": 450,
+      "cost": 300,
+      "stock": 120,
+      "minStock": 20,
+      "categoryId": "cat-d1",
+      "supplierId": "sup-d1",
+      "warehouseId": "wh-d1",
+      "currency": "VES",
+      "status": "activo",
+      "createdAt": "2026-08-18T17:36:40.322Z",
+      "updatedAt": "2026-08-18T17:36:40.322Z"
+    },
+    {
+      "id": "pd3",
+      "name": "Aceite 20W-50",
+      "sku": "ACE-001",
+      "price": 2100,
+      "cost": 1400,
+      "stock": 30,
+      "minStock": 10,
+      "categoryId": "cat-d3",
+      "supplierId": "sup-d2",
+      "warehouseId": "wh-d1",
+      "currency": "VES",
+      "status": "activo",
+      "createdAt": "2026-08-18T17:36:40.322Z",
+      "updatedAt": "2026-08-18T17:36:40.322Z"
+    },
+    {
+      "id": "pd4",
+      "name": "Sensor temperatura EUR",
+      "sku": "SEN-EUR1",
+      "price": 18,
+      "cost": 11,
+      "stock": 8,
+      "minStock": 3,
+      "categoryId": "cat-d1",
+      "supplierId": "sup-d2",
+      "warehouseId": "wh-d1",
+      "currency": "EUR",
+      "status": "activo",
+      "createdAt": "2026-08-18T17:36:40.322Z",
+      "updatedAt": "2026-08-18T17:36:40.322Z"
+    },
+    {
+      "id": "pd5",
+      "name": "Kit herramientas USD",
+      "sku": "KIT-001",
+      "price": 45,
+      "cost": 28,
+      "stock": 4,
+      "minStock": 5,
+      "categoryId": "cat-d2",
+      "supplierId": "sup-d1",
+      "warehouseId": "wh-d1",
+      "currency": "USD",
+      "status": "activo",
+      "createdAt": "2026-08-18T17:36:40.322Z",
+      "updatedAt": "2026-08-18T17:36:40.322Z"
+    },
+    {
+      "id": "pd6",
+      "name": "Correa distribución",
+      "sku": "COR-001",
+      "price": 3500,
+      "cost": 2200,
+      "stock": 0,
+      "minStock": 5,
+      "categoryId": "cat-d1",
+      "supplierId": "sup-d1",
+      "warehouseId": "wh-d1",
+      "currency": "VES",
+      "status": "activo",
+      "createdAt": "2026-08-18T17:36:40.322Z",
+      "updatedAt": "2026-08-18T17:36:40.322Z"
+    }
+  ],
+  "categories": [
+    {
+      "id": "cat-d1",
+      "name": "Repuestos",
+      "createdAt": "2026-08-18T17:36:40.322Z"
+    },
+    {
+      "id": "cat-d2",
+      "name": "Herramientas",
+      "createdAt": "2026-08-18T17:36:40.322Z"
+    },
+    {
+      "id": "cat-d3",
+      "name": "Consumibles",
+      "createdAt": "2026-08-18T17:36:40.322Z"
+    }
+  ],
+  "warehouses": [
+    {
+      "id": "wh-d1",
+      "name": "Almacén Principal",
+      "location": "Caracas"
+    }
+  ],
+  "customers": [
+    {
+      "id": "cus-d1",
+      "firstName": "Juan",
+      "lastName": "García",
+      "email": "juan@demo.com",
+      "phone": "0416-0000001",
+      "balance": 0,
+      "credit": 5000,
+      "status": "activo",
+      "createdAt": "2026-08-18T17:36:40.322Z"
+    },
+    {
+      "id": "cus-d2",
+      "firstName": "María",
+      "lastName": "López",
+      "email": "maria@demo.com",
+      "phone": "0424-0000002",
+      "balance": 2000,
+      "credit": 10000,
+      "status": "activo",
+      "createdAt": "2026-08-18T17:36:40.322Z"
+    },
+    {
+      "id": "cus-d3",
+      "firstName": "Carlos",
+      "lastName": "Pérez",
+      "email": "carlos@demo.com",
+      "phone": "0412-0000003",
+      "balance": 0,
+      "credit": 3000,
+      "status": "activo",
+      "createdAt": "2026-08-18T17:36:40.322Z"
+    }
+  ],
+  "suppliers": [
+    {
+      "id": "sup-d1",
+      "name": "Proveedor A",
+      "email": "a@prov.com",
+      "phone": "0412-0000001",
+      "balance": 0,
+      "status": "activo",
+      "createdAt": "2026-08-18T17:36:40.322Z"
+    },
+    {
+      "id": "sup-d2",
+      "name": "Proveedor B",
+      "email": "b@prov.com",
+      "phone": "0414-0000002",
+      "balance": 1500,
+      "status": "activo",
+      "createdAt": "2026-08-18T17:36:40.322Z"
+    }
+  ],
+  "sales": [
+    {
+      "id": "sale-d1",
+      "invoice": "DEMO-001",
+      "customerId": "cus-d1",
+      "items": [
+        {
+          "productId": "pd1",
+          "qty": 3,
+          "price": 1200
+        },
+        {
+          "productId": "pd2",
+          "qty": 10,
+          "price": 450
+        }
+      ],
+      "subtotal": 8100,
+      "tax": 1296,
+      "total": 9396,
+      "paid": 9396,
+      "method": "CASH",
+      "date": "2026-08-18",
+      "currency": "VES",
+      "status": "Pagada",
+      "createdAt": "2026-08-18T17:36:40.322Z"
+    },
+    {
+      "id": "sale-d2",
+      "invoice": "DEMO-002",
+      "customerId": "cus-d2",
+      "items": [
+        {
+          "productId": "pd4",
+          "qty": 1,
+          "price": 18
+        }
+      ],
+      "subtotal": 18,
+      "tax": 2.88,
+      "total": 20.88,
+      "paid": 20.88,
+      "method": "Zelle",
+      "date": "2026-08-18",
+      "currency": "EUR",
+      "status": "Pagada",
+      "createdAt": "2026-08-18T17:36:40.322Z"
+    },
+    {
+      "id": "sale-d3",
+      "invoice": "DEMO-003",
+      "customerId": "cus-d3",
+      "items": [
+        {
+          "productId": "pd5",
+          "qty": 1,
+          "price": 45
+        }
+      ],
+      "subtotal": 45,
+      "tax": 7.2,
+      "total": 52.2,
+      "paid": 52.2,
+      "method": "BANK_TRANSFER",
+      "date": "2026-08-18",
+      "currency": "USD",
+      "status": "Pagada",
+      "createdAt": "2026-08-18T17:36:40.322Z"
+    }
+  ],
+  "invoices": [
+    {
+      "id": "inv-d1",
+      "number": "FAC-DEMO-001",
+      "customerId": "cus-d2",
+      "date": "2026-08-18",
+      "dueDate": "2026-08-18",
+      "total": 20.88,
+      "paid": 0,
+      "notes": "Factura demo",
+      "currency": "EUR",
+      "status": "Pendiente",
+      "createdAt": "2026-08-18T17:36:40.322Z",
+      "updatedAt": "2026-08-18T17:36:40.322Z"
+    },
+    {
+      "id": "inv-d2",
+      "number": "FAC-DEMO-002",
+      "customerId": "cus-d1",
+      "date": "2026-08-18",
+      "dueDate": "2026-08-18",
+      "total": 9396,
+      "paid": 9396,
+      "notes": "Pagada",
+      "currency": "VES",
+      "status": "Pagada",
+      "createdAt": "2026-08-18T17:36:40.322Z",
+      "updatedAt": "2026-08-18T17:36:40.322Z"
+    }
+  ],
+  "purchases": [],
+  "expenses": [
+    {
+      "id": "exp-d1",
+      "description": "Alquiler local",
+      "category": "Operativo",
+      "amount": 5000,
+      "method": "BANK_TRANSFER",
+      "date": "2026-08-18",
+      "currency": "VES",
+      "status": "activo",
+      "createdAt": "2026-08-18T17:36:40.322Z"
+    },
+    {
+      "id": "exp-d2",
+      "description": "Electricidad",
+      "category": "Servicios",
+      "amount": 1200,
+      "method": "CASH",
+      "date": "2026-08-18",
+      "currency": "VES",
+      "status": "activo",
+      "createdAt": "2026-08-18T17:36:40.322Z"
+    },
+    {
+      "id": "exp-d3",
+      "description": "Software licencia",
+      "category": "Tech",
+      "amount": 25,
+      "method": "CREDIT_CARD",
+      "date": "2026-08-18",
+      "currency": "EUR",
+      "status": "activo",
+      "createdAt": "2026-08-18T17:36:40.322Z"
+    }
+  ],
+  "returns": [],
+  "inventoryMovements": [],
+  "inventoryHistory": [],
+  "alerts": [],
+  "chartOfAccounts": [
+    {
+      "code": "1-01-001",
+      "name": "Caja",
+      "type": "Activo",
+      "balance": 0
+    },
+    {
+      "code": "1-01-002",
+      "name": "Bancos",
+      "type": "Activo",
+      "balance": 0
+    },
+    {
+      "code": "1-02",
+      "name": "Cuentas por Cobrar",
+      "type": "Activo",
+      "balance": 0
+    },
+    {
+      "code": "1-03",
+      "name": "Inventario",
+      "type": "Activo",
+      "balance": 0
+    },
+    {
+      "code": "2-01",
+      "name": "Cuentas por Pagar",
+      "type": "Pasivo",
+      "balance": 0
+    },
+    {
+      "code": "2-02",
+      "name": "Impuestos por Pagar",
+      "type": "Pasivo",
+      "balance": 0
+    },
+    {
+      "code": "3-01",
+      "name": "Capital",
+      "type": "Patrimonio",
+      "balance": 0
+    },
+    {
+      "code": "4-01",
+      "name": "Ventas",
+      "type": "Ingreso",
+      "balance": 0
+    },
+    {
+      "code": "5-01",
+      "name": "Costo de Ventas",
+      "type": "Costo",
+      "balance": 0
+    },
+    {
+      "code": "5-02",
+      "name": "Gastos Administrativos",
+      "type": "Gasto",
+      "balance": 0
+    },
+    {
+      "code": "5-03",
+      "name": "Gastos de Ventas",
+      "type": "Gasto",
+      "balance": 0
+    }
+  ],
+  "journalEntries": [],
+  "balanceSheet": {
+    "assets": [],
+    "liabilities": [],
+    "equity": [],
+    "totalAssets": 0,
+    "totalLiabilitiesEquity": 0
+  },
+  "incomeStatement": {
+    "revenue": 0,
+    "costOfSales": 0,
+    "grossProfit": 0,
+    "expenses": 0,
+    "netIncome": 0
+  },
+  "importHistory": [],
+  "auditLog": [],
+  "payments": [],
+  "quotes": [],
+  "settings": {
+    "companyName": "Empresa Demo",
+    "rif": "J-00000000-0",
+    "country": "Venezuela",
+    "currency": "USD",
+    "defaultCurrency": "VES",
+    "darkMode": true,
+    "notifications": true,
+    "aiEnabled": true
+  },
+  "currencies": [
+    {
+      "code": "VES",
+      "name": "Bolívar venezolano",
+      "symbol": "Bs.",
+      "flag": "🇻🇪",
+      "active": true,
+      "isBase": true
+    },
+    {
+      "code": "EUR",
+      "name": "Euro",
+      "symbol": "€",
+      "flag": "🇪🇺",
+      "active": true,
+      "isBase": false
+    },
+    {
+      "code": "USD",
+      "name": "Dólar estadounidense",
+      "symbol": "$",
+      "flag": "🇺🇸",
+      "active": true,
+      "isBase": false
+    }
+  ],
+  "exchangeRates": [
+    {
+      "id": "r-eur-d",
+      "fromCurrency": "EUR",
+      "toCurrency": "VES",
+      "rate": 40,
+      "date": "2026-08-18",
+      "createdAt": "2026-08-18T17:36:40.322Z",
+      "createdBy": "demo",
+      "notes": "Tasa demo inicial",
+      "isActive": true,
+      "updateType": "manual"
+    },
+    {
+      "id": "r-usd-d",
+      "fromCurrency": "USD",
+      "toCurrency": "VES",
+      "rate": 36,
+      "date": "2026-08-18",
+      "createdAt": "2026-08-18T17:36:40.322Z",
+      "createdBy": "demo",
+      "notes": "Tasa demo inicial",
+      "isActive": true,
+      "updateType": "manual"
+    }
+  ],
+  "demoResetAt": "2026-08-18T17:36:40.322Z"
+}

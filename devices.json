@@ -1,0 +1,55 @@
+﻿{
+    "devices":  [
+                    {
+                        "id":  "dev001",
+                        "userId":  "msti84a936r6",
+                        "companyId":  "aa620ebd1a414c83",
+                        "deviceType":  "desktop",
+                        "deviceName":  "Windows PC - Chrome",
+                        "os":  "Windows 10",
+                        "browser":  "Chrome 128",
+                        "ipAddress":  "192.168.1.100",
+                        "lastActive":  "2026-08-15T22:23:29.958Z",
+                        "createdAt":  "2026-08-14T22:14:06.513Z",
+                        "status":  "active",
+                        "sessionToken":  "24f7fc417bacd8845e8d01bf18866cdbdfc2486be9a68128cd693d9a9775403a",
+                        "pushToken":  null
+                    },
+                    {
+                        "id":  "dev002",
+                        "userId":  "mstjbg1l5olx",
+                        "companyId":  "aa620ebd1a414c83",
+                        "deviceType":  "mobile",
+                        "deviceName":  "Android Phone",
+                        "os":  "Android 14",
+                        "browser":  "Chrome Mobile",
+                        "ipAddress":  "192.168.1.101",
+                        "lastActive":  "2026-08-15T19:29:57.083Z",
+                        "createdAt":  "2026-08-14T22:44:41.513Z",
+                        "status":  "suspended",
+                        "sessionToken":  "8dd624497a66eda4ea29fe6a1db8523af6b491bd3384bba67fa9f63017f549f5",
+                        "pushToken":  null
+                    },
+                    {
+                        "id":  "dev003",
+                        "userId":  "msujjz7xyibo",
+                        "companyId":  "8bda911c3b9bb8f8",
+                        "deviceType":  "tablet",
+                        "deviceName":  "iPad",
+                        "os":  "iOS 17",
+                        "browser":  "Safari",
+                        "ipAddress":  "192.168.1.102",
+                        "lastActive":  "2026-08-15T20:45:49.821Z",
+                        "createdAt":  "2026-08-15T15:39:05.614Z",
+                        "status":  "active",
+                        "sessionToken":  "66074154eb3cf6d48d1b17715e08503090dbac50878c8907a8ee789c9759a70b",
+                        "pushToken":  null
+                    }
+                ],
+    "deviceSettings":  {
+                           "maxDevicesPerUser":  3,
+                           "sessionTimeoutMinutes":  4320,
+                           "allowConcurrentSessions":  true,
+                           "requireDeviceVerification":  false
+                       }
+}
