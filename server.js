@@ -62,7 +62,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api', async (req, res, next) => {
     const exemptPrefixes = ['/auth/', '/subscription/', '/admin/', '/demo/', '/events'];
     // Rutas públicas explícitas que no necesitan suscripción
-    const exemptExact = ['/subscription/plans', '/config/payment-methods', '/ping', '/run-migration', '/fix-encoding'];
+    const exemptExact = ['/subscription/plans', '/config/payment-methods', '/ping', '/run-migration', '/fix-encoding', '/utf8-test'];
     const p = req.path;
     if (exemptPrefixes.some(e => p.startsWith(e) || p === e.slice(0, -1))) return next();
     if (exemptExact.some(e => p === e || p.startsWith(e + '/')))           return next();
