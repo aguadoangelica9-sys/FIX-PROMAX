@@ -1,159 +1,97 @@
 /**
- * FIX PRO MAX — Service Worker
- * Estrategia: Network-first para la app, Cache-first para assets estáticos.
- * Permite uso offline completo una vez cargado.
+ * FIX PRO MAX — Service Worker v5
+ * Estrategia: Network-ONLY para HTML principal (nunca cachear).
+ *             Cache-first solo para assets estáticos (íconos, imágenes).
  */
 
-const CACHE_NAME   = 'fixpromax-v4-utf8';
-const API_BASE     = '/api/';
+const CACHE_NAME = 'fixpromax-v5-nocache-html';
+const API_BASE   = '/api/';
 
-// Recursos que se cachean en la instalación
-const PRECACHE = [
-    '/',
-    '/index2.html',
-    '/manifest.json',
-    '/currency.js',
+// NO precachear el HTML — siempre va a la red para tener datos frescos
+const PRECACHE_STATIC = [
     '/icons/icon-192.png',
     '/icons/icon-512.png',
-    // Librerías externas (se cachean en runtime la primera vez)
 ];
 
-// ── Instalación: pre-cachear la shell de la app ──────────────────────────────
+// ── Instalación ──────────────────────────────────────────────────────────────
 self.addEventListener('install', event => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then(cache => {
-            // Cachear '/' y manifest; no fallar si faltan íconos
-            return Promise.allSettled(
-                PRECACHE.map(url => cache.add(url).catch(() => null))
-            );
-        }).then(() => self.skipWaiting())
+        caches.open(CACHE_NAME).then(cache =>
+            Promise.allSettled(PRECACHE_STATIC.map(url => cache.add(url).catch(() => null)))
+        ).then(() => self.skipWaiting())  // activar inmediatamente sin esperar
     );
 });
 
-// ── Activación: limpiar caches viejos ────────────────────────────────────────
+// ── Activación: borrar TODOS los caches viejos ───────────────────────────────
 self.addEventListener('activate', event => {
     event.waitUntil(
-        caches.keys().then(keys =>
-            Promise.all(
-                keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-            )
-        ).then(() => self.clients.claim())
+        caches.keys()
+            .then(keys => Promise.all(keys.map(k => caches.delete(k))))  // borrar TODO
+            .then(() => caches.open(CACHE_NAME))  // crear caché nuevo y limpio
+            .then(() => self.clients.claim())      // tomar control inmediato
     );
 });
 
-// ── Fetch: estrategia inteligente por tipo de recurso ────────────────────────
+// ── Fetch ─────────────────────────────────────────────────────────────────────
 self.addEventListener('fetch', event => {
     const { request } = event;
     const url = new URL(request.url);
 
-    // Ignorar peticiones no-GET y extensiones de Chrome
     if (request.method !== 'GET') return;
     if (url.protocol === 'chrome-extension:') return;
 
-    // API → Network-first, sin cache (datos siempre frescos)
-    if (url.pathname.startsWith(API_BASE)) {
-        event.respondWith(networkFirst(request, false));
+    // API → siempre red, sin caché
+    if (url.pathname.startsWith(API_BASE)) return;
+
+    // HTML principal y scripts críticos → siempre red, sin caché
+    const noCacheUrls = ['/', '/index2.html', '/auth.js', '/subscription.js',
+                         '/currency.js', '/sw.js', '/manifest.json'];
+    if (noCacheUrls.includes(url.pathname)) {
+        event.respondWith(
+            fetch(request).catch(() => caches.match('/icons/icon-192.png'))
+        );
         return;
     }
 
-    // Ruta principal '/' → Network-first (siempre datos del servidor)
-    if (url.pathname === '/' || url.pathname === '/index2.html') {
-        event.respondWith(networkFirst(request, true));
+    // Íconos y assets estáticos → cache-first
+    if (url.pathname.startsWith('/icons/') || url.pathname.match(/\.(png|jpg|jpeg|gif|webp|svg|woff2?)$/)) {
+        event.respondWith(
+            caches.match(request).then(cached => {
+                if (cached) return cached;
+                return fetch(request).then(resp => {
+                    if (resp.ok) {
+                        caches.open(CACHE_NAME).then(c => c.put(request, resp.clone()));
+                    }
+                    return resp;
+                }).catch(() => new Response('', { status: 404 }));
+            })
+        );
         return;
     }
 
-    // Scripts críticos de la app → Network-first (siempre versión fresca)
-    if (url.pathname === '/auth.js' || url.pathname === '/subscription.js') {
-        event.respondWith(networkFirst(request, false));
-        return;
-    }
-
-    // Assets estáticos (íconos, manifest, librerías CDN) → Cache-first
-    event.respondWith(cacheFirst(request));
+    // Todo lo demás → red directamente
+    event.respondWith(fetch(request).catch(() => new Response('', { status: 503 })));
 });
 
-// ── Estrategia Network-first ─────────────────────────────────────────────────
-async function networkFirst(request, shouldCache) {
-    try {
-        const response = await fetch(request);
-        if (shouldCache && response.ok) {
-            const cache = await caches.open(CACHE_NAME);
-            cache.put(request, response.clone());
-        }
-        return response;
-    } catch {
-        // Sin red → servir desde caché
-        const cached = await caches.match(request);
-        if (cached) return cached;
-        // Fallback offline para la app principal
-        if (request.destination === 'document') {
-            const rootCached = await caches.match('/');
-            if (rootCached) return rootCached;
-        }
-        return new Response('{"error":"Sin conexión"}', {
-            status: 503,
-            headers: { 'Content-Type': 'application/json' }
-        });
-    }
-}
-
-// ── Estrategia Cache-first ────────────────────────────────────────────────────
-async function cacheFirst(request) {
-    const cached = await caches.match(request);
-    if (cached) return cached;
-    try {
-        const response = await fetch(request);
-        if (response.ok) {
-            const cache = await caches.open(CACHE_NAME);
-            cache.put(request, response.clone());
-        }
-        return response;
-    } catch {
-        return new Response('', { status: 404 });
-    }
-}
-
-// ── Background Sync: guardar cambios offline y sincronizar al volver la red ──
-self.addEventListener('sync', event => {
-    if (event.tag === 'sync-data') {
-        event.waitUntil(syncPendingData());
-    }
-});
-
-async function syncPendingData() {
-    // Notificar a los clientes que hay conexión de vuelta
-    const clients = await self.clients.matchAll();
-    clients.forEach(client => client.postMessage({ type: 'SYNC_ONLINE' }));
-}
-
-// ── Push notifications (preparado para futuro) ───────────────────────────────
+// ── Push notifications ────────────────────────────────────────────────────────
 self.addEventListener('push', event => {
     const data = event.data?.json() || {};
     event.waitUntil(
         self.registration.showNotification(data.title || 'FIX PRO MAX', {
-            body:    data.body    || 'Tienes una nueva notificación',
-            icon:    '/icons/icon-192.png',
-            badge:   '/icons/icon-72.png',
-            vibrate: [200, 100, 200],
-            data:    data.url ? { url: data.url } : {},
-            actions: [
-                { action: 'open', title: 'Ver detalles' },
-                { action: 'dismiss', title: 'Ignorar' }
-            ]
+            body:  data.body || 'Tienes una nueva notificacion',
+            icon:  '/icons/icon-192.png',
+            badge: '/icons/icon-72.png',
         })
     );
 });
 
 self.addEventListener('notificationclick', event => {
     event.notification.close();
-    if (event.action === 'open' || !event.action) {
-        const url = event.notification.data?.url || '/';
-        event.waitUntil(
-            self.clients.matchAll({ type: 'window' }).then(clients => {
-                const existing = clients.find(c => c.url === url);
-                if (existing) return existing.focus();
-                return self.clients.openWindow(url);
-            })
-        );
-    }
+    event.waitUntil(
+        self.clients.matchAll({ type: 'window' }).then(clients => {
+            const existing = clients.find(c => c.focused);
+            if (existing) return existing.focus();
+            return self.clients.openWindow('/');
+        })
+    );
 });

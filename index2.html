@@ -12379,11 +12379,33 @@
 
     /* ─── Registro del Service Worker (PWA) ─── */
     if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        window.addEventListener('load', async () => {
+            // Forzar desregistro de SWs viejos con cache corrupto
+            try {
+                const regs = await navigator.serviceWorker.getRegistrations();
+                for (const reg of regs) {
+                    const sw = reg.active || reg.waiting || reg.installing;
+                    if (sw) {
+                        // Detectar SW viejo por cache name
+                        const cacheKeys = await caches.keys();
+                        const hasOldCache = cacheKeys.some(k =>
+                            k.startsWith('fixpromax-') && k !== 'fixpromax-v5-nocache-html'
+                        );
+                        if (hasOldCache || cacheKeys.some(k => k.startsWith('fixpromax-v') && !k.includes('v5'))) {
+                            await reg.unregister();
+                            // Borrar todos los caches viejos
+                            await Promise.all(cacheKeys.map(k => caches.delete(k)));
+                            console.log('🧹 SW viejo eliminado, recargando...');
+                            window.location.reload();
+                            return;
+                        }
+                    }
+                }
+            } catch(e) { console.warn('SW cleanup:', e); }
+
+            navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' })
                 .then(reg => {
                     console.log('✅ Service Worker registrado:', reg.scope);
-                    // Escuchar actualizaciones disponibles
                     reg.addEventListener('updatefound', () => {
                         const newWorker = reg.installing;
                         newWorker.addEventListener('statechange', () => {
@@ -12395,7 +12417,7 @@
                 })
                 .catch(err => console.warn('SW no registrado:', err));
 
-            // Escuchar mensajes del SW (ej: sincronización online)
+            // Escuchar mensajes del SW
             navigator.serviceWorker.addEventListener('message', event => {
                 if (event.data?.type === 'SYNC_ONLINE') {
                     showToast('🌐', 'Conexión restaurada — sincronizando datos...');
