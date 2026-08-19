@@ -10364,9 +10364,7 @@
     /** Escapa un valor para CSV: envuelve en comillas si tiene comas, comillas o saltos de línea */
     function csvEscape(val) {
         const s = String(val === null || val === undefined ? '' : val);
-        if (s.includes(',') || s.includes('"') || s.includes('
-') || s.includes('
-')) {
+        if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
             return '"' + s.replace(/"/g, '""') + '"';
         }
         return s;
@@ -10383,7 +10381,6 @@
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         showToast('📥', filename + ' descargado');
-    }   showToast('📥', filename + ' descargado');
     }
 
     /* ─── Módulo Finanzas / P&L ─── */
