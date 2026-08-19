@@ -38,8 +38,8 @@ async function startServer(port) {
         console.log('');
         console.log('  ❌š¡ FIX PRO MAX "” Backend corriendo');
         console.log(`  🖥️ï¸  URL: http://localhost:${port}`);
-        console.log(`  ðŸ‘‘ Panel admin: http://localhost:${port}/admin`);
-        console.log(`  ðŸƒ Base de datos: MongoDB Atlas`);
+        console.log(`  👑 Panel admin: http://localhost:${port}/admin`);
+        console.log(`  🍃 Base de datos: MongoDB Atlas`);
         console.log('');
     });
     server.on('error', (e) => {
@@ -197,9 +197,9 @@ function defaultData() {
         },
         // ❌”€❌”€ MONEDAS GLOBALES ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
         currencies: [
-            { code:'VES', name:'Bolívar venezolano',      symbol:'Bs.', flag:'ðŸ‡»ðŸ‡ª', active:true,  isBase:true,  format:'es-VE', decimals:2 },
-            { code:'EUR', name:'Euro',                    symbol:'❌‚¬',   flag:'ðŸ‡ªðŸ‡º', active:true,  isBase:false, format:'de-DE', decimals:2 },
-            { code:'USD', name:'Dólar estadounidense',    symbol:'$',   flag:'ðŸ‡ºðŸ‡¸', active:true,  isBase:false, format:'en-US', decimals:2 },
+            { code:'VES', name:'Bolívar venezolano',      symbol:'Bs.', flag:'🁻🁪', active:true,  isBase:true,  format:'es-VE', decimals:2 },
+            { code:'EUR', name:'Euro',                    symbol:'❌‚¬',   flag:'🁪🁺', active:true,  isBase:false, format:'de-DE', decimals:2 },
+            { code:'USD', name:'Dólar estadounidense',    symbol:'$',   flag:'🁺🁸', active:true,  isBase:false, format:'en-US', decimals:2 },
         ],
         // ❌”€❌”€ TASAS DE CAMBIO "” pendientes de actualización automática BCV ❌”€❌”€
         exchangeRates: [
@@ -294,12 +294,12 @@ app.get('/', async (req, res) => {
         // Inyectar datos iniciales + planes + estado de suscripción
         const activePlans = getActivePlans();
         const PLAN_COLORS = { basic:'#64748b', pro:'#4f46e5', semestral:'#f59e0b' };
-        const PLAN_ICONS  = { basic:'ðŸ“¦', pro:'🚀', semestral:'ðŸ’Ž' };
+        const PLAN_ICONS  = { basic:'📦', pro:'🚀', semestral:'💎' };
 
         // Generar HTML de los cards de planes directamente en el servidor
         const plansHtml = activePlans.map(p => {
             const color  = PLAN_COLORS[p.id] || '#4f46e5';
-            const icon   = PLAN_ICONS[p.id]  || 'ðŸ“‹';
+            const icon   = PLAN_ICONS[p.id]  || '📙';
             const fList  = (p.features || []).map(f => `<li style="font-size:12px;color:#94a3b8;padding:2px 0;">❌œ” ${f}</li>`).join('');
             const nList  = (p.notIncluded || []).filter(Boolean).map(f => `<li style="font-size:12px;color:#64748b;padding:2px 0;opacity:.6;">❌œ– ${f}</li>`).join('');
             const btnBg  = `linear-gradient(135deg,${color},${color}cc)`;
@@ -325,8 +325,8 @@ app.get('/', async (req, res) => {
                   <span style="font-size:12px;color:#64748b;">/ ${p.period || p.duration+' días'}</span>
                 </div>
                 <div style="font-size:11px;color:#64748b;margin-bottom:10px;">
-                  ${p.maxUsers===1?'ðŸ‘¤ 1 usuario':`ðŸ‘¥ Hasta ${p.maxUsers} usuarios`}
-                  &nbsp;·&nbsp;ðŸ“¦ ${p.maxProducts===-1?'Inventario ilimitado':`Hasta ${p.maxProducts} productos`}
+                  ${p.maxUsers===1?'👤 1 usuario':`👥 Hasta ${p.maxUsers} usuarios`}
+                  &nbsp;·&nbsp;📦 ${p.maxProducts===-1?'Inventario ilimitado':`Hasta ${p.maxProducts} productos`}
                   &nbsp;·&nbsp;${p.multiUser?'✅ Multiusuario':'❌Œ Sin multiusuario'}
                 </div>
                 <ul style="list-style:none;padding:0;margin:0 0 12px;">${fList}${nList}</ul>
@@ -334,7 +334,7 @@ app.get('/', async (req, res) => {
                     style="width:100%;background:${btnBg};color:${btnClr};border:none;padding:10px;
                            border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;"
                     onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
-                    ðŸ’³ Comprar / Pagar
+                    💳 Comprar / Pagar
                 </button>
               </div>
             </div>`;
@@ -1652,7 +1652,7 @@ app.post('/api/auth/change-password', requireAuth, async (req, res) => {
     users[idx].password    = hashPassword(newPassword);
     users[idx].mustChange  = false;
     await writeUsers(users);
-    console.log(`ðŸ”‘ ContraseÁ±a cambiada: ${users[idx].email}`);
+    console.log(`🔑 ContraseÁ±a cambiada: ${users[idx].email}`);
     ok(res, { changed: true });
 });
 
@@ -1669,7 +1669,7 @@ app.post('/api/auth/recover-request', async (req, res) => {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     _recoverCodes[email.toLowerCase()] = { code, exp: Date.now() + 10 * 60 * 1000 }; // 10 min
 
-    console.log(`ðŸ” Código de recuperación para ${email}: ${code}`);
+    console.log(`🔐 Código de recuperación para ${email}: ${code}`);
     // En producción aquí se enviaría el email. Por ahora se devuelve en la respuesta (dev mode).
     ok(res, { sent: true, devCode: code });   // devCode solo visible en desarrollo
 });
@@ -1775,7 +1775,7 @@ app.get('/entrar', async (req, res) => {
 h1{font-size:22px;margin-bottom:4px}p{color:#94a3b8;font-size:14px;margin-bottom:24px}
 </style></head><body>
 <div class="card">
-    <h1>ðŸ”‘ Acceso de Emergencia</h1>
+    <h1>🔑 Acceso de Emergencia</h1>
     <p>Selecciona tu cuenta para entrar directamente sin contraseÁ±a.</p>
     ${lista}
     <div style="margin-top:20px;padding-top:16px;border-top:1px solid #334155;font-size:13px;color:#64748b;">
@@ -1819,13 +1819,13 @@ const CONFIG_PATH = path.join(__dirname, 'config.json');
 
 // Métodos de pago predeterminados (si config.json no existe aún)
 const DEFAULT_PAYMENT_METHODS = [
-    { id: 'CASH',          label: 'Efectivo',              icon: 'ðŸ’µ', active: true,  type: 'pos',  isManual: false },
-    { id: 'CREDIT_CARD',   label: 'Tarjeta Crédito',       icon: 'ðŸ’³', active: true,  type: 'pos',  isManual: false },
-    { id: 'DEBIT_CARD',    label: 'Tarjeta Débito',        icon: 'ðŸ’³', active: true,  type: 'pos',  isManual: false },
+    { id: 'CASH',          label: 'Efectivo',              icon: '💵', active: true,  type: 'pos',  isManual: false },
+    { id: 'CREDIT_CARD',   label: 'Tarjeta Crédito',       icon: '💳', active: true,  type: 'pos',  isManual: false },
+    { id: 'DEBIT_CARD',    label: 'Tarjeta Débito',        icon: '💳', active: true,  type: 'pos',  isManual: false },
     { id: 'ZELLE',         label: 'Zelle',                 icon: '❌š¡', active: true,  type: 'both', isManual: true  },
     { id: 'USDT',          label: 'USDT / Cripto',         icon: '🟡', active: true,  type: 'both', isManual: true  },
-    { id: 'BANK_TRANSFER', label: 'Transferencia bancaria', icon: 'ðŸ¦', active: true, type: 'pos',  isManual: false },
-    { id: 'PAGO_MOVIL',    label: 'Pago Móvil',            icon: 'ðŸ“±', active: true,  type: 'both', isManual: true  },
+    { id: 'BANK_TRANSFER', label: 'Transferencia bancaria', icon: '🏦', active: true, type: 'pos',  isManual: false },
+    { id: 'PAGO_MOVIL',    label: 'Pago Móvil',            icon: '📱', active: true,  type: 'both', isManual: true  },
     { id: 'PAYPAL',        label: 'PayPal',                icon: '🅿️', active: false, type: 'sub',  isManual: false },
 ];
 
@@ -1853,7 +1853,7 @@ const PLANS = {
         id:          'basic',
         name:        'Plan Básico',
         description: 'Perfecto para empezar. Acceso completo para 1 usuario.',
-        icon:        'ðŸ“¦',
+        icon:        '📦',
         price:       10.00,
         currency:    'USD',
         duration:    30,
@@ -1916,7 +1916,7 @@ const PLANS = {
         },
         features: [
             'Hasta 3 usuarios',
-            'ðŸ‘¥ Multiusuario + permisos por rol',
+            '👥 Multiusuario + permisos por rol',
             'Inventario (hasta 500 productos)',
             'Ventas ilimitadas',
             'Contabilidad completa',
@@ -1930,7 +1930,7 @@ const PLANS = {
         id:          'semestral',
         name:        'Plan Semestral',
         description: 'El mayor valor. 6 meses con todas las funciones.',
-        icon:        'ðŸ’Ž',
+        icon:        '💎',
         price:       22.99,
         currency:    'USD',
         duration:    180,
@@ -1941,7 +1941,7 @@ const PLANS = {
         maxSales:    -1,
         maxInvoices: -1,
         recommended: false,
-        badge:       'ðŸ‘‘ MEJOR VALOR',
+        badge:       '👑 MEJOR VALOR',
         active:      true,
         order:       3,
         googlePlayId:'com.fixpromax.erp.semestral',
@@ -1955,7 +1955,7 @@ const PLANS = {
         },
         features: [
             'Hasta 5 usuarios',
-            'ðŸ‘¥ Multiusuario + permisos por rol',
+            '👥 Multiusuario + permisos por rol',
             'Inventario ilimitado',
             'Todo el Plan Pro',
             'Soporte prioritario',
@@ -2467,7 +2467,7 @@ app.post('/api/admin/payment-methods', requireAdmin, async (req, res) => {
     const cfg = await getConfig();
     if (cfg.paymentMethods.find(m => m.id === id))
         return err(res, `Ya existe un método con id "${id}"`);
-    const newMethod = { id: id.toUpperCase().replace(/\s+/g,'_'), label, icon: icon||'ðŸ’³',
+    const newMethod = { id: id.toUpperCase().replace(/\s+/g,'_'), label, icon: icon||'💳',
                         active: true, type: type||'pos', isManual: !!isManual, info: info||'' };
     cfg.paymentMethods.push(newMethod);
     cfg.updatedAt = new Date().toISOString();
@@ -2582,21 +2582,21 @@ async function alertWA(type, data) {
         day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
     let msg = '';
     if (type === 'payment_completed') {
-        msg = `ðŸ”” NUEVO PAGO - FIX PRO MAX\nðŸ‘¤ Usuario: ${data.userName||data.userEmail}\nðŸ¢ Empresa: ${data.company||'"”'}\nðŸ“¦ Plan: ${data.planName}\nðŸ’° Monto: $${Number(data.amount).toFixed(2)} ${data.currency||'USD'}\nðŸ’³ Método: ${data.method}\nðŸ“… Fecha: ${now}\nðŸ§¾ ID: ${data.id}\n✅ Estado: PAGO CONFIRMADO`;
+        msg = `🔔 NUEVO PAGO - FIX PRO MAX\n👤 Usuario: ${data.userName||data.userEmail}\n🏢 Empresa: ${data.company||'"”'}\n📦 Plan: ${data.planName}\n💰 Monto: $${Number(data.amount).toFixed(2)} ${data.currency||'USD'}\n💳 Método: ${data.method}\n📆 Fecha: ${now}\n🧾 ID: ${data.id}\n✅ Estado: PAGO CONFIRMADO`;
     } else if (type === 'subscription_new') {
-        msg = `ðŸ”” NUEVA SUSCRIPCION - FIX PRO MAX\nðŸ‘¤ Usuario: ${data.userName||data.userEmail}\nðŸ¢ Empresa: ${data.company||'"”'}\nðŸ“¦ Plan: ${data.planName}\nðŸ’° Precio: $${Number(data.amount).toFixed(2)}\nðŸ“… Fecha: ${now}\n✅ Estado: ACTIVA`;
+        msg = `🔔 NUEVA SUSCRIPCION - FIX PRO MAX\n👤 Usuario: ${data.userName||data.userEmail}\n🏢 Empresa: ${data.company||'"”'}\n📦 Plan: ${data.planName}\n💰 Precio: $${Number(data.amount).toFixed(2)}\n📆 Fecha: ${now}\n✅ Estado: ACTIVA`;
     } else if (type === 'payment_failed') {
-        msg = `❌š ï¸ PAGO FALLIDO - FIX PRO MAX\nðŸ‘¤ Usuario: ${data.userName||data.userEmail}\nðŸ¢ Empresa: ${data.company||'"”'}\nðŸ“¦ Plan: ${data.planName}\nðŸ’° Monto: $${Number(data.amount).toFixed(2)}\nðŸ“… Fecha: ${now}\n❌Œ Estado: PAGO FALLIDO`;
+        msg = `❌š ï¸ PAGO FALLIDO - FIX PRO MAX\n👤 Usuario: ${data.userName||data.userEmail}\n🏢 Empresa: ${data.company||'"”'}\n📦 Plan: ${data.planName}\n💰 Monto: $${Number(data.amount).toFixed(2)}\n📆 Fecha: ${now}\n❌Œ Estado: PAGO FALLIDO`;
     } else if (type === 'payment_pending') {
-        msg = `🟡 PAGO PENDIENTE - FIX PRO MAX\nðŸ‘¤ Usuario: ${data.userName||data.userEmail}\nðŸ¢ Empresa: ${data.company||'"”'}\nðŸ“¦ Plan: ${data.planName}\nðŸ’° Monto: $${Number(data.amount).toFixed(2)}\nðŸ“… Fecha: ${now}\n❌³ Estado: PENDIENTE DE VERIFICACION`;
+        msg = `🟡 PAGO PENDIENTE - FIX PRO MAX\n👤 Usuario: ${data.userName||data.userEmail}\n🏢 Empresa: ${data.company||'"”'}\n📦 Plan: ${data.planName}\n💰 Monto: $${Number(data.amount).toFixed(2)}\n📆 Fecha: ${now}\n❌³ Estado: PENDIENTE DE VERIFICACION`;
     } else if (type === 'subscription_cancelled') {
-        msg = `ðŸ”„ SUSCRIPCION CANCELADA - FIX PRO MAX\nðŸ‘¤ Usuario: ${data.userName||data.userEmail}\nðŸ¢ Empresa: ${data.company||'"”'}\nðŸ“¦ Plan: ${data.planName||'"”'}\nðŸ“… Fecha: ${now}\nEstado: CANCELADA`;
+        msg = `🔞 SUSCRIPCION CANCELADA - FIX PRO MAX\n👤 Usuario: ${data.userName||data.userEmail}\n🏢 Empresa: ${data.company||'"”'}\n📦 Plan: ${data.planName||'"”'}\n📆 Fecha: ${now}\nEstado: CANCELADA`;
     } else if (type === 'ticket_new') {
-        msg = `ðŸš¨ NUEVO TICKET DE SOPORTE - FIX PRO MAX\nðŸ‘¤ Usuario: ${data.userName}\nðŸ¢ Empresa: ${data.company||'"”'}\nðŸ“‚ Categoria: ${data.category}\nðŸ“ Titulo: ${data.title}\nðŸ”´ Prioridad: ${(data.priority||'media').toUpperCase()}\nðŸ“… Fecha: ${now}\nðŸ†” ID: ${data.id}`;
+        msg = `🚨 NUEVO TICKET DE SOPORTE - FIX PRO MAX\n👤 Usuario: ${data.userName}\n🏢 Empresa: ${data.company||'"”'}\n📚 Categoria: ${data.category}\n📝 Titulo: ${data.title}\n🔴 Prioridad: ${(data.priority||'media').toUpperCase()}\n📆 Fecha: ${now}\n🀔 ID: ${data.id}`;
     } else if (type === 'refund') {
-        msg = `ðŸ’¸ REEMBOLSO - FIX PRO MAX\nðŸ‘¤ Usuario: ${data.userName||data.userEmail}\nðŸ“¦ Plan: ${data.planName||'"”'}\nðŸ’° Monto: $${Number(data.amount||0).toFixed(2)}\nðŸ“… Fecha: ${now}\nEstado: REEMBOLSADO`;
+        msg = `💸 REEMBOLSO - FIX PRO MAX\n👤 Usuario: ${data.userName||data.userEmail}\n📦 Plan: ${data.planName||'"”'}\n💰 Monto: $${Number(data.amount||0).toFixed(2)}\n📆 Fecha: ${now}\nEstado: REEMBOLSADO`;
     } else if (type === 'test') {
-        msg = `✅ TEST FIX PRO MAX\nNotificaciones WhatsApp activas y funcionando correctamente.\nðŸ“… ${now}`;
+        msg = `✅ TEST FIX PRO MAX\nNotificaciones WhatsApp activas y funcionando correctamente.\n📆 ${now}`;
     }
     if (msg) setImmediate(() => sendWhatsApp(msg, data.id || generateId()));
 }
@@ -3624,7 +3624,7 @@ app.post('/api/support/tickets', requireAuth, async (req, res) => {
     };
     tickets.unshift(ticket);
     await writeTickets(tickets);
-    console.log(`ðŸŽ« Nuevo ticket: ${ticket.id} "” ${req.user.email} "” ${title}`);
+    console.log(`🎫 Nuevo ticket: ${ticket.id} "” ${req.user.email} "” ${title}`);
 
     // Alerta WhatsApp automática
     await alertWA('ticket_new', {
@@ -3803,9 +3803,9 @@ function demoData() {
         { id:'inv-d2', number:'FAC-DEMO-002', customerId:'cus-d1', date:today, dueDate:today, total:9396,  paid:9396,  notes:'Pagada',       currency:'VES', status:'Pagada',    createdAt:now, updatedAt:now },
     ];
     d.currencies = [
-        { code:'VES', name:'Bolívar venezolano',   symbol:'Bs.', flag:'ðŸ‡»ðŸ‡ª', active:true,  isBase:true  },
-        { code:'EUR', name:'Euro',                 symbol:'❌‚¬',   flag:'ðŸ‡ªðŸ‡º', active:true,  isBase:false },
-        { code:'USD', name:'Dólar estadounidense', symbol:'$',   flag:'ðŸ‡ºðŸ‡¸', active:true,  isBase:false },
+        { code:'VES', name:'Bolívar venezolano',   symbol:'Bs.', flag:'🁻🁪', active:true,  isBase:true  },
+        { code:'EUR', name:'Euro',                 symbol:'❌‚¬',   flag:'🁪🁺', active:true,  isBase:false },
+        { code:'USD', name:'Dólar estadounidense', symbol:'$',   flag:'🁺🁸', active:true,  isBase:false },
     ];
     d.exchangeRates = [
         { id:'r-eur-d', fromCurrency:'EUR', toCurrency:'VES', rate:40.00, date:today, createdAt:now, createdBy:'demo', notes:'Tasa demo inicial', isActive:true,  updateType:'manual' },
@@ -4081,7 +4081,7 @@ app.get('/api/currencies', requireAuth, async (req, res) => {
     }
     // Asegurar que USD está en currencies
     if (!db.currencies.find(c => c.code === 'USD')) {
-        db.currencies.push({ code:'USD', name:'Dólar estadounidense', symbol:'$', flag:'ðŸ‡ºðŸ‡¸', active:true, isBase:false, format:'en-US', decimals:2 });
+        db.currencies.push({ code:'USD', name:'Dólar estadounidense', symbol:'$', flag:'🁺🁸', active:true, isBase:false, format:'en-US', decimals:2 });
     }
     const svcStatus = ExchangeRateService.getStatus();
     ok(res, {

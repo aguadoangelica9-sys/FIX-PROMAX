@@ -1,6 +1,6 @@
 ﻿/**
- * FIX PRO MAX â€” Sistema de AutenticaciÃ³n Completo
- * auth.js â€” MÃ³dulo independiente, no modifica el ERP existente.
+ * FIX PRO MAX â€” Sistema de Autenticación Completo
+ * auth.js â€” Módulo independiente, no modifica el ERP existente.
  *
  * Funciones exportadas al window:
  *   switchAuthTab, submitLogin, submitRegister, submitRecover,
@@ -13,7 +13,7 @@
     /* â”€â”€ Constantes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     const AUTH_KEY        = 'fixpromax_token';
     const LOCAL_KEY       = 'fixpromax_local_users';
-    const RECOVER_KEY     = 'fixpromax_recover';          // cÃ³digo de recuperaciÃ³n en trÃ¡nsito
+    const RECOVER_KEY     = 'fixpromax_recover';          // código de recuperación en tránsito
     const API_BASE        = (() => {
         const h = window.location.hostname;
         // Si es localhost, 127.0.0.1 o una IP privada â†’ usar el origen actual
@@ -26,7 +26,7 @@
 
     /* â”€â”€ Estado interno â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     let _pendingUser   = null;   // usuario pendiente de mustChange
-    let _recoverEmail  = null;   // email en flujo de recuperaciÃ³n
+    let _recoverEmail  = null;   // email en flujo de recuperación
 
     /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
        UTILIDADES LOCALES (fallback sin servidor)
@@ -164,7 +164,7 @@
     }
 
     /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       TABS â€” Iniciar sesiÃ³n / Crear cuenta / Recuperar
+       TABS â€” Iniciar sesión / Crear cuenta / Recuperar
        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     function switchAuthTab(tab) {
         const tabs = { login: 'loginForm', register: 'registerForm',
@@ -173,7 +173,7 @@
             const f = _form(formId);
             if (f) f.style.display = (t === tab) ? 'block' : 'none';
         });
-        // Actualizar tab activo (login/register/recover Ãºnicamente)
+        // Actualizar tab activo (login/register/recover únicamente)
         ['tabLogin','tabRegister','tabRecover'].forEach(id => {
             const el = _form(id);
             if (!el) return;
@@ -209,7 +209,7 @@
         if (!email || !password) { _setError('login', 'Debes completar todos los campos.'); return; }
 
         const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-        if (!emailOk) { _setError('login', 'El correo electrÃ³nico no tiene un formato vÃ¡lido.'); return; }
+        if (!emailOk) { _setError('login', 'El correo electrónico no tiene un formato válido.'); return; }
 
         _setLoading('loginBtn', true);
 
@@ -217,11 +217,11 @@
         const json = await _post('/api/auth/login', { email, password });
 
         if (json !== null) {
-            // Servidor respondiÃ³
+            // Servidor respondió
             if (!json.ok) {
-                _setError('login', json.error === 'Email o contraseÃ±a incorrectos'
-                    ? 'El correo electrÃ³nico o la contraseÃ±a son incorrectos.'
-                    : json.error || 'No pudimos completar la operaciÃ³n. IntÃ©ntalo nuevamente.');
+                _setError('login', json.error === 'Email o contraseña incorrectos'
+                    ? 'El correo electrónico o la contraseña son incorrectos.'
+                    : json.error || 'No pudimos completar la operación. Inténtalo nuevamente.');
                 _setLoading('loginBtn', false);
                 return;
             }
@@ -229,7 +229,7 @@
             // Guardar localmente para fallback offline
             _saveLocalUser({ ...json.data.user, passwordHash: _h(password) });
             _setLoading('loginBtn', false);
-            // Si debe cambiar contraseÃ±a
+            // Si debe cambiar contraseña
             if (json.data.user.mustChange) {
                 _pendingUser = json.data.user;
                 switchAuthTab('mustchange');
@@ -244,12 +244,12 @@
         if (local) {
             _setLoading('loginBtn', false);
             _enterApp(local);
-            _toast('âš ï¸', 'Modo sin conexiÃ³n â€” usando datos locales');
+            _toast('âš ï¸', 'Modo sin conexión â€” usando datos locales');
             return;
         }
 
         _setError('login',
-            'El correo electrÃ³nico o la contraseÃ±a son incorrectos.' +
+            'El correo electrónico o la contraseña son incorrectos.' +
             '<br><small style="opacity:.8">Si el servidor no responde, usa ' +
             '<a href="/entrar" style="color:#4f46e5">acceso de emergencia</a>.</small>');
         _setLoading('loginBtn', false);
@@ -269,7 +269,7 @@
         if (json && json.ok) {
             localStorage.setItem(AUTH_KEY, json.data.token);
             _saveLocalUser({ ...json.data.user });
-            if (btn) { btn.disabled = false; btn.innerHTML = 'ðŸŽ­ Probar Demo'; }
+            if (btn) { btn.disabled = false; btn.innerHTML = '🎭 Probar Demo'; }
             _enterApp(json.data.user);
             // Mostrar banner demo
             setTimeout(() => {
@@ -277,7 +277,7 @@
                 if (!existing) _showDemoBanner();
             }, 800);
         } else {
-            if (btn) { btn.disabled = false; btn.innerHTML = 'ðŸŽ­ Probar Demo'; }
+            if (btn) { btn.disabled = false; btn.innerHTML = '🎭 Probar Demo'; }
             _setError('login', 'No se pudo iniciar el modo demo. Intenta de nuevo.');
         }
     }
@@ -294,9 +294,9 @@
             'gap:12px;flex-wrap:wrap;box-shadow:0 2px 8px rgba(0,0,0,.3)',
         ].join(';');
         banner.innerHTML = `
-            <span>ðŸŽ­ <strong>MODO DEMO</strong> â€” Los datos de esta sesiÃ³n son independientes y no afectan cuentas reales.</span>
+            <span>🎭 <strong>MODO DEMO</strong> â€” Los datos de esta sesión son independientes y no afectan cuentas reales.</span>
             <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
-                <button onclick="window._resetDemo()" style="padding:4px 12px;background:#000;color:#f59e0b;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:12px;">ðŸ”„ Restablecer datos</button>
+                <button onclick="window._resetDemo()" style="padding:4px 12px;background:#000;color:#f59e0b;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:12px;">🔞 Restablecer datos</button>
                 <button onclick="document.getElementById('demoBanner').remove()" style="background:none;border:none;font-size:16px;cursor:pointer;color:#000;">âœ•</button>
             </div>`;
         document.body.prepend(banner);
@@ -341,9 +341,9 @@
         const mode     = _form('regMode')?.value      || 'basic';
 
         if (!name || !email || !password) { _setError('register', 'Debes completar todos los campos obligatorios.'); return; }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { _setError('register', 'El correo electrÃ³nico no tiene un formato vÃ¡lido.'); return; }
-        if (password.length < 6) { _setError('register', 'La contraseÃ±a debe tener al menos 6 caracteres.'); return; }
-        if (password !== password2) { _setError('register', 'Las contraseÃ±as no coinciden.'); return; }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { _setError('register', 'El correo electrónico no tiene un formato válido.'); return; }
+        if (password.length < 6) { _setError('register', 'La contraseña debe tener al menos 6 caracteres.'); return; }
+        if (password !== password2) { _setError('register', 'Las contraseñas no coinciden.'); return; }
 
         _setLoading('registerBtn', true);
 
@@ -352,8 +352,8 @@
         if (json !== null) {
             if (!json.ok) {
                 const msg = json.error.includes('Ya existe')
-                    ? 'Ya existe una cuenta registrada con ese correo electrÃ³nico.'
-                    : json.error || 'No pudimos completar el registro. IntÃ©ntalo nuevamente.';
+                    ? 'Ya existe una cuenta registrada con ese correo electrónico.'
+                    : json.error || 'No pudimos completar el registro. Inténtalo nuevamente.';
                 _setError('register', msg);
                 _setLoading('registerBtn', false);
                 return;
@@ -362,14 +362,14 @@
             _saveLocalUser({ ...json.data.user, passwordHash: _h(password) });
             _setLoading('registerBtn', false);
             _enterApp(json.data.user);
-            _toast('ðŸŽ‰', 'Â¡Bienvenido, ' + name.split(' ')[0] + '!');
+            _toast('🎐', '¡Bienvenido, ' + name.split(' ')[0] + '!');
             return;
         }
 
         // Sin servidor â†’ registro local
         // Verificar si ya existe localmente
         if (_localUsers().find(u => u.email === email.toLowerCase())) {
-            _setError('register', 'Ya existe una cuenta registrada con ese correo electrÃ³nico.');
+            _setError('register', 'Ya existe una cuenta registrada con ese correo electrónico.');
             _setLoading('registerBtn', false);
             return;
         }
@@ -381,7 +381,7 @@
     window.submitRegister = submitRegister;
 
     /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       RECUPERACIÃ“N DE CONTRASEÃ‘A
+       RECUPERACIÓN DE CONTRASEÑA
        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     let _recoverStep = 1;
 
@@ -391,11 +391,11 @@
         _setSuccess('recover', '');
 
         if (_recoverStep === 1) {
-            // Paso 1: enviar cÃ³digo
+            // Paso 1: enviar código
             const email = (_form('recoverEmail')?.value || '').trim().toLowerCase();
             if (!email) { _setError('recover', 'Debes completar todos los campos.'); return; }
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                _setError('recover', 'El correo electrÃ³nico no tiene un formato vÃ¡lido.'); return;
+                _setError('recover', 'El correo electrónico no tiene un formato válido.'); return;
             }
             _setLoading('recoverBtn', true);
 
@@ -404,37 +404,37 @@
 
             if (json !== null) {
                 if (!json.ok) {
-                    _setError('recover', json.error || 'No pudimos enviar el cÃ³digo. Verifica el correo.');
+                    _setError('recover', json.error || 'No pudimos enviar el código. Verifica el correo.');
                     return;
                 }
-                // Modo desarrollo: el cÃ³digo viene en la respuesta
+                // Modo desarrollo: el código viene en la respuesta
                 if (json.data && json.data.devCode) {
-                    _setSuccess('recover', 'âœ… CÃ³digo enviado. <br><strong>CÃ³digo de prueba: ' +
+                    _setSuccess('recover', 'âœ… Código enviado. <br><strong>Código de prueba: ' +
                         json.data.devCode + '</strong> (solo visible en desarrollo)');
                 } else {
-                    _setSuccess('recover', 'âœ… CÃ³digo enviado a ' + email + '. Revisa tu bandeja de entrada.');
+                    _setSuccess('recover', 'âœ… Código enviado a ' + email + '. Revisa tu bandeja de entrada.');
                 }
             } else {
-                // Sin servidor â†’ generar cÃ³digo local
+                // Sin servidor â†’ generar código local
                 const code = Math.floor(100000 + Math.random() * 900000).toString();
                 localStorage.setItem(RECOVER_KEY, JSON.stringify({ email, code, exp: Date.now() + 600000 }));
-                _setSuccess('recover', 'âœ… CÃ³digo generado localmente: <strong>' + code + '</strong><br>' +
-                    '<small>(el servidor no estÃ¡ disponible â€” usa este cÃ³digo)</small>');
+                _setSuccess('recover', 'âœ… Código generado localmente: <strong>' + code + '</strong><br>' +
+                    '<small>(el servidor no está disponible â€” usa este código)</small>');
             }
 
             _recoverEmail = email;
             const step2 = _form('recoverStep2');
             if (step2) step2.style.display = 'block';
             const btnTxt = _form('recoverBtnText');
-            if (btnTxt) btnTxt.textContent = 'Restablecer contraseÃ±a';
+            if (btnTxt) btnTxt.textContent = 'Restablecer contraseña';
             _recoverStep = 2;
 
         } else {
-            // Paso 2: verificar cÃ³digo y cambiar contraseÃ±a
+            // Paso 2: verificar código y cambiar contraseña
             const code    = (_form('recoverCode')?.value    || '').trim();
             const newPass = (_form('recoverNewPass')?.value  || '');
             if (!code || !newPass)   { _setError('recover', 'Debes completar todos los campos.'); return; }
-            if (newPass.length < 6)  { _setError('recover', 'La contraseÃ±a debe tener al menos 6 caracteres.'); return; }
+            if (newPass.length < 6)  { _setError('recover', 'La contraseña debe tener al menos 6 caracteres.'); return; }
 
             _setLoading('recoverBtn', true);
 
@@ -445,39 +445,39 @@
 
             if (json !== null) {
                 if (!json.ok) {
-                    _setError('recover', json.error || 'CÃ³digo incorrecto o expirado. Intenta nuevamente.');
+                    _setError('recover', json.error || 'Código incorrecto o expirado. Intenta nuevamente.');
                     return;
                 }
-                _setSuccess('recover', 'âœ… ContraseÃ±a restablecida correctamente. Ahora puedes iniciar sesiÃ³n.');
+                _setSuccess('recover', 'âœ… Contraseña restablecida correctamente. Ahora puedes iniciar sesión.');
                 setTimeout(() => {
                     _recoverStep = 1;
                     _recoverEmail = null;
                     if (_form('recoverStep2')) _form('recoverStep2').style.display = 'none';
-                    if (_form('recoverBtnText')) _form('recoverBtnText').textContent = 'Enviar cÃ³digo';
+                    if (_form('recoverBtnText')) _form('recoverBtnText').textContent = 'Enviar código';
                     if (_form('recoverEmail')) _form('recoverEmail').value = '';
                     if (_form('recoverCode'))  _form('recoverCode').value  = '';
                     if (_form('recoverNewPass')) _form('recoverNewPass').value = '';
                     switchAuthTab('login');
                 }, 2500);
             } else {
-                // Sin servidor â†’ verificar cÃ³digo local
+                // Sin servidor â†’ verificar código local
                 try {
                     const stored = JSON.parse(localStorage.getItem(RECOVER_KEY) || '{}');
                     if (!stored.code || stored.code !== code || stored.email !== _recoverEmail || Date.now() > stored.exp) {
-                        _setError('recover', 'CÃ³digo incorrecto o expirado. Intenta nuevamente.');
+                        _setError('recover', 'Código incorrecto o expirado. Intenta nuevamente.');
                         return;
                     }
-                    // Cambiar contraseÃ±a localmente
+                    // Cambiar contraseña localmente
                     const users = _localUsers().map(u => {
                         if (u.email === _recoverEmail) return { ...u, passwordHash: _h(newPass) };
                         return u;
                     });
                     _localSave(users);
                     localStorage.removeItem(RECOVER_KEY);
-                    _setSuccess('recover', 'âœ… ContraseÃ±a restablecida localmente.');
+                    _setSuccess('recover', 'âœ… Contraseña restablecida localmente.');
                     setTimeout(() => { _recoverStep = 1; switchAuthTab('login'); }, 2000);
                 } catch {
-                    _setError('recover', 'No pudimos completar la operaciÃ³n. IntÃ©ntalo nuevamente.');
+                    _setError('recover', 'No pudimos completar la operación. Inténtalo nuevamente.');
                 }
             }
         }
@@ -493,8 +493,8 @@
         const p1 = _form('mcNewPass')?.value  || '';
         const p2 = _form('mcNewPass2')?.value || '';
         if (!p1 || !p2)   { _setError('mustChange', 'Debes completar todos los campos.'); return; }
-        if (p1.length < 6) { _setError('mustChange', 'La contraseÃ±a debe tener al menos 6 caracteres.'); return; }
-        if (p1 !== p2)     { _setError('mustChange', 'Las contraseÃ±as no coinciden.'); return; }
+        if (p1.length < 6) { _setError('mustChange', 'La contraseña debe tener al menos 6 caracteres.'); return; }
+        if (p1 !== p2)     { _setError('mustChange', 'Las contraseñas no coinciden.'); return; }
 
         _setLoading('mustChangeBtn', true);
         const token = localStorage.getItem(AUTH_KEY);
@@ -506,7 +506,7 @@
             const updatedUser = { ..._pendingUser, mustChange: false };
             _pendingUser = null;
             _enterApp(updatedUser);
-            _toast('âœ…', 'ContraseÃ±a actualizada. Â¡Bienvenido!');
+            _toast('âœ…', 'Contraseña actualizada. ¡Bienvenido!');
         } else if (json === null) {
             // Sin servidor â†’ cambiar localmente
             if (_pendingUser) {
@@ -516,7 +516,7 @@
                 _enterApp(u);
             }
         } else {
-            _setError('mustChange', json.error || 'No pudimos actualizar la contraseÃ±a. IntÃ©ntalo nuevamente.');
+            _setError('mustChange', json.error || 'No pudimos actualizar la contraseña. Inténtalo nuevamente.');
         }
     }
     window.submitMustChange = submitMustChange;
@@ -559,14 +559,14 @@
         // 2b. Token del servidor
         const json = await _get('/api/auth/me', token);
         if (json === null) {
-            // Sin servidor â†’ intentar sesiÃ³n local
+            // Sin servidor â†’ intentar sesión local
             const u = _localSession(token);
             if (u) { _enterApp(u); return; }
             localStorage.removeItem(AUTH_KEY);
             return;
         }
         if (!json.ok) {
-            // SesiÃ³n expirada
+            // Sesión expirada
             localStorage.removeItem(AUTH_KEY);
             _showSessionExpired();
             return;
@@ -577,14 +577,14 @@
             return;
         }
 
-        // 2c. Verificar suscripciÃ³n ANTES de mostrar la app
-        // Limpiar cachÃ© de suscripciÃ³n para forzar verificaciÃ³n fresca
+        // 2c. Verificar suscripción ANTES de mostrar la app
+        // Limpiar caché de suscripción para forzar verificación fresca
         try { localStorage.removeItem('fixpromax_sub_cache'); } catch(e) {}
 
         // Si __INITIAL_SUB__ ya lo sabemos del servidor (inyectado en el HTML)
         const initSub = window.__INITIAL_SUB__;
         if (initSub && initSub.access === false && json.data.role !== 'admin') {
-            // No hay acceso â€” entrar a la app pero el paywall se mostrarÃ¡
+            // No hay acceso â€” entrar a la app pero el paywall se mostrará
             _enterApp(json.data);
             return;
         }
@@ -596,7 +596,7 @@
     function _showSessionExpired() {
         const el = document.getElementById('loginError');
         if (el) {
-            el.innerHTML = 'Tu sesiÃ³n ha expirado. Inicia sesiÃ³n nuevamente.';
+            el.innerHTML = 'Tu sesión ha expirado. Inicia sesión nuevamente.';
             el.style.display = 'block';
         }
     }
@@ -605,7 +605,7 @@
        LOGOUT
        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     async function logoutUser() {
-        if (!confirm('Â¿Cerrar sesiÃ³n?')) return;
+        if (!confirm('¿Cerrar sesión?')) return;
         const token = localStorage.getItem(AUTH_KEY);
         if (token && !token.startsWith('lt_')) {
             await _post('/api/auth/logout', {}, token).catch(() => {});
@@ -628,7 +628,7 @@
         const tabs_row = document.querySelector('.auth-tabs');
         if (tabs_row) tabs_row.style.display = '';
         switchAuthTab('login');
-        _toast('ðŸ‘‹', 'SesiÃ³n cerrada correctamente.');
+        _toast('👙', 'Sesión cerrada correctamente.');
     }
     window.logoutUser = logoutUser;
 
@@ -638,16 +638,16 @@
     function openUserProfile() {
         const u = window._currentUser;
         if (!u) return;
-        // Navegar a ConfiguraciÃ³n donde estÃ¡ ahora el perfil
+        // Navegar a Configuración donde está ahora el perfil
         if (typeof navigateTo === 'function') navigateTo('settings');
 
-        // Poblar los campos del perfil incrustado en ConfiguraciÃ³n
+        // Poblar los campos del perfil incrustado en Configuración
         const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
         const txt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || ''; };
 
         txt('settingsProfileName',  u.name);
         txt('settingsProfileEmail', u.email);
-        txt('settingsProfileRole',  u.role === 'admin' ? 'ðŸ‘‘ Administrador' : 'ðŸ‘¤ Usuario');
+        txt('settingsProfileRole',  u.role === 'admin' ? '👑 Administrador' : '👤 Usuario');
 
         const avatEl = document.getElementById('settingsAvatar');
         if (avatEl) {
@@ -695,15 +695,15 @@
         const newP2 = document.getElementById('profileNewPass2')?.value    || '';
 
         if (!name) {
-            if (msg) { msg.textContent = 'El nombre no puede estar vacÃ­o.'; msg.className = 'profileMsg err'; }
+            if (msg) { msg.textContent = 'El nombre no puede estar vacío.'; msg.className = 'profileMsg err'; }
             return;
         }
         if (newP && newP !== newP2) {
-            if (msg) { msg.textContent = 'Las contraseÃ±as nuevas no coinciden.'; msg.className = 'profileMsg err'; }
+            if (msg) { msg.textContent = 'Las contraseñas nuevas no coinciden.'; msg.className = 'profileMsg err'; }
             return;
         }
         if (newP && newP.length < 6) {
-            if (msg) { msg.textContent = 'La nueva contraseÃ±a debe tener al menos 6 caracteres.'; msg.className = 'profileMsg err'; }
+            if (msg) { msg.textContent = 'La nueva contraseña debe tener al menos 6 caracteres.'; msg.className = 'profileMsg err'; }
             return;
         }
 
@@ -731,7 +731,7 @@
             const avatEl = document.querySelector('.sidebar .user-card .avatar, #sidebarAvatar');
             if (nameEl) nameEl.textContent = name;
             if (roleEl) roleEl.textContent = (window._currentUser.role === 'admin' ? 'Admin' : 'Usuario') +
-                (comp ? ' Â· ' + comp : '');
+                (comp ? ' · ' + comp : '');
             if (avatEl) {
                 if (photo) {
                     avatEl.style.backgroundImage = 'url(' + photo + ')';
@@ -743,7 +743,7 @@
                 }
             }
 
-            // Actualizar tambiÃ©n el avatar en settingsProfileCard
+            // Actualizar también el avatar en settingsProfileCard
             const settingsAv = document.getElementById('settingsAvatar');
             if (settingsAv) {
                 if (photo) {
@@ -762,8 +762,8 @@
         }
 
         if (json !== null && !json.ok) {
-            const errMsg = json.error === 'ContraseÃ±a actual incorrecta'
-                ? 'La contraseÃ±a actual es incorrecta.'
+            const errMsg = json.error === 'Contraseña actual incorrecta'
+                ? 'La contraseña actual es incorrecta.'
                 : json.error || 'No pudimos guardar los cambios.';
             if (msg) { msg.textContent = errMsg; msg.className = 'profileMsg err'; }
             return;
@@ -772,7 +772,7 @@
         if (msg) {
             msg.textContent = 'âœ… Perfil actualizado correctamente.';
             msg.className = 'profileMsg ok';
-            // Limpiar campos de contraseÃ±a
+            // Limpiar campos de contraseña
             ['profileCurrentPass','profileNewPass','profileNewPass2'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.value = '';
@@ -795,7 +795,7 @@
         const avatEl = document.querySelector('.sidebar .user-card .avatar, #sidebarAvatar');
         if (nameEl) nameEl.textContent = user.name;
         if (roleEl) roleEl.textContent = (user.role === 'admin' ? 'Admin' : 'Usuario') +
-                                         (user.company ? ' Â· ' + user.company : '');
+                                         (user.company ? ' · ' + user.company : '');
         if (avatEl) {
             if (user.photoUrl) {
                 avatEl.style.backgroundImage = 'url(' + user.photoUrl + ')';
@@ -807,14 +807,14 @@
             }
         }
 
-        // BotÃ³n logout en sidebar (una sola vez)
+        // Botón logout en sidebar (una sola vez)
         const userCard = document.querySelector('.sidebar .user-card');
         if (userCard && !document.getElementById('logoutBtn')) {
             const btn = document.createElement('button');
             btn.id = 'logoutBtn'; btn.className = 'btn-icon';
-            btn.title = 'Cerrar sesiÃ³n';
+            btn.title = 'Cerrar sesión';
             btn.style.cssText = 'width:34px;height:34px;font-size:15px;';
-            btn.textContent = 'ðŸšª'; btn.onclick = logoutUser;
+            btn.textContent = '🚪'; btn.onclick = logoutUser;
             userCard.appendChild(btn);
         }
 
@@ -822,10 +822,10 @@
         document.getElementById('authScreen').style.display = 'none';
 
         // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-        // FASE 1 â€” Setup silencioso (sin mostrar la app todavÃ­a)
+        // FASE 1 â€” Setup silencioso (sin mostrar la app todavía)
         // Preparar todo en memoria pero NO mostrar #appMain.
-        // La app solo se muestra en FASE 2, despuÃ©s de que el servidor confirme
-        // que el usuario tiene acceso activo (trial o suscripciÃ³n).
+        // La app solo se muestra en FASE 2, después de que el servidor confirme
+        // que el usuario tiene acceso activo (trial o suscripción).
         // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         try { localStorage.removeItem('fixpromax_sub_cache'); } catch(e) {}
 
@@ -836,18 +836,18 @@
         // Aplicar modo visual (no muestra la app, solo prepara CSS/badges)
         if (typeof applyMode === 'function') applyMode(user.mode || 'basic');
 
-        // Pre-rellenar perfil en ConfiguraciÃ³n (en background, no visible aÃºn)
+        // Pre-rellenar perfil en Configuración (en background, no visible aún)
         setTimeout(function() {
             if (typeof window._plansLoad === 'function') window._plansLoad();
         }, 500);
 
         // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         // FASE 2 â€” Mostrar app (solo la llama subscription.js tras verificar)
-        // Esta funciÃ³n se expone globalmente para que subscription.js la invoque
+        // Esta función se expone globalmente para que subscription.js la invoque
         // cuando el servidor confirme access: true.
         // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         window._showAppAfterAuth = function(subStatus) {
-            // Evitar doble ejecuciÃ³n
+            // Evitar doble ejecución
             if (window._appShown) return;
             window._appShown = true;
 
@@ -857,13 +857,13 @@
                 appEl.classList.add('visible');
             }
 
-            // Aplicar restricciones de mÃ³dulos segÃºn el plan
+            // Aplicar restricciones de módulos según el plan
             if (subStatus && subStatus.modules && typeof window._updateSidebarByPlan === 'function') {
                 window._updateSidebarByPlan(subStatus.modules);
             }
 
             // Toast de bienvenida
-            _toast('ðŸ‘‹', 'Â¡Hola, ' + user.name.split(' ')[0] + '!');
+            _toast('👙', '¡Hola, ' + user.name.split(' ')[0] + '!');
 
             // Cargar datos frescos del servidor
             const _authToken = localStorage.getItem(AUTH_KEY);
@@ -896,10 +896,10 @@
             }
         };
 
-        // Limpiar flag de sesiÃ³n anterior
+        // Limpiar flag de sesión anterior
         window._appShown = false;
 
-        // Admins: acceso total inmediato, sin esperar al servidor de suscripciÃ³n
+        // Admins: acceso total inmediato, sin esperar al servidor de suscripción
         if (user.role === 'admin') {
             window._showAppAfterAuth({ modules: null });
             return;
@@ -916,12 +916,12 @@
             }
         })();
 
-        // Pre-rellenar los campos de perfil en ConfiguraciÃ³n (seguro, no muestra la app)
+        // Pre-rellenar los campos de perfil en Configuración (seguro, no muestra la app)
         const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
         const txt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || ''; };
         txt('settingsProfileName',  user.name);
         txt('settingsProfileEmail', user.email);
-        txt('settingsProfileRole',  user.role === 'admin' ? 'ðŸ‘‘ Administrador' : 'ðŸ‘¤ Usuario');
+        txt('settingsProfileRole',  user.role === 'admin' ? '👑 Administrador' : '👤 Usuario');
         const settingsAv = document.getElementById('settingsAvatar');
         if (settingsAv) {
             settingsAv.style.backgroundImage = user.photoUrl ? 'url(' + user.photoUrl + ')' : '';
@@ -933,7 +933,7 @@
     }
 
     /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       LIMPIAR SESIÃ“N (botÃ³n emergencia)
+       LIMPIAR SESIÃ“N (botón emergencia)
        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     function clearSessionAndReload() {
         localStorage.removeItem(AUTH_KEY);
@@ -952,7 +952,7 @@
         const el = document.getElementById(id);
         if (!el) return;
         el.type = el.type === 'password' ? 'text' : 'password';
-        btn.textContent = el.type === 'password' ? 'ðŸ‘' : 'ðŸ™ˆ';
+        btn.textContent = el.type === 'password' ? '👁' : '🙈';
     }
     window.togglePasswordVis = togglePasswordVis;
 
@@ -978,45 +978,45 @@
 
     /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
        INDICADOR DE SERVIDOR (en la pantalla de login)
-       Si la pÃ¡gina cargÃ³, el servidor estÃ¡ disponible por definiciÃ³n.
+       Si la página cargó, el servidor está disponible por definición.
        Solo mostramos error si el HTML vino de un archivo local (file://).
        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     async function _checkServer() {
         const badge = document.getElementById('serverStatusAuth');
         if (!badge) return;
 
-        // Si se abriÃ³ como archivo local (file://), el servidor no estÃ¡ disponible
+        // Si se abrió como archivo local (file://), el servidor no está disponible
         if (window.location.protocol === 'file:') {
-            badge.innerHTML = 'ðŸ”´ Abre desde <strong>' + API_BASE + '</strong>';
+            badge.innerHTML = '🔴 Abre desde <strong>' + API_BASE + '</strong>';
             badge.style.color = '#dc2626';
             return;
         }
 
-        // Si llegÃ³ aquÃ­ es porque el servidor sirviÃ³ esta pÃ¡gina â†’ siempre estÃ¡ disponible
-        // Hacemos un ping rÃ¡pido solo para confirmar (usando el mismo origin)
+        // Si llegó aquí es porque el servidor sirvió esta página â†’ siempre está disponible
+        // Hacemos un ping rápido solo para confirmar (usando el mismo origin)
         try {
             const ctrl = new AbortController();
             setTimeout(() => ctrl.abort(), 3000);
             const r = await fetch(window.location.origin + '/api/ping', { signal: ctrl.signal });
             const j = await r.json().catch(() => null);
             if (r.ok && j && j.ok) {
-                badge.innerHTML = 'ðŸŸ¢ Servidor conectado';
+                badge.innerHTML = '🟢 Servidor conectado';
                 badge.style.color = '#16a34a';
                 localStorage.removeItem('fixpromax_local_users');
             } else {
-                badge.innerHTML = 'ðŸŸ¡ Servidor con problemas â€” intenta recargar';
+                badge.innerHTML = '🟡 Servidor con problemas â€” intenta recargar';
                 badge.style.color = '#d97706';
             }
         } catch {
-            // Si falla el ping pero la pÃ¡gina cargÃ³, probablemente es un timeout de red breve
-            // No mostramos error â€” la pÃ¡gina estÃ¡ funcionando
-            badge.innerHTML = 'ðŸŸ¢ Servidor conectado';
+            // Si falla el ping pero la página cargó, probablemente es un timeout de red breve
+            // No mostramos error â€” la página está funcionando
+            badge.innerHTML = '🟢 Servidor conectado';
             badge.style.color = '#16a34a';
         }
     }
 
     /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       INICIALIZACIÃ“N â€” se ejecuta cuando el DOM estÃ¡ listo
+       INICIALIZACIÃ“N â€” se ejecuta cuando el DOM está listo
        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     function _init() {
         _checkServer();
