@@ -62,7 +62,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api', async (req, res, next) => {
     const exemptPrefixes = ['/auth/', '/subscription/', '/admin/', '/demo/', '/events'];
     // Rutas públicas explícitas que no necesitan suscripción
-    const exemptExact = ['/subscription/plans', '/config/payment-methods', '/ping', '/run-migration'];
+    const exemptExact = ['/subscription/plans', '/config/payment-methods', '/ping', '/run-migration', '/fix-encoding'];
     const p = req.path;
     if (exemptPrefixes.some(e => p.startsWith(e) || p === e.slice(0, -1))) return next();
     if (exemptExact.some(e => p === e || p.startsWith(e + '/')))           return next();
@@ -4353,6 +4353,82 @@ app.get('/api/events', async (req, res) => {
 
     res.write(`event: connected\ndata: ` + JSON.stringify({ clientId, ts: new Date().toISOString() }) + `\n\n`);
     req.on('close', () => { clearInterval(pingTimer); _sseClients.delete(clientId); });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENDPOINT DE LIMPIEZA DE ENCODING — corrige mojibake en todos los documentos
+// POST /api/fix-encoding?key=FIXPROMAX_MIGRATE_2026
+// ══════════════════════════════════════════════════════════════════════════════
+app.post('/api/fix-encoding', async (req, res) => {
+    const key = req.query.key || req.body?.key;
+    if (key !== 'FIXPROMAX_MIGRATE_2026') {
+        return res.status(403).json({ ok: false, error: 'Clave incorrecta' });
+    }
+    res.json({ ok: true, message: 'Limpieza de encoding iniciada. Revisa los logs.' });
+
+    setImmediate(async () => {
+        try {
+            console.log('\n🔧 INICIANDO LIMPIEZA DE ENCODING...\n');
+
+            // Tabla de reemplazos mojibake → correcto
+            const FIXES = [
+                ['ÁÂ¡','á'],['ÁÂ©','é'],['ÁÂ­','í'],['ÁÂ³','ó'],['ÁÂº','ú'],['ÁÂ±','ñ'],['ÁÂ¼','ü'],
+                ['Á¡','á'],['Á©','é'],['Á­','í'],['Á³','ó'],['Áº','ú'],['Á±','ñ'],
+                ['Ã¡','á'],['Ã©','é'],['Ã­','í'],['Ã³','ó'],['Ãº','ú'],['Ã±','ñ'],['Ã¼','ü'],
+                ['Â·','·'],['Â¿','¿'],['Â¡','¡'],['Â©','©'],
+                ['GonzÃ¡lez','González'],['MarÃ­a','María'],['RodrÃ­guez','Rodríguez'],
+                ['MartÃ­nez','Martínez'],['HernÃ¡ndez','Hernández'],['SÃ¡nchez','Sánchez'],
+                ['JimÃ©nez','Jiménez'],['PÃ©rez','Pérez'],['LÃ³pez','López'],['GarcÃ­a','García'],
+            ];
+
+            function fixStr(s) {
+                if (typeof s !== 'string') return s;
+                let out = s;
+                for (const [bad, good] of FIXES) {
+                    if (out.includes(bad)) out = out.split(bad).join(good);
+                }
+                return out;
+            }
+
+            function fixVal(v) {
+                if (typeof v === 'string') return fixStr(v);
+                if (Array.isArray(v))      return v.map(fixVal);
+                if (v && typeof v === 'object') {
+                    const o = {};
+                    for (const k of Object.keys(v)) o[fixStr(k)] = fixVal(v[k]);
+                    return o;
+                }
+                return v;
+            }
+
+            // Limpiar todas las CompanyDB
+            const { CompanyDB } = require('./models/index');
+            const companies = await CompanyDB.find({}).lean();
+            let fixed = 0;
+            for (const doc of companies) {
+                const { companyId, _id, __v, updatedAt, ...rest } = doc;
+                const cleaned = fixVal(rest);
+                await DB.writeCompanyDB(companyId, cleaned);
+                console.log(`✅ CompanyDB limpiada: ${companyId}`);
+                fixed++;
+            }
+
+            // Limpiar usuarios
+            const users = await DB.readUsers();
+            const cleanUsers = users.map(u => fixVal(u));
+            await DB.writeUsers(cleanUsers);
+            console.log(`✅ ${cleanUsers.length} usuarios limpiados`);
+
+            // Limpiar companies
+            const comps = await DB.readCompanies();
+            await DB.writeCompanies(comps.map(c => fixVal(c)));
+            console.log(`✅ ${comps.length} empresas limpiadas`);
+
+            console.log(`\n✅ LIMPIEZA COMPLETADA — ${fixed} BDs de empresa procesadas\n`);
+        } catch (e) {
+            console.error('❌ Error en limpieza:', e.message);
+        }
+    });
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
