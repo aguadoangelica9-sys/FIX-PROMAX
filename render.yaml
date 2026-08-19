@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: fixpromax-erp
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false   # Se configura manualmente en el dashboard de Render
+    healthCheckPath: /api/ping
+    autoDeploy: true

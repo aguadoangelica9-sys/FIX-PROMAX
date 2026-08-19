@@ -1,2 +1,13 @@
-node_modules
-node_modules
+node_modules/
+
+# Variables de entorno — NUNCA subir a Git
+.env
+
+# Scripts temporales de migración de código (no necesarios en producción)
+_patch-async.js
+_fix-handlers.js
+
+# Logs y archivos de sistema
+*.log
+.DS_Store
+Thumbs.db
