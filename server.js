@@ -1,4 +1,4 @@
-/**
+﻿/**
  * FIX PRO MAX "” Backend API
  * Servidor Express con persistencia en MongoDB Atlas (vía db-mongo.js).
  * Puerto: process.env.PORT || 3000
@@ -11,6 +11,11 @@ const express = require('express');
 const cors    = require('cors');
 const fs      = require('fs');
 const path    = require('path');
+
+// AsyncLocalStorage declarado AQUÍ (al inicio) para que todos los middlewares y
+// handlers posteriores puedan acceder a él sin riesgo de Temporal Dead Zone.
+const { AsyncLocalStorage } = require('async_hooks');
+const reqContext = new AsyncLocalStorage();
 
 // ❌”€❌”€ Capa de datos MongoDB (reemplaza lectura/escritura de archivos JSON) ❌”€❌”€❌”€❌”€❌”€❌”€
 const DB = require('./db-mongo');
@@ -114,9 +119,19 @@ app.use('/api', async (req, res, next) => {
             companyId:   user.companyId   || user.id,
             teamRole:    user.teamRole    || 'employee',
             permissions: user.permissions || null,
+            isDemo:      user.isDemo || false,
         };
     }
-    next();
+    // FIX CRÍTICO: inyectar companyId en AsyncLocalStorage para que readDB()/writeDB()
+    // usen la BD correcta de la empresa. Sin este run(), los endpoints que no pasan
+    // por requireAuth explícito recibían defaultData() vacío en lugar de la BD real.
+    // Nota: DEMO_COMPANY_ID se define más abajo pero el valor es una constante de string
+    // conocida — se usa el literal para evitar dependencia de orden de declaración.
+    const _DEMO_ID = 'demo-company-fixed';
+    const ctxCompanyId = (user.isDemo || user.companyId === _DEMO_ID)
+        ? _DEMO_ID
+        : (user.companyId || user.id);
+    reqContext.run({ companyId: ctxCompanyId, isDemo: user.isDemo || false }, next);
 });
 
 // ❌”€❌”€ RUTA RAÁZ "” debe ir ANTES de express.static para interceptar GET / ❌”€❌”€❌”€❌”€❌”€❌”€❌”€
@@ -2912,15 +2927,8 @@ function requirePermission(module, action) {
         next();
     };
 }
-
-// ❌”€❌”€ OVERRIDE de readDB/writeDB para usar BD por empresa ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
-// Los endpoints del ERP ya existentes leen/escriben await readDB()/await writeDB()
-// Interceptamos dinámicamente según el contexto de la petición
-// Usamos un contexto de request almacenado en AsyncLocalStorage si es posible,
-// o simplemente modificamos la función según req.companyId (ver middleware abajo)
-
-const { AsyncLocalStorage } = require('async_hooks');
-const reqContext = new AsyncLocalStorage();
+// readDB / writeDB: async, usan el companyId del contexto async (AsyncLocalStorage).
+// reqContext declarado al inicio del archivo (línea ~18) para evitar Temporal Dead Zone.
 
 // readDB / writeDB: async, usan el companyId del contexto async (AsyncLocalStorage).
 // Exactamente la misma semántica que antes, solo que ahora van a MongoDB.
@@ -4490,12 +4498,6 @@ app.post('/api/fix-encoding', async (req, res) => {
                 if (v && typeof v === 'object') {
                     const o = {};
                     for (const k of Object.keys(v)) o[k] = fixVal(v[k]);
-                    return o;
-                }
-                return v;
-            }
-                    const o = {};
-                    for (const k of Object.keys(v)) o[fixStr(k)] = fixVal(v[k]);
                     return o;
                 }
                 return v;

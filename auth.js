@@ -908,9 +908,16 @@
         // Usuarios normales: esperar a subscription.js para verificar acceso
         // subscription.js llama window._showAppAfterAuth(status) si access===true
         // o muestra el paywall si access===false.
+        // TIMEOUT DE SEGURIDAD (FASE 32): si subscription.js no carga en 8 s,
+        // mostramos la app de todas formas para evitar carga infinita.
+        var _subWaitStart = Date.now();
         (function _waitForSub() {
             if (typeof window.checkSubscriptionAccess === 'function') {
                 window.checkSubscriptionAccess();
+            } else if (Date.now() - _subWaitStart > 8000) {
+                // subscription.js no respondió — mostrar app con acceso básico
+                console.warn('[auth] checkSubscriptionAccess no disponible tras 8s — mostrando app');
+                window._showAppAfterAuth({ access: true, status: 'unknown', modules: null });
             } else {
                 setTimeout(_waitForSub, 50);
             }
