@@ -4043,7 +4043,7 @@
             <div class="actions">
                 <div class="search-box">
                     <span>🔍</span>
-                    <input type="search" placeholder="Buscar..." id="globalSearch" inputmode="search" onkeydown="if(event.key==='Enter') globalSearch()" />
+                    <input type="search" placeholder="Buscar..." id="globalSearch" inputmode="search" onkeydown="if(event.key==='Enter') runGlobalSearch()" />
                     <span class="kbd">⌘K</span>
                 </div>
                 <button class="btn btn-primary" onclick="openModal('sale')">+ Nueva Venta</button>
@@ -11972,8 +11972,8 @@
         if (e.target === this) closeCmd();
     });
 
-    function globalSearch() {
-        const q = document.getElementById('globalSearch').value.trim().toLowerCase();
+    function runGlobalSearch() {
+        const q = (document.getElementById('globalSearch')?.value || '').trim().toLowerCase();
         if (!q) return;
         let results = [];
         results.push(...data.products.filter(p => p.name.toLowerCase().includes(q) && p.status !== 'anulado').map(p =>
