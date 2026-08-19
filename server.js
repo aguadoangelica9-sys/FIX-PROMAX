@@ -4390,23 +4390,95 @@ app.post('/api/fix-encoding', async (req, res) => {
 
     setImmediate(async () => {
         try {
-            console.log('\n🔧 INICIANDO LIMPIEZA DE ENCODING...\n');
+            console.log('\n🔧 INICIANDO LIMPIEZA DE ENCODING (reconstrucción de bytes)...\n');
 
-            // Tabla de reemplazos mojibake → correcto
-            const FIXES = [
-                ['Á¡','á'],['Á©','é'],['ÁÂ­','í'],['ÁÂ³','ó'],['ÁÂº','ú'],['ÁÂ±','ñ'],['ÁÂ¼','ü'],
-                ['Á¡','á'],['Á©','é'],['Á­','í'],['Á³','ó'],['Áº','ú'],['Á±','ñ'],
-                ['Ã¡','á'],['Ã©','é'],['Ã­','í'],['Ã³','ó'],['Ãº','ú'],['Ã±','ñ'],['Ã¼','ü'],
-                ['·','·'],['¿','¿'],['¡','¡'],['©','©'],
-                ['GonzÃ¡lez','González'],['MarÃ­a','María'],['RodrÃ­guez','Rodríguez'],
-                ['MartÃ­nez','Martínez'],['HernÃ¡ndez','Hernández'],['SÃ¡nchez','Sánchez'],
-                ['JimÃ©nez','Jiménez'],['PÃ©rez','Pérez'],['LÃ³pez','López'],['GarcÃ­a','García'],
+            /**
+             * Reconstruye strings que sufrieron doble o triple encoding UTF-8→Latin-1→UTF-8.
+             * Patrón más común: bytes C3 83 C2 XX → char UTF-8 C3 XX (tildes)
+             *                   bytes C3 B0 C5 B8 XX XX → emoji 4-byte F0 9F XX XX
+             */
+            function fixEncodingBytes(str) {
+                if (typeof str !== 'string') return str;
+                // Convertir el string a Buffer UTF-8 para trabajar a nivel de bytes
+                const inputBuf = Buffer.from(str, 'utf8');
+                const result = [];
+                let i = 0;
+                let changed = false;
+
+                while (i < inputBuf.length) {
+                    // Patrón de tilde doble-encoded: C3 83 C2 XX → C3 XX
+                    // Ejemplo: á = C3 A1 → Ã¡ = C3 83 C2 A1
+                    if (inputBuf[i] === 0xC3 && inputBuf[i+1] === 0x83 &&
+                        inputBuf[i+2] === 0xC2 && inputBuf[i+3] >= 0x80) {
+                        result.push(0xC3, inputBuf[i+3]);
+                        i += 4; changed = true; continue;
+                    }
+                    // Patrón de acento doble-encoded: C3 82 C2 XX → C2 XX
+                    // Ejemplo: ¿ = C2 BF → Â¿ = C3 82 C2 BF
+                    if (inputBuf[i] === 0xC3 && inputBuf[i+1] === 0x82 &&
+                        inputBuf[i+2] === 0xC2 && inputBuf[i+3] >= 0x80) {
+                        result.push(0xC2, inputBuf[i+3]);
+                        i += 4; changed = true; continue;
+                    }
+                    // Patrón tilde triple-encoded: C3 83 C2 83 C2 XX → C3 XX (ÁÂ­ → í)
+                    if (inputBuf[i] === 0xC3 && inputBuf[i+1] === 0x83 &&
+                        inputBuf[i+2] === 0xC2 && inputBuf[i+3] === 0x83 &&
+                        inputBuf[i+4] === 0xC2) {
+                        result.push(0xC3, inputBuf[i+5]);
+                        i += 6; changed = true; continue;
+                    }
+                    // Patrón Ã (solo) seguido de chars especiales Windows-1252
+                    // CIGÁÅ"EÁ"˜AL → reconstruir char a char
+                    result.push(inputBuf[i++]);
+                }
+
+                if (!changed) return str;
+                const fixed = Buffer.from(result).toString('utf8');
+                // Si el resultado tiene caracteres de reemplazo, devolver original
+                if (fixed.includes('\uFFFD')) return str;
+                return fixed;
+            }
+
+            // Segunda pasada: tabla de reemplazos directos para patrones conocidos
+            // Usamos escape sequences para evitar problemas de encoding en el archivo fuente
+            const DIRECT = [
+                // Doble encoding tildes minúsculas: Ã + char → vocal con tilde
+                ['\u00c3\u00a1','á'],  // Ã¡ → á
+                ['\u00c3\u00a9','é'],  // Ã© → é
+                ['\u00c3\u00ad','í'],  // Ã­ → í
+                ['\u00c3\u00b3','ó'],  // Ã³ → ó
+                ['\u00c3\u00ba','ú'],  // Ãº → ú
+                ['\u00c3\u00b1','ñ'],  // Ã± → ñ
+                ['\u00c3\u00bc','ü'],  // Ã¼ → ü
+                // Doble encoding mayúsculas
+                ['\u00c3\u0081','Á'],  // ÃÁ → Á (a través de byte 81)
+                ['\u00c3\u0089','É'],  // ÃÉ → É
+                ['\u00c3\u008d','Í'],  // ÃÍ → Í
+                ['\u00c3\u0093','Ó'],  // ÃÓ → Ó
+                ['\u00c3\u009a','Ú'],  // ÃÚ → Ú
+                ['\u00c3\u0091','Ñ'],  // ÃÑ → Ñ
+                ['\u00c3\u0087','Ç'],  // ÃÇ → Ç
+                // Triple encoding (ÁÂ...)
+                ['\u00c1\u00c2\u00a1','á'],
+                ['\u00c1\u00c2\u00a9','é'],
+                ['\u00c1\u00c2\u00ad','í'],
+                ['\u00c1\u00c2\u00b3','ó'],
+                ['\u00c1\u00c2\u00ba','ú'],
+                ['\u00c1\u00c2\u00b1','ñ'],
+                ['\u00c1\u00c2\u00bc','ü'],
+                ['\u00c1\u00a1','á'],['\u00c1\u00a9','é'],['\u00c1\u00ad','í'],
+                ['\u00c1\u00b3','ó'],['\u00c1\u00ba','ú'],['\u00c1\u00b1','ñ'],
+                // Caracteres de puntuación doble-encoded
+                ['\u00c2\u00b7','·'],['\u00c2\u00bf','¿'],['\u00c2\u00a1','¡'],
+                ['\u00c2\u00a9','©'],['\u00c2\u00ae','®'],
             ];
 
             function fixStr(s) {
                 if (typeof s !== 'string') return s;
-                let out = s;
-                for (const [bad, good] of FIXES) {
+                // Primero intentar reconstrucción de bytes
+                let out = fixEncodingBytes(s);
+                // Luego tabla de reemplazos directos
+                for (const [bad, good] of DIRECT) {
                     if (out.includes(bad)) out = out.split(bad).join(good);
                 }
                 return out;
@@ -4416,6 +4488,12 @@ app.post('/api/fix-encoding', async (req, res) => {
                 if (typeof v === 'string') return fixStr(v);
                 if (Array.isArray(v))      return v.map(fixVal);
                 if (v && typeof v === 'object') {
+                    const o = {};
+                    for (const k of Object.keys(v)) o[k] = fixVal(v[k]);
+                    return o;
+                }
+                return v;
+            }
                     const o = {};
                     for (const k of Object.keys(v)) o[fixStr(k)] = fixVal(v[k]);
                     return o;
