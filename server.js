@@ -1080,7 +1080,7 @@ app.post('/api/payments', requireAuth, async (req, res) => {
     ok(res, payment);
 });
 
-app.put('/api/payments/:id', async (req, res) => {
+app.put('/api/payments/:id', requireAuth, async (req, res) => {
     const db = await readDB();
     const idx = db.payments.findIndex(p => p.id === req.params.id);
     if (idx === -1) return err(res, 'Pago no encontrado', 404);
@@ -1089,7 +1089,7 @@ app.put('/api/payments/:id', async (req, res) => {
     ok(res, db.payments[idx]);
 });
 
-app.delete('/api/payments/:id', async (req, res) => {
+app.delete('/api/payments/:id', requireAuth, async (req, res) => {
     const db = await readDB();
     db.payments = db.payments.filter(p => p.id !== req.params.id);
     await writeDB(db);
@@ -1101,7 +1101,7 @@ app.delete('/api/payments/:id', async (req, res) => {
 // ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 app.get('/api/chart-of-accounts', async (req, res) => ok(res, (await readDB()).chartOfAccounts));
 
-app.put('/api/chart-of-accounts', async (req, res) => {
+app.put('/api/chart-of-accounts', requireAuth, async (req, res) => {
     const db = await readDB();
     db.chartOfAccounts = req.body;
     await writeDB(db);
@@ -1120,7 +1120,7 @@ app.post('/api/journal-entries', requireAuth, requireModule('accounting'), async
 
 app.get('/api/balance-sheet', async (req, res) => ok(res, (await readDB()).balanceSheet));
 
-app.put('/api/balance-sheet', async (req, res) => {
+app.put('/api/balance-sheet', requireAuth, async (req, res) => {
     const db = await readDB();
     db.balanceSheet = req.body;
     await writeDB(db);
@@ -1129,7 +1129,7 @@ app.put('/api/balance-sheet', async (req, res) => {
 
 app.get('/api/income-statement', async (req, res) => ok(res, (await readDB()).incomeStatement));
 
-app.put('/api/income-statement', async (req, res) => {
+app.put('/api/income-statement', requireAuth, async (req, res) => {
     const db = await readDB();
     db.incomeStatement = req.body;
     await writeDB(db);
@@ -1172,7 +1172,7 @@ app.get('/api/alerts', requireAuth, async (req, res) => {
     ok(res, [...stockAlerts, ...invoiceAlerts, ...db.alerts]);
 });
 
-app.post('/api/alerts', async (req, res) => {
+app.post('/api/alerts', requireAuth, async (req, res) => {
     const db = await readDB();
     const alert = { id: generateId(), createdAt: new Date().toISOString(), ...req.body };
     db.alerts.push(alert);
@@ -1180,7 +1180,7 @@ app.post('/api/alerts', async (req, res) => {
     ok(res, alert);
 });
 
-app.delete('/api/alerts/:id', async (req, res) => {
+app.delete('/api/alerts/:id', requireAuth, async (req, res) => {
     const db = await readDB();
     db.alerts = db.alerts.filter(a => a.id !== req.params.id);
     await writeDB(db);
@@ -1192,7 +1192,7 @@ app.delete('/api/alerts/:id', async (req, res) => {
 // ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 app.get('/api/audit-log', async (req, res) => ok(res, (await readDB()).auditLog));
 
-app.post('/api/audit-log', async (req, res) => {
+app.post('/api/audit-log', requireAuth, async (req, res) => {
     const db = await readDB();
     const entry = { id: generateId(), timestamp: new Date().toISOString(), user: 'admin', ...req.body };
     db.auditLog.push(entry);
@@ -1205,7 +1205,7 @@ app.post('/api/audit-log', async (req, res) => {
 // ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 app.get('/api/import-history', async (req, res) => ok(res, (await readDB()).importHistory));
 
-app.post('/api/import-history', async (req, res) => {
+app.post('/api/import-history', requireAuth, async (req, res) => {
     const db = await readDB();
     const record = { id: generateId(), date: new Date().toISOString(), status: 'Completada', ...req.body };
     db.importHistory.push(record);
@@ -1213,7 +1213,7 @@ app.post('/api/import-history', async (req, res) => {
     ok(res, record);
 });
 
-app.delete('/api/import-history/:id', async (req, res) => {
+app.delete('/api/import-history/:id', requireAuth, async (req, res) => {
     const db = await readDB();
     db.importHistory = db.importHistory.filter(h => h.id !== req.params.id);
     await writeDB(db);
@@ -1298,7 +1298,7 @@ app.post('/api/import-bulk', requireAuth, async (req, res) => {
 // ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 app.get('/api/settings', async (req, res) => ok(res, (await readDB()).settings));
 
-app.put('/api/settings', async (req, res) => {
+app.put('/api/settings', requireAuth, async (req, res) => {
     const db = await readDB();
     db.settings = { ...db.settings, ...req.body };
     await writeDB(db);
@@ -1308,7 +1308,7 @@ app.put('/api/settings', async (req, res) => {
 // ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 // BACKUP / RESTAURACIÁ“N
 // ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
-app.get('/api/backup', async (req, res) => {
+app.get('/api/backup', requireAuth, async (req, res) => {
     const db = await readDB();
     res.setHeader('Content-Disposition', `attachment; filename="fixpro-backup-${Date.now()}.json"`);
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -1344,7 +1344,7 @@ app.post('/api/reset', requireAuth, async (req, res) => {
 // ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 // REPORTES (generados al vuelo desde los datos)
 // ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
-app.get('/api/reports/:type', async (req, res) => {
+app.get('/api/reports/:type', requireAuth, async (req, res) => {
     const db   = await readDB();
     const type = req.params.type;
 

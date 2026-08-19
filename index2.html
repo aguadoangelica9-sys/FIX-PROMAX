@@ -14584,6 +14584,24 @@
                 const mod = activePanel.id.replace('module-', '');
                 updateMobileBottomNav(mod);
             }
+            // Leer ?module= de la URL para PWA shortcuts y deep links
+            // Ej: /?module=pos abre directamente el punto de venta
+            const _urlModule = new URLSearchParams(window.location.search).get('module');
+            if (_urlModule && typeof navigateTo === 'function') {
+                // Esperar a que la app esté visible antes de navegar
+                const _tryNav = (attempts) => {
+                    const panel = document.getElementById('module-' + _urlModule);
+                    const appEl = document.getElementById('appMain');
+                    if (panel && appEl && appEl.classList.contains('visible')) {
+                        navigateTo(_urlModule);
+                        // Limpiar el parámetro de la URL sin recargar
+                        history.replaceState({}, '', '/');
+                    } else if (attempts < 40) {
+                        setTimeout(() => _tryNav(attempts + 1), 250);
+                    }
+                };
+                _tryNav(0);
+            }
         });
 
         // También inicializar si el DOM ya estaba listo

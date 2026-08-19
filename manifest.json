@@ -1,8 +1,8 @@
-{
+﻿{
   "name": "FIX PRO MAX — ERP Profesional",
   "short_name": "FIX PRO MAX",
   "description": "Sistema ERP completo: ventas, inventario, facturación, finanzas y más",
-  "start_url": "/index2.html",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
@@ -99,28 +99,28 @@
       "name": "Nueva Venta",
       "short_name": "Venta",
       "description": "Abrir punto de venta",
-      "url": "/index2.html?module=pos",
+      "url": "/?module=pos",
       "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
     },
     {
       "name": "Inventario",
       "short_name": "Inventario",
       "description": "Ver inventario",
-      "url": "/index2.html?module=inventory",
+      "url": "/?module=inventory",
       "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
     },
     {
       "name": "Clientes",
       "short_name": "Clientes",
       "description": "Ver clientes",
-      "url": "/index2.html?module=customers",
+      "url": "/?module=customers",
       "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
     },
     {
       "name": "Finanzas",
       "short_name": "Finanzas",
       "description": "Ver P&L y finanzas",
-      "url": "/index2.html?module=finance",
+      "url": "/?module=finance",
       "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
     }
   ]
