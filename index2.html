@@ -10361,9 +10361,21 @@
         res.scrollIntoView({ behavior:'smooth', block:'start' });
     }
 
+    /** Escapa un valor para CSV: envuelve en comillas si tiene comas, comillas o saltos de línea */
+    function csvEscape(val) {
+        const s = String(val === null || val === undefined ? '' : val);
+        if (s.includes(',') || s.includes('"') || s.includes('
+') || s.includes('
+')) {
+            return '"' + s.replace(/"/g, '""') + '"';
+        }
+        return s;
+    }
     function downloadCSV(filename, content) {
         if (!content) { showToast('⚠️','Sin datos para descargar'); return; }
-        const blob = new Blob([content], { type:'text/csv;charset=utf-8;' });
+        // BOM UTF-8 (\uFEFF) necesario para que Excel abra el CSV con tildes, ñ y emojis correctamente
+        const BOM  = '\uFEFF';
+        const blob = new Blob([BOM + content], { type: 'text/csv;charset=utf-8;' });
         const url  = URL.createObjectURL(blob);
         const a    = document.createElement('a');
         a.href = url; a.download = filename;
@@ -10371,6 +10383,7 @@
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         showToast('📥', filename + ' descargado');
+    }   showToast('📥', filename + ' descargado');
     }
 
     /* ─── Módulo Finanzas / P&L ─── */

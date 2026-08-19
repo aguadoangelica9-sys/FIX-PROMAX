@@ -657,9 +657,29 @@
         reader.onload = e => {
             try {
                 if (ext === 'csv') {
-                    // Parsear CSV con SheetJS
-                    const text = new TextDecoder('utf-8').decode(new Uint8Array(e.target.result));
-                    const wb   = XLSX.read(text, { type: 'string' });
+                    // Detectar encoding del CSV:
+                    // Si tiene BOM UTF-8 (EF BB BF) → UTF-8
+                    // Si tiene BOM UTF-16 LE (FF FE) → UTF-16
+                    // Sin BOM → intentar UTF-8, fallback a Windows-1252
+                    const rawBytes = new Uint8Array(e.target.result);
+                    let text;
+                    if (rawBytes[0] === 0xEF && rawBytes[1] === 0xBB && rawBytes[2] === 0xBF) {
+                        // BOM UTF-8 — decodificar sin el BOM
+                        text = new TextDecoder('utf-8').decode(rawBytes.slice(3));
+                    } else if (rawBytes[0] === 0xFF && rawBytes[1] === 0xFE) {
+                        // BOM UTF-16 LE
+                        text = new TextDecoder('utf-16le').decode(rawBytes.slice(2));
+                    } else {
+                        // Sin BOM: intentar UTF-8 primero, luego Windows-1252
+                        try {
+                            // TextDecoder con fatal:true lanza error si no es UTF-8 válido
+                            text = new TextDecoder('utf-8', { fatal: true }).decode(rawBytes);
+                        } catch {
+                            // Fallback a Windows-1252 (encoding de Excel en Windows)
+                            text = new TextDecoder('windows-1252').decode(rawBytes);
+                        }
+                    }
+                    const wb = XLSX.read(text, { type: 'string' });
                     _state.workbook = wb;
                 } else {
                     const arr = new Uint8Array(e.target.result);

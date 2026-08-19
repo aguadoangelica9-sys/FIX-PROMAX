@@ -1,4 +1,4 @@
-﻿/**
+/**
  * FIX PRO MAX "” Backend API
  * Servidor Express con persistencia en MongoDB Atlas (vía db-mongo.js).
  * Puerto: process.env.PORT || 3000
@@ -1296,7 +1296,7 @@ app.put('/api/settings', async (req, res) => {
 app.get('/api/backup', async (req, res) => {
     const db = await readDB();
     res.setHeader('Content-Disposition', `attachment; filename="fixpro-backup-${Date.now()}.json"`);
-    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.send(JSON.stringify(db, null, 2));
 });
 
@@ -1626,8 +1626,9 @@ app.post('/api/auth/login', async (req, res) => {
     console.log(`✅ Login: ${user.email}`);
     // Setear cookie de sesión para que GET / pueda inyectar los datos correctos
     res.cookie('fixpromax_token', token, {
-        httpOnly: false,      // false para que el cliente JS también pueda leerla si necesita
-        sameSite: 'Lax',
+        httpOnly: false,      // false para que el cliente JS pueda leerla
+        sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+        secure:   process.env.NODE_ENV === 'production',  // true en HTTPS
         maxAge:   30 * 24 * 60 * 60 * 1000,  // 30 días
         path:     '/'
     });
@@ -1670,8 +1671,9 @@ app.post('/api/auth/recover-request', async (req, res) => {
     _recoverCodes[email.toLowerCase()] = { code, exp: Date.now() + 10 * 60 * 1000 }; // 10 min
 
     console.log(`🔐 Código de recuperación para ${email}: ${code}`);
-    // En producción aquí se enviaría el email. Por ahora se devuelve en la respuesta (dev mode).
-    ok(res, { sent: true, devCode: code });   // devCode solo visible en desarrollo
+    // En producción: no exponer el código. En desarrollo (NODE_ENV != production) sí se devuelve.
+    const isProduction = process.env.NODE_ENV === 'production';
+    ok(res, { sent: true, ...(isProduction ? {} : { devCode: code }) });
 });
 
 // ❌”€❌”€ RECUPERACIÁ“N "” validar código y cambiar contraseÁ±a ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
@@ -2533,7 +2535,7 @@ async function sendWhatsApp(message, eventId) {
         method:   'POST',
         headers:  {
             'Content-Type':   'application/json',
-            'Content-Length': Buffer.byteLength(postData),
+            'Content-Length': Buffer.byteLength(postData, 'utf8'),
         },
         timeout: 12000,
     };
@@ -2571,7 +2573,7 @@ async function sendWhatsApp(message, eventId) {
             resolve({ ok: false, error: e.message });
         });
         req_wa.on('timeout', () => { req_wa.destroy(); resolve({ ok: false, error: 'timeout' }); });
-        req_wa.write(postData);
+        req_wa.write(postData, 'utf8');
         req_wa.end();
     });
 }
@@ -4356,6 +4358,26 @@ app.get('/api/events', async (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
+// ENDPOINT DE PRUEBA UTF-8 — verifica que el servidor procesa Unicode correctamente
+// GET /api/utf8-test — público, sin autenticación
+// ══════════════════════════════════════════════════════════════════════════════
+app.get('/api/utf8-test', (req, res) => {
+    const testData = {
+        tildes:   'á é í ó ú Á É Í Ó Ú',
+        enie:     'ñ Ñ camión cañón',
+        emojis:   '📦 💰 🚗 🔧 ✅ ⚠️ 👋 🟢',
+        nombres:  ['José Pérez', 'Óscar Rodríguez', 'María González', 'Ángel López'],
+        empresa:  'Repuestos Encava 🚗',
+        frase:    'Información del cliente: Última actualización ✅',
+        json_ok:  true,
+        encoding: 'UTF-8',
+        node_env: process.env.NODE_ENV || 'development',
+    };
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.json({ ok: true, data: testData });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
 // ENDPOINT DE LIMPIEZA DE ENCODING — corrige mojibake en todos los documentos
 // POST /api/fix-encoding?key=FIXPROMAX_MIGRATE_2026
 // ══════════════════════════════════════════════════════════════════════════════
@@ -4372,10 +4394,10 @@ app.post('/api/fix-encoding', async (req, res) => {
 
             // Tabla de reemplazos mojibake → correcto
             const FIXES = [
-                ['ÁÂ¡','á'],['ÁÂ©','é'],['ÁÂ­','í'],['ÁÂ³','ó'],['ÁÂº','ú'],['ÁÂ±','ñ'],['ÁÂ¼','ü'],
+                ['Á¡','á'],['Á©','é'],['ÁÂ­','í'],['ÁÂ³','ó'],['ÁÂº','ú'],['ÁÂ±','ñ'],['ÁÂ¼','ü'],
                 ['Á¡','á'],['Á©','é'],['Á­','í'],['Á³','ó'],['Áº','ú'],['Á±','ñ'],
                 ['Ã¡','á'],['Ã©','é'],['Ã­','í'],['Ã³','ó'],['Ãº','ú'],['Ã±','ñ'],['Ã¼','ü'],
-                ['Â·','·'],['Â¿','¿'],['Â¡','¡'],['Â©','©'],
+                ['·','·'],['¿','¿'],['¡','¡'],['©','©'],
                 ['GonzÃ¡lez','González'],['MarÃ­a','María'],['RodrÃ­guez','Rodríguez'],
                 ['MartÃ­nez','Martínez'],['HernÃ¡ndez','Hernández'],['SÃ¡nchez','Sánchez'],
                 ['JimÃ©nez','Jiménez'],['PÃ©rez','Pérez'],['LÃ³pez','López'],['GarcÃ­a','García'],
