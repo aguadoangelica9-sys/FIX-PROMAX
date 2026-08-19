@@ -4356,5 +4356,72 @@ app.get('/api/events', async (req, res) => {
     req.on('close', () => { clearInterval(pingTimer); _sseClients.delete(clientId); });
 });
 
+// ══════════════════════════════════════════════════════════════════════════════
+// ENDPOINT DE MIGRACIÓN — solo ejecutable con clave secreta
+// POST /api/run-migration?key=FIXPROMAX_MIGRATE_2026
+// Sube todos los datos JSON al MongoDB Atlas desde el servidor de Render
+// ══════════════════════════════════════════════════════════════════════════════
+app.post('/api/run-migration', async (req, res) => {
+    const key = req.query.key || req.body?.key;
+    if (key !== 'FIXPROMAX_MIGRATE_2026') {
+        return res.status(403).json({ ok: false, error: 'Clave incorrecta' });
+    }
+    res.json({ ok: true, message: 'Migración iniciada. Revisa los logs de Render para ver el progreso.' });
+
+    // Ejecutar migración en background
+    setImmediate(async () => {
+        try {
+            console.log('\n🚀 INICIANDO MIGRACIÓN DESDE RENDER...\n');
+            const fs   = require('fs');
+            const path = require('path');
+            const ROOT = __dirname;
+
+            function readJSON(file, fallback) {
+                try {
+                    const p = path.join(ROOT, file);
+                    if (!fs.existsSync(p)) return fallback;
+                    return JSON.parse(fs.readFileSync(p, 'utf8').replace(/^\uFEFF/, ''));
+                } catch { return fallback; }
+            }
+
+            const users     = readJSON('users.json', []);
+            const companies = readJSON('companies.json', []);
+            const sessions  = readJSON('sessions.json', {});
+            const tickets   = readJSON('tickets.json', []);
+            const payments  = readJSON('payments.json', []);
+            const adminLog  = readJSON('admin-log.json', []);
+            const waAlerts  = readJSON('wa-alerts.json', []);
+            const config    = readJSON('config.json', null);
+            const devData   = readJSON('devices.json', { devices: [] });
+
+            if (users.length)     { await DB.writeUsers(users);     console.log(`✅ ${users.length} usuarios`); }
+            if (companies.length) { await DB.writeCompanies(companies); console.log(`✅ ${companies.length} empresas`); }
+            if (Object.keys(sessions).length) { await DB.writeSessions(sessions); console.log(`✅ ${Object.keys(sessions).length} sesiones`); }
+            if (tickets.length)   { await DB.writeTickets(tickets); console.log(`✅ ${tickets.length} tickets`); }
+            if (payments.length)  { await DB.writePayments(payments); console.log(`✅ ${payments.length} pagos`); }
+            if (adminLog.length)  { await DB.writeAdminLog(adminLog); console.log(`✅ ${adminLog.length} logs admin`); }
+            if (waAlerts.length)  { await DB.writeWALog(waAlerts); console.log(`✅ ${waAlerts.length} alertas WA`); }
+            if (config)           { await DB.writeConfig(config); console.log('✅ Configuración'); }
+            const devices = Array.isArray(devData.devices) ? devData.devices : (Array.isArray(devData) ? devData : []);
+            if (devices.length)   { await DB.writeDevices({ devices }); console.log(`✅ ${devices.length} dispositivos`); }
+
+            // BDs por empresa
+            const dbFiles = fs.readdirSync(ROOT).filter(f => /^db_[a-z0-9_-]+\.json$/i.test(f));
+            for (const dbFile of dbFiles) {
+                const companyId = dbFile.replace(/^db_/, '').replace(/\.json$/, '');
+                try {
+                    const data = readJSON(dbFile, null);
+                    if (!data) continue;
+                    await DB.writeCompanyDB(companyId, data);
+                    console.log(`✅ ${dbFile} → ${companyId} (${(data.products||[]).length} productos, ${(data.sales||[]).length} ventas)`);
+                } catch (e) { console.error(`❌ ${dbFile}: ${e.message}`); }
+            }
+            console.log('\n✅ MIGRACIÓN COMPLETADA DESDE RENDER\n');
+        } catch (e) {
+            console.error('❌ Error en migración:', e.message);
+        }
+    });
+});
+
 // Iniciar servidor
 startServer(PORT);
