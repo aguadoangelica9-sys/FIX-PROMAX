@@ -1,10 +1,10 @@
-/**
- * FIX PRO MAX — Sistema Global de Monedas VES / EUR
- * currency.js — Módulo centralizado. NO modifica ninguna función existente.
+﻿/**
+ * FIX PRO MAX â€” Sistema Global de Monedas VES / EUR
+ * currency.js â€” MÃ³dulo centralizado. NO modifica ninguna funciÃ³n existente.
  *
  * Monedas soportadas:
- *   🇻🇪 VES — Bolívar venezolano  (Bs.)
- *   🇪🇺 EUR — Euro                (€)
+ *   ðŸ‡»ðŸ‡ª VES â€” BolÃ­var venezolano  (Bs.)
+ *   ðŸ‡ªðŸ‡º EUR â€” Euro                (â‚¬)
  *
  * Funciones expuestas al window:
  *   CurrencySystem.format(amount, currency)
@@ -24,18 +24,18 @@
 (function CurrencyModule() {
     'use strict';
 
-    /* ═══════════════════════════════════════════════════════════════
-       CATÁLOGO DE MONEDAS
-       ═══════════════════════════════════════════════════════════════ */
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       CATÃLOGO DE MONEDAS
+       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     const CURRENCIES = {
         VES: {
             code:     'VES',
-            name:     'Bolívar venezolano',
+            name:     'BolÃ­var venezolano',
             symbol:   'Bs.',
-            flag:     '🇻🇪',
+            flag:     'ðŸ‡»ðŸ‡ª',
             locale:   'es-VE',
             decimals: 2,
-            /* Formato: Bs. 1.000  (sin decimales — estilo venezolano para precios enteros) */
+            /* Formato: Bs. 1.000  (sin decimales â€” estilo venezolano para precios enteros) */
             format(amount) {
                 const n = Number(amount) || 0;
                 // Sin decimales: mostrar entero con separador de miles (punto)
@@ -47,23 +47,23 @@
         EUR: {
             code:     'EUR',
             name:     'Euro',
-            symbol:   '€',
-            flag:     '🇪🇺',
+            symbol:   'â‚¬',
+            flag:     'ðŸ‡ªðŸ‡º',
             locale:   'de-DE',
             decimals: 2,
-            /* Formato: €1.000  (sin decimales) */
+            /* Formato: â‚¬1.000  (sin decimales) */
             format(amount) {
                 const n = Number(amount) || 0;
                 const abs   = Math.round(Math.abs(n));
                 const intFmt = abs.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-                return (n < 0 ? '-' : '') + '€' + intFmt;
+                return (n < 0 ? '-' : '') + 'â‚¬' + intFmt;
             },
         },
         USD: {
             code:     'USD',
-            name:     'Dólar estadounidense',
+            name:     'DÃ³lar estadounidense',
             symbol:   '$',
-            flag:     '🇺🇸',
+            flag:     'ðŸ‡ºðŸ‡¸',
             locale:   'en-US',
             decimals: 2,
             /* Formato: $1,000  (sin decimales) */
@@ -78,26 +78,26 @@
 
     const SUPPORTED = ['VES', 'EUR', 'USD'];
 
-    /* ═══════════════════════════════════════════════════════════════
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
        ESTADO INTERNO
-       ═══════════════════════════════════════════════════════════════ */
+       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     let _defaultCurrency = 'VES';
-    let _activeRate       = 40.00;    // EUR→VES (fallback)
-    let _activeRateUSD    = 36.00;    // USD→VES (fallback)
+    let _activeRate       = 40.00;    // EURâ†’VES (fallback)
+    let _activeRateUSD    = 36.00;    // USDâ†’VES (fallback)
     let _rateCache        = { EUR: null, USD: null, date: null, source: null, status: 'initializing' };
     let _rateHistory      = [];
     let _initialized      = false;
 
-    /* ═══════════════════════════════════════════════════════════════
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
        API HELPER
-       ═══════════════════════════════════════════════════════════════ */
+       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     function _apiBase() {
         const h = window.location.hostname;
         if (h === 'localhost' || h === '127.0.0.1' ||
             h.startsWith('192.168.') || h.startsWith('10.') || h.startsWith('172.')) {
             return window.location.origin;
         }
-        return 'http://localhost:3000';
+        return window.location.origin;
     }
 
     async function _get(path) {
@@ -146,16 +146,16 @@
         } catch { return null; }
     }
 
-    /* ═══════════════════════════════════════════════════════════════
-       FUNCIONES NÚCLEO PÚBLICAS
-       ═══════════════════════════════════════════════════════════════ */
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       FUNCIONES NÃšCLEO PÃšBLICAS
+       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
     /**
      * Formatea un monto con la moneda indicada.
      * Si no se indica moneda, usa la moneda principal de la empresa.
      * @param {number} amount
      * @param {string} [currency]  'VES' | 'EUR'  (opcional)
-     * @returns {string}  "Bs. 1.000,00" | "€20,00"
+     * @returns {string}  "Bs. 1.000,00" | "â‚¬20,00"
      */
     function format(amount, currency) {
         const code = _resolve(currency);
@@ -165,7 +165,7 @@
     }
 
     /**
-     * Devuelve el código de moneda principal de la empresa.
+     * Devuelve el cÃ³digo de moneda principal de la empresa.
      * @returns {'VES'|'EUR'}
      */
     function getDefault() {
@@ -183,21 +183,21 @@
     async function setDefault(code) {
         if (!SUPPORTED.includes(code)) { console.warn('[Currency] Moneda no soportada:', code); return; }
         _defaultCurrency = code;
-        // Actualizar en data local si está disponible
+        // Actualizar en data local si estÃ¡ disponible
         if (typeof data !== 'undefined' && data.settings) {
             data.settings.defaultCurrency = code;
             if (typeof persist === 'function') persist();
         }
         // Persistir en servidor
         await _put('/api/currencies/default', { code });
-        // Actualizar UI del panel de configuración si está visible
+        // Actualizar UI del panel de configuraciÃ³n si estÃ¡ visible
         _updateSettingsBadge();
         if (typeof showToast === 'function')
-            showToast('💱', `Moneda principal: ${CURRENCIES[code]?.flag || ''} ${code}`);
+            showToast('ðŸ’±', `Moneda principal: ${CURRENCIES[code]?.flag || ''} ${code}`);
     }
 
     /**
-     * Devuelve la tasa activa EUR→VES.
+     * Devuelve la tasa activa EURâ†’VES.
      * @returns {number}
      */
     function getRate() {
@@ -205,7 +205,7 @@
     }
 
     /**
-     * Devuelve la tasa para cualquier par (from → VES).
+     * Devuelve la tasa para cualquier par (from â†’ VES).
      * @param {'USD'|'EUR'|'VES'} from
      * @param {'VES'} [to]
      * @returns {number}
@@ -217,7 +217,7 @@
             const active = data.exchangeRates.find(r =>
                 r.fromCurrency === from && r.toCurrency === to && r.isActive);
             if (active) return active.rate;
-            // Fallback: la más reciente
+            // Fallback: la mÃ¡s reciente
             const sorted = data.exchangeRates
                 .filter(r => r.fromCurrency === from && r.toCurrency === to)
                 .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -226,18 +226,18 @@
         // Fallback del estado global cargado desde API
         if (from === 'EUR' && _rateCache.EUR) return _rateCache.EUR;
         if (from === 'USD' && _rateCache.USD) return _rateCache.USD;
-        // Últimos valores conocidos
+        // Ãšltimos valores conocidos
         return from === 'EUR' ? _activeRate : (from === 'USD' ? _activeRateUSD : 1);
     }
 
     /**
-     * Registra una nueva tasa EUR→VES (persiste en BD y en historial local).
+     * Registra una nueva tasa EURâ†’VES (persiste en BD y en historial local).
      * @param {number} rate
      * @param {string} [notes]
      */
     async function setRate(rate, notes) {
         const val = parseFloat(rate);
-        if (!val || val <= 0) { if (typeof showToast === 'function') showToast('⚠️', 'Tasa inválida'); return; }
+        if (!val || val <= 0) { if (typeof showToast === 'function') showToast('âš ï¸', 'Tasa invÃ¡lida'); return; }
         _activeRate = val;
 
         // Actualizar en data local
@@ -264,7 +264,7 @@
         // Persistir en servidor
         await _post('/api/exchange-rates', { fromCurrency: 'EUR', toCurrency: 'VES', rate: val, notes: notes || '' });
         if (typeof showToast === 'function')
-            showToast('✅', `1 EUR = ${format(val, 'VES')} — Tasa actualizada`);
+            showToast('âœ…', `1 EUR = ${format(val, 'VES')} â€” Tasa actualizada`);
         // Re-renderizar si es posible
         if (typeof renderAll === 'function') renderAll();
     }
@@ -272,7 +272,7 @@
     /**
      * Convierte un monto entre cualquier par de monedas soportadas.
      * Usa VES como moneda puente cuando no hay tasa directa.
-     * Nunca mezcla monedas sin conversión explícita.
+     * Nunca mezcla monedas sin conversiÃ³n explÃ­cita.
      *
      * @param {number} amount
      * @param {'VES'|'EUR'|'USD'} from
@@ -286,14 +286,14 @@
         const rateEUR = getRateFor('EUR', 'VES');  // 1 EUR = X VES
         const rateUSD = getRateFor('USD', 'VES');  // 1 USD = X VES
 
-        // Convertir `from` → VES primero
+        // Convertir `from` â†’ VES primero
         let inVES;
         if      (from === 'VES') inVES = val;
         else if (from === 'EUR') inVES = val * rateEUR;
         else if (from === 'USD') inVES = val * rateUSD;
         else return { amount: val, rate: 1, original: val, from, to };
 
-        // Convertir VES → `to`
+        // Convertir VES â†’ `to`
         let result, rateUsed, via;
         if (to === 'VES') {
             result   = inVES;
@@ -335,11 +335,11 @@
         return _rateHistory;
     }
 
-    /* ═══════════════════════════════════════════════════════════════
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
        HELPERS UI
-       ═══════════════════════════════════════════════════════════════ */
+       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-    /** Resuelve el código de moneda: si es válido lo usa, si no, usa el default */
+    /** Resuelve el cÃ³digo de moneda: si es vÃ¡lido lo usa, si no, usa el default */
     function _resolve(code) {
         if (code && SUPPORTED.includes(String(code).toUpperCase())) {
             return String(code).toUpperCase();
@@ -371,7 +371,7 @@
     /**
      * Retorna HTML de un <select> de moneda listo para usar en formularios.
      * @param {string}   currentCode  Moneda seleccionada actualmente
-     * @param {string}   onChangeFn   Nombre de función JS a llamar al cambiar
+     * @param {string}   onChangeFn   Nombre de funciÃ³n JS a llamar al cambiar
      * @param {object}   opts         { id, name, style, compact }
      * @returns {string}
      */
@@ -385,7 +385,7 @@
 
         const options = SUPPORTED.map(code => {
             const c = CURRENCIES[code];
-            return `<option value="${code}" ${code === cur ? 'selected' : ''}>${c.flag} ${c.code} — ${c.symbol}</option>`;
+            return `<option value="${code}" ${code === cur ? 'selected' : ''}>${c.flag} ${c.code} â€” ${c.symbol}</option>`;
         }).join('');
 
         const baseStyle = compact
@@ -397,9 +397,9 @@
                     onblur="this.style.borderColor='var(--border)'">${options}</select>`;
     }
 
-    /* ═══════════════════════════════════════════════════════════════
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
        PANEL ADMIN: TASAS DE CAMBIO
-       ═══════════════════════════════════════════════════════════════ */
+       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     function openRatesPanel() {
         const old = document.getElementById('currencyRatesPanel');
         if (old) old.remove();
@@ -421,11 +421,11 @@
             <!-- Header -->
             <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border,#1e293b);">
                 <div>
-                    <div style="font-size:18px;font-weight:800;color:var(--text,#f8fafc);">💱 Monedas &amp; Tasas de Cambio</div>
-                    <div style="font-size:12px;color:var(--text-3,#64748b);margin-top:2px;">Administración global · VES / EUR</div>
+                    <div style="font-size:18px;font-weight:800;color:var(--text,#f8fafc);">ðŸ’± Monedas &amp; Tasas de Cambio</div>
+                    <div style="font-size:12px;color:var(--text-3,#64748b);margin-top:2px;">AdministraciÃ³n global Â· VES / EUR</div>
                 </div>
                 <button onclick="document.getElementById('currencyRatesPanel').remove()"
-                    style="background:none;border:none;color:var(--text-2,#94a3b8);font-size:22px;cursor:pointer;padding:4px 8px;">✕</button>
+                    style="background:none;border:none;color:var(--text-2,#94a3b8);font-size:22px;cursor:pointer;padding:4px 8px;">âœ•</button>
             </div>
 
             <div style="padding:24px;display:flex;flex-direction:column;gap:20px;">
@@ -444,10 +444,10 @@
                                        color:var(--text,#f8fafc);font-family:inherit;transition:all .2s;flex:1;min-width:160px;">
                                 <span style="font-size:24px;">${c.flag}</span>
                                 <div style="text-align:left;">
-                                    <div style="font-weight:700;font-size:14px;">${c.code} — ${c.symbol}</div>
+                                    <div style="font-weight:700;font-size:14px;">${c.code} â€” ${c.symbol}</div>
                                     <div style="font-size:11px;color:var(--text-3,#64748b);">${c.name}</div>
                                 </div>
-                                ${sel ? '<span style="margin-left:auto;color:var(--primary,#818cf8);font-size:16px;">✓</span>' : ''}
+                                ${sel ? '<span style="margin-left:auto;color:var(--primary,#818cf8);font-size:16px;">âœ“</span>' : ''}
                             </button>`;
                         }).join('')}
                     </div>
@@ -460,9 +460,9 @@
                         <div style="flex:1;background:var(--surface,#0f172a);border-radius:10px;padding:14px 16px;min-width:180px;">
                             <div style="font-size:11px;color:var(--text-3,#64748b);margin-bottom:4px;">1 EUR =</div>
                             <div style="font-size:26px;font-weight:900;color:var(--primary,#818cf8);">${CURRENCIES.VES.format(current)}</div>
-                            <div style="font-size:11px;color:var(--text-3,#64748b);margin-top:2px;">Bolívar venezolano</div>
+                            <div style="font-size:11px;color:var(--text-3,#64748b);margin-top:2px;">BolÃ­var venezolano</div>
                         </div>
-                        <div style="font-size:28px;color:var(--text-3,#475569);">⇄</div>
+                        <div style="font-size:28px;color:var(--text-3,#475569);">â‡„</div>
                         <div style="flex:1;background:var(--surface,#0f172a);border-radius:10px;padding:14px 16px;min-width:180px;">
                             <div style="font-size:11px;color:var(--text-3,#64748b);margin-bottom:4px;">1 VES =</div>
                             <div style="font-size:26px;font-weight:900;color:#1d4ed8;">${CURRENCIES.EUR.format(current > 0 ? 1/current : 0)}</div>
@@ -483,7 +483,7 @@
                         </div>
                         <div style="flex:2;min-width:200px;">
                             <label style="font-size:12px;color:var(--text-2,#94a3b8);display:block;margin-bottom:6px;">Nota (opcional)</label>
-                            <input id="newRateNotes" type="text" placeholder="Ej: BCV del día"
+                            <input id="newRateNotes" type="text" placeholder="Ej: BCV del dÃ­a"
                                 style="width:100%;padding:10px 12px;border:1.5px solid var(--border,#1e293b);border-radius:8px;
                                        background:var(--bg,#020617);color:var(--text,#f8fafc);font-size:14px;font-family:inherit;
                                        outline:none;"
@@ -494,7 +494,7 @@
                             style="padding:10px 22px;background:var(--primary-gradient,linear-gradient(135deg,#4f46e5,#7c3aed));
                                    color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;
                                    font-family:inherit;white-space:nowrap;">
-                            💾 Actualizar tasa
+                            ðŸ’¾ Actualizar tasa
                         </button>
                     </div>
                 </div>
@@ -504,7 +504,7 @@
                     <div style="font-size:13px;font-weight:700;color:var(--text-2,#94a3b8);margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px;">Historial de tasas</div>
                     <div style="max-height:200px;overflow-y:auto;">
                         ${history.length === 0
-                            ? '<p style="color:var(--text-3,#64748b);font-size:13px;">Sin historial aún.</p>'
+                            ? '<p style="color:var(--text-3,#64748b);font-size:13px;">Sin historial aÃºn.</p>'
                             : `<table style="width:100%;font-size:12px;border-collapse:collapse;">
                                 <thead>
                                     <tr style="color:var(--text-3,#64748b);border-bottom:1px solid var(--border,#1e293b);">
@@ -518,16 +518,16 @@
                                 <tbody>
                                     ${history.map(r => `
                                     <tr style="border-bottom:1px solid var(--border-light,#1e293b);${r.isActive ? 'background:rgba(79,70,229,.08);' : ''}">
-                                        <td style="padding:7px 8px;color:var(--text,#f8fafc);">${r.date || r.createdAt?.slice(0,10) || '—'}</td>
+                                        <td style="padding:7px 8px;color:var(--text,#f8fafc);">${r.date || r.createdAt?.slice(0,10) || 'â€”'}</td>
                                         <td style="padding:7px 8px;text-align:right;font-weight:700;color:var(--primary,#818cf8);font-family:monospace;">
                                             1 EUR = ${CURRENCIES.VES.format(r.rate)}
                                         </td>
-                                        <td style="padding:7px 8px;color:var(--text-2,#94a3b8);">${r.createdBy || '—'}</td>
-                                        <td style="padding:7px 8px;color:var(--text-3,#64748b);">${r.notes || '—'}</td>
+                                        <td style="padding:7px 8px;color:var(--text-2,#94a3b8);">${r.createdBy || 'â€”'}</td>
+                                        <td style="padding:7px 8px;color:var(--text-3,#64748b);">${r.notes || 'â€”'}</td>
                                         <td style="padding:7px 8px;text-align:center;">
                                             ${r.isActive
                                                 ? '<span style="background:#dcfce7;color:#15803d;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;">ACTIVA</span>'
-                                                : '<span style="background:var(--surface,#0f172a);color:var(--text-3,#64748b);font-size:10px;padding:2px 8px;border-radius:20px;">HISTÓRICA</span>'}
+                                                : '<span style="background:var(--surface,#0f172a);color:var(--text-3,#64748b);font-size:10px;padding:2px 8px;border-radius:20px;">HISTÃ“RICA</span>'}
                                         </td>
                                     </tr>`).join('')}
                                 </tbody>
@@ -537,8 +537,8 @@
 
                 <!-- Nota importante -->
                 <div style="background:#1c1a06;border:1px solid #a16207;border-radius:10px;padding:12px 16px;font-size:12px;color:#fbbf24;line-height:1.6;">
-                    ⚠️ <strong>Importante:</strong> Cambiar la tasa NO modifica operaciones históricas.
-                    Cada operación registrada conserva la tasa y moneda del momento en que se realizó.
+                    âš ï¸ <strong>Importante:</strong> Cambiar la tasa NO modifica operaciones histÃ³ricas.
+                    Cada operaciÃ³n registrada conserva la tasa y moneda del momento en que se realizÃ³.
                     La nueva tasa aplica solo a operaciones futuras y conversiones en reportes.
                 </div>
 
@@ -548,9 +548,9 @@
         document.body.appendChild(ov);
     }
 
-    /* ═══════════════════════════════════════════════════════════════
-       PANEL DE ESTADÍSTICAS POR MONEDA
-       ═══════════════════════════════════════════════════════════════ */
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       PANEL DE ESTADÃSTICAS POR MONEDA
+       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     function openStatsPanel() {
         if (typeof data === 'undefined') return;
 
@@ -587,31 +587,31 @@
              width:100%;max-width:700px;max-height:90dvh;overflow-y:auto;box-shadow:0 30px 80px rgba(0,0,0,.7);">
             <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border,#1e293b);">
                 <div>
-                    <div style="font-size:18px;font-weight:800;color:var(--text,#f8fafc);">📊 Estadísticas por Moneda</div>
+                    <div style="font-size:18px;font-weight:800;color:var(--text,#f8fafc);">ðŸ“Š EstadÃ­sticas por Moneda</div>
                     <div style="font-size:12px;color:var(--text-3,#64748b);margin-top:2px;">Tasa activa: 1 EUR = ${format(rate,'VES')}</div>
                 </div>
                 <button onclick="document.getElementById('currencyStatsPanel').remove()"
-                    style="background:none;border:none;color:var(--text-2,#94a3b8);font-size:22px;cursor:pointer;padding:4px 8px;">✕</button>
+                    style="background:none;border:none;color:var(--text-2,#94a3b8);font-size:22px;cursor:pointer;padding:4px 8px;">âœ•</button>
             </div>
             <div style="padding:24px;">
                 <table style="width:100%;border-collapse:collapse;">
                     <thead>
                         <tr style="color:var(--text-3,#64748b);font-size:12px;border-bottom:2px solid var(--border,#1e293b);">
                             <th style="text-align:left;padding:8px 12px;">Concepto</th>
-                            <th style="text-align:right;padding:8px 12px;">🇻🇪 VES</th>
-                            <th style="text-align:right;padding:8px 12px;">🇪🇺 EUR</th>
+                            <th style="text-align:right;padding:8px 12px;">ðŸ‡»ðŸ‡ª VES</th>
+                            <th style="text-align:right;padding:8px 12px;">ðŸ‡ªðŸ‡º EUR</th>
                             <th style="text-align:right;padding:8px 12px;">Total (en VES)</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${_row('💰 Ventas',       salesVES, salesEUR)}
-                        ${_row('📦 Inventario',   invVES,   invEUR)}
-                        ${_row('💸 Gastos',       expVES,   expEUR)}
-                        ${_row('📈 Ganancias',    profVES,  profEUR)}
+                        ${_row('ðŸ’° Ventas',       salesVES, salesEUR)}
+                        ${_row('ðŸ“¦ Inventario',   invVES,   invEUR)}
+                        ${_row('ðŸ’¸ Gastos',       expVES,   expEUR)}
+                        ${_row('ðŸ“ˆ Ganancias',    profVES,  profEUR)}
                     </tbody>
                 </table>
                 <div style="margin-top:16px;background:var(--surface-2,#1e293b);border-radius:10px;padding:14px 16px;font-size:12px;color:var(--text-2,#94a3b8);">
-                    ℹ️ La columna <strong>Total (en VES)</strong> convierte los valores EUR a VES usando la tasa activa
+                    â„¹ï¸ La columna <strong>Total (en VES)</strong> convierte los valores EUR a VES usando la tasa activa
                     (<strong>1 EUR = ${format(rate,'VES')}</strong>). Los valores originales siempre se conservan.
                 </div>
             </div>
@@ -620,21 +620,21 @@
         document.body.appendChild(ov);
     }
 
-    /* ═══════════════════════════════════════════════════════════════
-       INTEGRACIÓN CON CONFIGURACIÓN
-       ═══════════════════════════════════════════════════════════════ */
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       INTEGRACIÃ“N CON CONFIGURACIÃ“N
+       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-    /** Actualiza el badge de moneda en el panel de Configuración */
+    /** Actualiza el badge de moneda en el panel de ConfiguraciÃ³n */
     function _updateSettingsBadge() {
         const el = document.getElementById('currencyDefaultDisplay');
         if (!el) return;
         const c = CURRENCIES[getDefault()];
-        el.innerHTML = `${c.flag} ${c.code} — ${c.name} <span style="font-size:11px;color:var(--text-3);">(${c.symbol})</span>`;
+        el.innerHTML = `${c.flag} ${c.code} â€” ${c.name} <span style="font-size:11px;color:var(--text-3);">(${c.symbol})</span>`;
     }
 
     /**
-     * Renderiza el bloque de Monedas & Tasas dentro del panel de Configuración.
-     * Se inserta dinámicamente al cargar el módulo.
+     * Renderiza el bloque de Monedas & Tasas dentro del panel de ConfiguraciÃ³n.
+     * Se inserta dinÃ¡micamente al cargar el mÃ³dulo.
      */
     function renderCurrencySettings() {
         const target = document.getElementById('currencySettingsBlock');
@@ -651,23 +651,23 @@
         <div class="card mt-4" id="currencySettingsCard">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
                 <h4 style="font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;">
-                    💱 Monedas &amp; Tasas de Cambio BCV
+                    ðŸ’± Monedas &amp; Tasas de Cambio BCV
                 </h4>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
                     <button onclick="window.CurrencySystem.openRatesHistory()"
                         style="padding:6px 14px;background:var(--surface-2);border:1px solid var(--border);
                                color:var(--text-2);border-radius:8px;cursor:pointer;font-family:inherit;font-size:12px;">
-                        📈 Historial BCV
+                        ðŸ“ˆ Historial BCV
                     </button>
                     <button onclick="window.CurrencySystem.openStatsPanel()"
                         style="padding:6px 14px;background:var(--surface-2);border:1px solid var(--border);
                                color:var(--text-2);border-radius:8px;cursor:pointer;font-family:inherit;font-size:12px;">
-                        📊 Estadísticas
+                        ðŸ“Š EstadÃ­sticas
                     </button>
                     <button onclick="window.CurrencySystem.refreshRates('admin-settings')"
                         style="padding:6px 14px;background:var(--primary-gradient);border:none;
                                color:#fff;border-radius:8px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:700;">
-                        🔄 Actualizar ahora
+                        ðŸ”„ Actualizar ahora
                     </button>
                 </div>
             </div>
@@ -679,23 +679,23 @@
                     Estado: <strong style="color:${cache.status==='ok'?'#16a34a':cache.status==='error'?'#dc2626':'#d97706'};">${icon} ${label}</strong>
                 </div>
                 <div style="font-size:11px;color:var(--text-3);">
-                    Fuente: ${cache.source || 'BCV (bcv.today)'} &nbsp;·&nbsp;
-                    Vigente: <strong>${cache.date || '—'}</strong>
+                    Fuente: ${cache.source || 'BCV (bcv.today)'} &nbsp;Â·&nbsp;
+                    Vigente: <strong>${cache.date || 'â€”'}</strong>
                 </div>
             </div>
 
             <!-- Tasas actuales -->
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px;">
                 <div style="background:var(--surface-2);border-radius:10px;padding:12px 14px;">
-                    <div style="font-size:10px;color:var(--text-3);margin-bottom:4px;">🇺🇸 USD/VES (BCV)</div>
+                    <div style="font-size:10px;color:var(--text-3);margin-bottom:4px;">ðŸ‡ºðŸ‡¸ USD/VES (BCV)</div>
                     <div style="font-size:20px;font-weight:800;color:#3b82f6;font-family:monospace;">${CURRENCIES.VES.format(rateUSD)}</div>
                 </div>
                 <div style="background:var(--surface-2);border-radius:10px;padding:12px 14px;">
-                    <div style="font-size:10px;color:var(--text-3);margin-bottom:4px;">🇪🇺 EUR/VES (BCV)</div>
+                    <div style="font-size:10px;color:var(--text-3);margin-bottom:4px;">ðŸ‡ªðŸ‡º EUR/VES (BCV)</div>
                     <div style="font-size:20px;font-weight:800;color:#8b5cf6;font-family:monospace;">${CURRENCIES.VES.format(rateEUR)}</div>
                 </div>
                 <div style="background:var(--surface-2);border-radius:10px;padding:12px 14px;">
-                    <div style="font-size:10px;color:var(--text-3);margin-bottom:4px;">🇪🇺→🇺🇸 EUR/USD</div>
+                    <div style="font-size:10px;color:var(--text-3);margin-bottom:4px;">ðŸ‡ªðŸ‡ºâ†’ðŸ‡ºðŸ‡¸ EUR/USD</div>
                     <div style="font-size:20px;font-weight:800;color:var(--text);font-family:monospace;">
                         ${CURRENCIES.USD.format(rateUSD > 0 ? rateEUR / rateUSD : 0)}
                     </div>
@@ -715,23 +715,23 @@
                                    background:${sel ? 'var(--primary-light)' : 'var(--surface)'};
                                    color:var(--text);font-family:inherit;font-size:13px;font-weight:${sel?700:500};">
                             <span>${cu.flag}</span> <span>${cu.code}</span>
-                            ${sel ? '<span style="color:var(--primary);font-size:14px;">✓</span>' : ''}
+                            ${sel ? '<span style="color:var(--primary);font-size:14px;">âœ“</span>' : ''}
                         </button>`;
                     }).join('')}
                 </div>
             </div>
 
-            <!-- Actualización rápida manual -->
+            <!-- ActualizaciÃ³n rÃ¡pida manual -->
             <div style="background:var(--surface-2);border-radius:10px;padding:14px 16px;margin-bottom:14px;">
                 <div style="font-size:12px;font-weight:700;color:var(--text-2);margin-bottom:10px;">
-                    Ingresar tasa manualmente <span style="font-size:10px;font-weight:400;color:var(--text-3);">(si la fuente no está disponible)</span>
+                    Ingresar tasa manualmente <span style="font-size:10px;font-weight:400;color:var(--text-3);">(si la fuente no estÃ¡ disponible)</span>
                 </div>
                 <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
                     <div>
                         <label style="font-size:11px;color:var(--text-3);display:block;margin-bottom:4px;">Par</label>
                         <select id="manualRatePair" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-family:inherit;font-size:13px;outline:none;">
-                            <option value="USD_VES">🇺🇸 USD → 🇻🇪 VES</option>
-                            <option value="EUR_VES">🇪🇺 EUR → 🇻🇪 VES</option>
+                            <option value="USD_VES">ðŸ‡ºðŸ‡¸ USD â†’ ðŸ‡»ðŸ‡ª VES</option>
+                            <option value="EUR_VES">ðŸ‡ªðŸ‡º EUR â†’ ðŸ‡»ðŸ‡ª VES</option>
                         </select>
                     </div>
                     <div>
@@ -750,38 +750,38 @@
                         style="padding:7px 16px;background:var(--surface);border:1px solid var(--border);
                                color:var(--text-2);border-radius:8px;font-weight:700;cursor:pointer;
                                font-family:inherit;font-size:13px;white-space:nowrap;">
-                        💾 Guardar manual
+                        ðŸ’¾ Guardar manual
                     </button>
                 </div>
             </div>
 
             <!-- Mini historial EUR -->
             ${history.length > 0 ? `
-            <div style="font-size:11px;color:var(--text-3);margin-bottom:6px;font-weight:600;">Últimas tasas EUR/VES</div>
+            <div style="font-size:11px;color:var(--text-3);margin-bottom:6px;font-weight:600;">Ãšltimas tasas EUR/VES</div>
             <div style="display:flex;flex-direction:column;gap:3px;max-height:120px;overflow-y:auto;">
                 ${history.map(r => `
                 <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 10px;
                             background:${r.isActive?'rgba(79,70,229,.08)':'var(--surface-2)'};border-radius:7px;">
                     <span style="color:var(--text-2);font-size:11px;">${r.date||r.createdAt?.slice(0,10)}</span>
                     <span style="font-weight:700;color:var(--primary);font-family:monospace;font-size:12px;">1 EUR = ${CURRENCIES.VES.format(r.rate)}</span>
-                    <span style="font-size:10px;color:var(--text-3);">${r.updateType==='auto'?'🤖':'👤'} ${r.createdBy||''}</span>
+                    <span style="font-size:10px;color:var(--text-3);">${r.updateType==='auto'?'ðŸ¤–':'ðŸ‘¤'} ${r.createdBy||''}</span>
                     ${r.isActive ? '<span style="background:#dcfce7;color:#15803d;font-size:9px;font-weight:700;padding:1px 6px;border-radius:20px;">ACTIVA</span>' : ''}
                 </div>`).join('')}
             </div>` : ''}
 
-            <!-- Aviso cron automático -->
+            <!-- Aviso cron automÃ¡tico -->
             <div style="margin-top:14px;background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);
                         border-radius:10px;padding:10px 14px;font-size:12px;color:#6ee7b7;line-height:1.6;">
-                🤖 <strong>Actualización automática:</strong> El sistema consulta la fuente BCV todos los días
-                a las 08:00 AM hora Venezuela y actualiza las tasas sin intervención del usuario.
-                Si la fuente falla, se mantiene la última tasa válida y se reintenta automáticamente.
+                ðŸ¤– <strong>ActualizaciÃ³n automÃ¡tica:</strong> El sistema consulta la fuente BCV todos los dÃ­as
+                a las 08:00 AM hora Venezuela y actualiza las tasas sin intervenciÃ³n del usuario.
+                Si la fuente falla, se mantiene la Ãºltima tasa vÃ¡lida y se reintenta automÃ¡ticamente.
             </div>
         </div>`;
     }
 
-    /* ═══════════════════════════════════════════════════════════════
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
        HELPERS GLOBALES NECESARIOS POR EL HTML INLINE
-       ═══════════════════════════════════════════════════════════════ */
+       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
     window._saveNewRate = async function() {
         const val   = parseFloat(document.getElementById('newRateInput')?.value);
@@ -804,7 +804,7 @@
         const val   = parseFloat(document.getElementById('manualRateValue')?.value);
         const notes = document.getElementById('manualRateNote')?.value?.trim() || 'Manual';
         const [from, to] = pair.split('_');
-        if (!val || val <= 0) { if (typeof showToast === 'function') showToast('⚠️', 'Tasa inválida'); return; }
+        if (!val || val <= 0) { if (typeof showToast === 'function') showToast('âš ï¸', 'Tasa invÃ¡lida'); return; }
         const tok = localStorage.getItem('fixpromax_token') || '';
         try {
             const r = await fetch(CurrencySystem._apiBase ? CurrencySystem._apiBase() + '/api/rates/manual' : '/api/rates/manual', {
@@ -816,22 +816,22 @@
             if (j.ok) {
                 if (from === 'EUR') { window.CurrencySystem._setActiveRate && window.CurrencySystem._setActiveRate(val); }
                 CurrencySystem.renderCurrencySettings();
-                if (typeof showToast === 'function') showToast('✅', `Tasa manual guardada: 1 ${from} = ${val} ${to}`);
+                if (typeof showToast === 'function') showToast('âœ…', `Tasa manual guardada: 1 ${from} = ${val} ${to}`);
                 if (typeof renderAll === 'function') renderAll();
             } else {
-                if (typeof showToast === 'function') showToast('⚠️', j.error || 'Error al guardar');
+                if (typeof showToast === 'function') showToast('âš ï¸', j.error || 'Error al guardar');
             }
         } catch (e) {
-            if (typeof showToast === 'function') showToast('⚠️', 'Error de conexión');
+            if (typeof showToast === 'function') showToast('âš ï¸', 'Error de conexiÃ³n');
         }
     };
 
-    /* ═══════════════════════════════════════════════════════════════
-       CONVERSIÓN PARA REPORTES — helper público
-       ═══════════════════════════════════════════════════════════════ */
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       CONVERSIÃ“N PARA REPORTES â€” helper pÃºblico
+       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
     /**
-     * Retorna HTML para mostrar una conversión de moneda en reportes.
+     * Retorna HTML para mostrar una conversiÃ³n de moneda en reportes.
      * @param {number} amount
      * @param {'VES'|'EUR'} from
      * @param {'VES'|'EUR'} to
@@ -842,13 +842,13 @@
         const result = convert(amount, from, to);
         const rate   = getRate();
         return `<div style="font-size:11px;color:var(--text-3,#64748b);margin-top:2px;">
-            ${format(amount,from)} × (1 ${from}=${from==='EUR'?format(rate,'VES'):'1/'+format(rate,'VES')}) = <strong>${format(result.amount,to)}</strong>
+            ${format(amount,from)} Ã— (1 ${from}=${from==='EUR'?format(rate,'VES'):'1/'+format(rate,'VES')}) = <strong>${format(result.amount,to)}</strong>
         </div>`;
     }
 
-    /* ═══════════════════════════════════════════════════════════════
-       INICIALIZACIÓN
-       ═══════════════════════════════════════════════════════════════ */
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       INICIALIZACIÃ“N
+       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     async function init() {
         if (_initialized) return;
         _initialized = true;
@@ -867,7 +867,7 @@
             }
         }
 
-        // Renderizar bloque en Configuración si existe el contenedor
+        // Renderizar bloque en ConfiguraciÃ³n si existe el contenedor
         if (document.getElementById('currencySettingsBlock')) {
             renderCurrencySettings();
         }
@@ -875,14 +875,14 @@
         // Cargar tasas frescas desde la API del backend (no bloqueante)
         loadRatesFromAPI();
 
-        // Ejecutar migración automática silenciosa si hay datos sin currency
+        // Ejecutar migraciÃ³n automÃ¡tica silenciosa si hay datos sin currency
         await _autoMigrate();
     }
 
     /**
      * Carga las tasas actuales desde el backend y actualiza toda la UI.
      * Se llama al iniciar y puede llamarse manualmente.
-     * NO hace fetch directo a fuentes externas — solo consulta el backend propio.
+     * NO hace fetch directo a fuentes externas â€” solo consulta el backend propio.
      */
     async function loadRatesFromAPI() {
         try {
@@ -917,7 +917,7 @@
             // Actualizar todos los widgets de tasas en pantalla
             _updateRateWidgets();
 
-            // Renderizar bloque de settings si está visible
+            // Renderizar bloque de settings si estÃ¡ visible
             if (document.getElementById('currencySettingsBlock')) {
                 renderCurrencySettings();
             }
@@ -931,7 +931,7 @@
     function _updateRateWidgets() {
         const usd = _rateCache.USD || _activeRateUSD;
         const eur = _rateCache.EUR || _activeRate;
-        const date = _rateCache.date || '—';
+        const date = _rateCache.date || 'â€”';
         const status = _rateCache.status || 'ok';
 
         // Widget en dashboard
@@ -939,8 +939,8 @@
         if (w) w.innerHTML = _buildRateWidgetHTML(usd, eur, date, status);
 
         // Indicadores individuales
-        _setInner('bcvRateUSD',  usd  ? CURRENCIES.VES.format(usd)  : '—');
-        _setInner('bcvRateEUR',  eur  ? CURRENCIES.VES.format(eur)  : '—');
+        _setInner('bcvRateUSD',  usd  ? CURRENCIES.VES.format(usd)  : 'â€”');
+        _setInner('bcvRateEUR',  eur  ? CURRENCIES.VES.format(eur)  : 'â€”');
         _setInner('bcvRateDate', date);
 
         // Badge de estado
@@ -958,11 +958,11 @@
     }
 
     function _statusInfo(status) {
-        if (status === 'ok')          return { icon: '🟢', label: 'Actualizada',             color: '#16a34a' };
-        if (status === 'pending')     return { icon: '🟡', label: 'Actualización pendiente', color: '#d97706' };
-        if (status === 'error')       return { icon: '🔴', label: 'Error de actualización',  color: '#dc2626' };
-        if (status === 'initializing')return { icon: '⚪', label: 'Iniciando...',             color: '#64748b' };
-        return                               { icon: '🟡', label: 'Sin datos',               color: '#64748b' };
+        if (status === 'ok')          return { icon: 'ðŸŸ¢', label: 'Actualizada',             color: '#16a34a' };
+        if (status === 'pending')     return { icon: 'ðŸŸ¡', label: 'ActualizaciÃ³n pendiente', color: '#d97706' };
+        if (status === 'error')       return { icon: 'ðŸ”´', label: 'Error de actualizaciÃ³n',  color: '#dc2626' };
+        if (status === 'initializing')return { icon: 'âšª', label: 'Iniciando...',             color: '#64748b' };
+        return                               { icon: 'ðŸŸ¡', label: 'Sin datos',               color: '#64748b' };
     }
 
     function _buildRateWidgetHTML(usd, eur, date, status) {
@@ -976,26 +976,26 @@
         </div>
         <div style="display:flex;gap:16px;flex-wrap:wrap;">
             <div>
-                <div style="font-size:10px;color:var(--text-3,#64748b);">🇺🇸 USD/VES</div>
+                <div style="font-size:10px;color:var(--text-3,#64748b);">ðŸ‡ºðŸ‡¸ USD/VES</div>
                 <div style="font-size:17px;font-weight:800;color:var(--text,#f8fafc);font-family:monospace;" id="bcvRateUSD">
-                    ${usd ? CURRENCIES.VES.format(usd) : '—'}
+                    ${usd ? CURRENCIES.VES.format(usd) : 'â€”'}
                 </div>
             </div>
             <div>
-                <div style="font-size:10px;color:var(--text-3,#64748b);">🇪🇺 EUR/VES</div>
+                <div style="font-size:10px;color:var(--text-3,#64748b);">ðŸ‡ªðŸ‡º EUR/VES</div>
                 <div style="font-size:17px;font-weight:800;color:var(--text,#f8fafc);font-family:monospace;" id="bcvRateEUR">
-                    ${eur ? CURRENCIES.VES.format(eur) : '—'}
+                    ${eur ? CURRENCIES.VES.format(eur) : 'â€”'}
                 </div>
             </div>
         </div>
         <div style="font-size:10px;color:var(--text-3,#64748b);margin-top:6px;">
-            Vigente: <strong id="bcvRateDate">${date}</strong> · Fuente: ${src}
+            Vigente: <strong id="bcvRateDate">${date}</strong> Â· Fuente: ${src}
         </div>`;
     }
 
-    /** Activa una actualización manual de tasas desde el backend */
+    /** Activa una actualizaciÃ³n manual de tasas desde el backend */
     async function refreshRates(triggeredBy) {
-        if (typeof showToast === 'function') showToast('⏳', 'Consultando tasas BCV...');
+        if (typeof showToast === 'function') showToast('â³', 'Consultando tasas BCV...');
         const result = await _post('/api/rates/update', { triggeredBy: triggeredBy || 'manual-ui' });
         if (result?.success) {
             _rateCache.USD    = result.USD;
@@ -1008,11 +1008,11 @@
             _updateRateWidgets();
             if (document.getElementById('currencySettingsBlock')) renderCurrencySettings();
             if (typeof showToast === 'function')
-                showToast('✅', `Tasas actualizadas: 1 USD = ${CURRENCIES.VES.format(result.USD)} · 1 EUR = ${CURRENCIES.VES.format(result.EUR)}`);
+                showToast('âœ…', `Tasas actualizadas: 1 USD = ${CURRENCIES.VES.format(result.USD)} Â· 1 EUR = ${CURRENCIES.VES.format(result.EUR)}`);
             if (typeof renderAll === 'function') renderAll();
         } else {
             if (typeof showToast === 'function')
-                showToast('⚠️', result?.error || 'No se pudo obtener la tasa. Se usa la última válida.');
+                showToast('âš ï¸', result?.error || 'No se pudo obtener la tasa. Se usa la Ãºltima vÃ¡lida.');
         }
         return result;
     }
@@ -1023,7 +1023,7 @@
         if (old) old.remove();
 
         const resp = await _get('/api/rates/history');
-        if (!resp) { if (typeof showToast === 'function') showToast('⚠️', 'No se pudo cargar historial'); return; }
+        if (!resp) { if (typeof showToast === 'function') showToast('âš ï¸', 'No se pudo cargar historial'); return; }
 
         const { rates, currentUSD, currentEUR, serviceStatus } = resp;
         const svc = serviceStatus || {};
@@ -1038,7 +1038,7 @@
         const eurRates = rates.filter(r => r.fromCurrency === 'EUR').slice(0, 50);
 
         const _rateTable = (rows, curr) => rows.length === 0
-            ? '<p style="color:var(--text-3,#64748b);font-size:13px;padding:12px;">Sin historial aún.</p>'
+            ? '<p style="color:var(--text-3,#64748b);font-size:13px;padding:12px;">Sin historial aÃºn.</p>'
             : `<table style="width:100%;font-size:11px;border-collapse:collapse;">
                 <thead><tr style="color:var(--text-3,#64748b);border-bottom:1px solid var(--border,#1e293b);">
                     <th style="text-align:left;padding:5px 6px;">Fecha</th>
@@ -1056,8 +1056,8 @@
                         <span style="font-size:10px;padding:2px 6px;border-radius:20px;
                             background:${r.updateType==='auto'?'rgba(16,185,129,.15)':'rgba(79,70,229,.15)'};
                             color:${r.updateType==='auto'?'#6ee7b7':'#a5b4fc'};">
-                            ${r.updateType==='auto'?'🤖 Auto':'👤 Manual'}</span></td>
-                    <td style="padding:5px 6px;color:var(--text-3,#64748b);font-size:10px;">${r.sourceName||r.source||'—'}</td>
+                            ${r.updateType==='auto'?'ðŸ¤– Auto':'ðŸ‘¤ Manual'}</span></td>
+                    <td style="padding:5px 6px;color:var(--text-3,#64748b);font-size:10px;">${r.sourceName||r.source||'â€”'}</td>
                     <td style="padding:5px 6px;text-align:center;">
                         ${r.isActive ? '<span style="background:#dcfce7;color:#15803d;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;">ACTIVA</span>' : ''}</td>
                 </tr>`).join('')}</tbody></table>`;
@@ -1067,10 +1067,10 @@
              width:100%;max-width:780px;max-height:92dvh;overflow-y:auto;box-shadow:0 30px 80px rgba(0,0,0,.7);">
             <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border,#1e293b);">
                 <div>
-                    <div style="font-size:18px;font-weight:800;color:var(--text,#f8fafc);">📈 Historial de Tasas BCV</div>
+                    <div style="font-size:18px;font-weight:800;color:var(--text,#f8fafc);">ðŸ“ˆ Historial de Tasas BCV</div>
                     <div style="font-size:12px;color:var(--text-3,#64748b);margin-top:2px;">
-                        ${icon} ${label} &nbsp;·&nbsp;
-                        ${svc.lastSuccess ? 'Última actualización: ' + new Date(svc.lastSuccess).toLocaleString('es-VE') : 'Sin actualización registrada'}
+                        ${icon} ${label} &nbsp;Â·&nbsp;
+                        ${svc.lastSuccess ? 'Ãšltima actualizaciÃ³n: ' + new Date(svc.lastSuccess).toLocaleString('es-VE') : 'Sin actualizaciÃ³n registrada'}
                     </div>
                 </div>
                 <div style="display:flex;gap:8px;align-items:center;">
@@ -1078,10 +1078,10 @@
                         style="padding:7px 16px;background:var(--primary-gradient,linear-gradient(135deg,#4f46e5,#7c3aed));
                                color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;
                                font-family:inherit;font-size:12px;">
-                        🔄 Actualizar ahora
+                        ðŸ”„ Actualizar ahora
                     </button>
                     <button onclick="document.getElementById('bcvRatesHistoryPanel').remove()"
-                        style="background:none;border:none;color:var(--text-2,#94a3b8);font-size:22px;cursor:pointer;padding:4px 8px;">✕</button>
+                        style="background:none;border:none;color:var(--text-2,#94a3b8);font-size:22px;cursor:pointer;padding:4px 8px;">âœ•</button>
                 </div>
             </div>
             <div style="padding:20px 24px;display:flex;flex-direction:column;gap:16px;">
@@ -1089,16 +1089,16 @@
                 <!-- Tasas actuales -->
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                     ${[
-                        { label:'🇺🇸 USD/VES', rate: currentUSD, color:'#3b82f6' },
-                        { label:'🇪🇺 EUR/VES', rate: currentEUR, color:'#8b5cf6' },
+                        { label:'ðŸ‡ºðŸ‡¸ USD/VES', rate: currentUSD, color:'#3b82f6' },
+                        { label:'ðŸ‡ªðŸ‡º EUR/VES', rate: currentEUR, color:'#8b5cf6' },
                     ].map(t => `
                     <div style="background:var(--surface-2,#1e293b);border-radius:12px;padding:14px 16px;">
                         <div style="font-size:11px;color:var(--text-3,#64748b);margin-bottom:4px;">${t.label}</div>
                         <div style="font-size:22px;font-weight:900;color:${t.color};font-family:monospace;">
-                            ${t.rate ? CURRENCIES.VES.format(t.rate.rate) : '—'}
+                            ${t.rate ? CURRENCIES.VES.format(t.rate.rate) : 'â€”'}
                         </div>
                         <div style="font-size:10px;color:var(--text-3,#64748b);margin-top:2px;">
-                            ${t.rate?.date || '—'} · ${t.rate?.sourceName || t.rate?.source || '—'}
+                            ${t.rate?.date || 'â€”'} Â· ${t.rate?.sourceName || t.rate?.source || 'â€”'}
                         </div>
                     </div>`).join('')}
                 </div>
@@ -1106,20 +1106,20 @@
                 <!-- Servicio info -->
                 <div style="background:var(--surface-2,#1e293b);border-radius:10px;padding:12px 16px;font-size:12px;display:flex;gap:20px;flex-wrap:wrap;">
                     <div><span style="color:var(--text-3,#64748b);">Fuente principal:</span> <strong style="color:var(--text,#f8fafc);">${svc.config?.primaryUrl||'bcv.today'}</strong></div>
-                    <div><span style="color:var(--text-3,#64748b);">Actualizaciones:</span> <strong style="color:#6ee7b7;">${svc.updateCount||0} éxitos</strong></div>
+                    <div><span style="color:var(--text-3,#64748b);">Actualizaciones:</span> <strong style="color:#6ee7b7;">${svc.updateCount||0} Ã©xitos</strong></div>
                     <div><span style="color:var(--text-3,#64748b);">Fallos consecutivos:</span> <strong style="color:${(svc.failCount||0)>0?'#fca5a5':'#6ee7b7'}">${svc.failCount||0}</strong></div>
                     <div><span style="color:var(--text-3,#64748b);">Cron diario:</span> <strong style="color:var(--text,#f8fafc);">08:00 hora Venezuela</strong></div>
                 </div>
 
                 <!-- Tablas historial -->
                 <div>
-                    <div style="font-size:13px;font-weight:700;color:var(--text,#f8fafc);margin-bottom:8px;">🇺🇸 Historial USD/VES</div>
+                    <div style="font-size:13px;font-weight:700;color:var(--text,#f8fafc);margin-bottom:8px;">ðŸ‡ºðŸ‡¸ Historial USD/VES</div>
                     <div style="max-height:200px;overflow-y:auto;background:var(--surface-2,#1e293b);border-radius:10px;padding:8px;">
                         ${_rateTable(usdRates, 'USD')}
                     </div>
                 </div>
                 <div>
-                    <div style="font-size:13px;font-weight:700;color:var(--text,#f8fafc);margin-bottom:8px;">🇪🇺 Historial EUR/VES</div>
+                    <div style="font-size:13px;font-weight:700;color:var(--text,#f8fafc);margin-bottom:8px;">ðŸ‡ªðŸ‡º Historial EUR/VES</div>
                     <div style="max-height:200px;overflow-y:auto;background:var(--surface-2,#1e293b);border-radius:10px;padding:8px;">
                         ${_rateTable(eurRates, 'EUR')}
                     </div>
@@ -1127,8 +1127,8 @@
 
                 <!-- Aviso -->
                 <div style="background:#1c1a06;border:1px solid #a16207;border-radius:10px;padding:10px 16px;font-size:12px;color:#fbbf24;line-height:1.6;">
-                    ⚠️ Las tasas históricas <strong>nunca modifican operaciones pasadas</strong>.
-                    Cada venta, factura y gasto conserva la tasa que estaba vigente al momento de su creación.
+                    âš ï¸ Las tasas histÃ³ricas <strong>nunca modifican operaciones pasadas</strong>.
+                    Cada venta, factura y gasto conserva la tasa que estaba vigente al momento de su creaciÃ³n.
                     La nueva tasa aplica solo a operaciones futuras y conversiones en reportes.
                 </div>
             </div>
@@ -1137,7 +1137,7 @@
         document.body.appendChild(ov);
     }
 
-    /** Migración silenciosa: añade campo currency a registros sin él */
+    /** MigraciÃ³n silenciosa: aÃ±ade campo currency a registros sin Ã©l */
     async function _autoMigrate() {
         if (typeof data === 'undefined') return;
         const defCurr  = getDefault();
@@ -1157,9 +1157,9 @@
         }
     }
 
-    /* ═══════════════════════════════════════════════════════════════
-       EXPORTACIÓN PÚBLICA
-       ═══════════════════════════════════════════════════════════════ */
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       EXPORTACIÃ“N PÃšBLICA
+       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     window.CurrencySystem = {
         format,
         getDefault,
@@ -1184,11 +1184,11 @@
         get rateCache() { return { ..._rateCache }; },
     };
 
-    // Iniciar cuando el DOM esté listo
+    // Iniciar cuando el DOM estÃ© listo
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
-        // Diferir un tick para que data esté disponible
+        // Diferir un tick para que data estÃ© disponible
         setTimeout(init, 0);
     }
 

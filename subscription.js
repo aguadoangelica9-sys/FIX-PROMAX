@@ -27,7 +27,7 @@
             h.startsWith('192.168.') || h.startsWith('10.') || h.startsWith('172.')) {
             return window.location.origin;
         }
-        return 'http://localhost:3000';
+        return window.location.origin;
     }
 
     async function _fetchStatus() {
