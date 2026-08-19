@@ -1,0 +1,3283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
+<!-- PWA / mobile -->
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="FIX PRO MAX Admin"/>
+<meta name="theme-color" content="#0f172a"/>
+<meta name="msapplication-tap-highlight" content="no"/>
+<title>FIX PRO MAX — Panel de Administrador</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0f172a;--surface:#1e293b;--surface2:#263348;--border:#334155;
+  --text:#f1f5f9;--text2:#94a3b8;--text3:#475569;
+  --primary:#4f46e5;--primary-h:#4338ca;--primary-l:#1e1b4b;
+  --success:#10b981;--warning:#f59e0b;--danger:#ef4444;--info:#3b82f6;
+  --radius:10px;--shadow:0 4px 16px rgba(0,0,0,.4);
+  --transition:.18s cubic-bezier(.4,0,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);
+     display:flex;min-height:100vh;font-size:14px;-webkit-font-smoothing:antialiased;}
+a{color:inherit;text-decoration:none;}
+button{font-family:inherit;cursor:pointer;}
+/* LOGIN */
+#loginScreen{position:fixed;inset:0;background:var(--bg);z-index:9999;
+  display:flex;align-items:center;justify-content:center;padding:20px;}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:36px 32px;width:100%;max-width:400px;box-shadow:var(--shadow);}
+.login-logo{display:flex;align-items:center;gap:10px;margin-bottom:24px;}
+.login-logo span{font-size:28px;font-weight:800;
+  background:linear-gradient(135deg,#4f46e5,#7c3aed);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.login-logo small{font-size:11px;background:var(--primary-l);color:#a5b4fc;
+  padding:2px 10px;border-radius:20px;font-weight:700;}
+.login-box h2{font-size:20px;font-weight:700;margin-bottom:4px;}
+.login-box p{color:var(--text2);font-size:13px;margin-bottom:24px;}
+.form-field{margin-bottom:14px;}
+.form-field label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:5px;}
+.form-field input{width:100%;padding:10px 14px;background:var(--bg);border:1.5px solid var(--border);
+  border-radius:8px;color:var(--text);font-family:inherit;font-size:14px;outline:none;
+  transition:border-color var(--transition);}
+.form-field input:focus{border-color:var(--primary);}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 20px;
+  border:none;border-radius:8px;font-size:13px;font-weight:600;transition:all var(--transition);}
+.btn-primary{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;}
+.btn-primary:hover{opacity:.9;transform:translateY(-1px);}
+.btn-danger{background:var(--danger);color:#fff;}
+.btn-success{background:var(--success);color:#fff;}
+.btn-warning{background:var(--warning);color:#000;}
+.btn-sm{padding:5px 12px;font-size:12px;}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text2);}
+.btn-ghost:hover{background:var(--surface2);}
+.btn-w{width:100%;}
+.err-msg{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.3);
+  border-radius:8px;padding:9px 13px;font-size:13px;margin-bottom:12px;display:none;}
+/* LAYOUT */
+#adminApp{display:none;width:100%;min-height:100vh;}
+.sidebar{width:240px;background:var(--surface);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;height:100vh;position:sticky;top:0;overflow-y:auto;flex-shrink:0;}
+.sidebar-logo{padding:20px 16px 16px;border-bottom:1px solid var(--border);}
+.sidebar-logo .name{font-size:16px;font-weight:800;color:var(--text);}
+.sidebar-logo .badge{font-size:10px;background:var(--primary-l);color:#a5b4fc;
+  padding:1px 8px;border-radius:20px;font-weight:700;margin-left:6px;}
+.nav-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;
+  letter-spacing:.8px;padding:14px 16px 6px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;color:var(--text2);
+  font-size:13px;font-weight:500;border-radius:0;transition:all var(--transition);cursor:pointer;border:none;
+  background:none;width:100%;text-align:left;}
+.nav-item:hover{background:var(--surface2);color:var(--text);}
+.nav-item.active{background:var(--primary-l);color:#a5b4fc;font-weight:600;}
+.nav-item .icon{width:18px;text-align:center;font-size:15px;flex-shrink:0;}
+.nav-item .badge-count{margin-left:auto;background:var(--danger);color:#fff;
+  font-size:10px;padding:1px 7px;border-radius:20px;font-weight:700;}
+.sidebar-footer{margin-top:auto;padding:14px 16px;border-top:1px solid var(--border);}
+.admin-card{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.admin-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#4f46e5,#7c3aed);
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#fff;flex-shrink:0;}
+.admin-info .name{font-size:13px;font-weight:600;}
+.admin-info .role{font-size:11px;color:var(--text2);}
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow-y:auto;min-height:100vh;}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);
+  padding:14px 24px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:10;gap:12px;}
+.topbar h1{font-size:18px;font-weight:700;}
+.topbar .sub{font-size:12px;color:var(--text2);margin-top:1px;}
+.content{padding:24px;flex:1;}
+/* SECTION */
+.section{display:none;}
+.section.active{display:block;}
+/* CARDS GRID */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:24px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:18px 20px;}
+.stat-card .val{font-size:28px;font-weight:800;line-height:1.1;}
+.stat-card .lbl{font-size:12px;color:var(--text2);margin-top:4px;}
+.stat-card .sub{font-size:11px;color:var(--text3);margin-top:2px;}
+.stat-card.blue .val{color:#60a5fa;}
+.stat-card.green .val{color:var(--success);}
+.stat-card.red .val{color:var(--danger);}
+.stat-card.yellow .val{color:var(--warning);}
+.stat-card.purple .val{color:#a78bfa;}
+/* TABLE */
+.tbl-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.tbl-toolbar{padding:14px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-bottom:1px solid var(--border);}
+.search-inp{flex:1;min-width:180px;padding:8px 12px;background:var(--bg);border:1px solid var(--border);
+  border-radius:7px;color:var(--text);font-family:inherit;font-size:13px;outline:none;}
+.search-inp:focus{border-color:var(--primary);}
+select.filter-sel{padding:8px 12px;background:var(--bg);border:1px solid var(--border);
+  border-radius:7px;color:var(--text);font-family:inherit;font-size:13px;outline:none;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead th{text-align:left;padding:11px 14px;color:var(--text2);font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.5px;background:var(--surface2);border-bottom:1px solid var(--border);}
+tbody td{padding:11px 14px;border-bottom:1px solid var(--border);color:var(--text);}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover td{background:var(--surface2);}
+/* BADGES */
+.badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+.badge-trial{background:rgba(59,130,246,.2);color:#93c5fd;}
+.badge-subscribed{background:rgba(16,185,129,.2);color:#6ee7b7;}
+.badge-expired{background:rgba(239,68,68,.2);color:#fca5a5;}
+.badge-admin{background:rgba(167,139,250,.2);color:#c4b5fd;}
+.badge-new{background:rgba(59,130,246,.2);color:#93c5fd;}
+.badge-in_progress{background:rgba(245,158,11,.2);color:#fcd34d;}
+.badge-resolved{background:rgba(16,185,129,.2);color:#6ee7b7;}
+.badge-closed{background:rgba(71,85,105,.3);color:#94a3b8;}
+.badge-alta{background:rgba(239,68,68,.2);color:#fca5a5;}
+.badge-media{background:rgba(245,158,11,.2);color:#fcd34d;}
+.badge-baja{background:rgba(16,185,129,.2);color:#6ee7b7;}
+.badge-critica{background:rgba(239,68,68,.4);color:#f87171;animation:pulse 1s infinite;}
+@keyframes pulse{50%{opacity:.6;}}
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9998;
+  align-items:center;justify-content:center;padding:16px;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  width:100%;max-width:680px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow);}
+.modal-hd{display:flex;justify-content:space-between;align-items:center;
+  padding:18px 22px;border-bottom:1px solid var(--border);}
+.modal-hd h3{font-size:16px;font-weight:700;}
+.modal-body{padding:20px 22px;}
+.modal-ft{padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;}
+/* TICKET CHAT */
+.chat{display:flex;flex-direction:column;gap:10px;max-height:360px;overflow-y:auto;padding:4px 0;}
+.chat-msg{padding:10px 14px;border-radius:10px;font-size:13px;line-height:1.5;max-width:88%;}
+.chat-msg.user{background:var(--surface2);align-self:flex-start;border-bottom-left-radius:2px;}
+.chat-msg.admin-pub{background:var(--primary-l);color:#c4b5fd;align-self:flex-end;border-bottom-right-radius:2px;}
+.chat-msg.admin-int{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);
+  align-self:flex-end;font-style:italic;}
+.chat-msg .meta{font-size:10px;color:var(--text3);margin-top:4px;}
+/* FORM */
+.form-row{display:flex;gap:12px;margin-bottom:12px;}
+.form-row .fg{flex:1;}
+.fg label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:4px;}
+.fg input,.fg select,.fg textarea{width:100%;padding:9px 12px;background:var(--bg);
+  border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;outline:none;
+  transition:border-color var(--transition);}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--primary);}
+.fg textarea{resize:vertical;min-height:80px;}
+/* TOAST */
+#adminToast{position:fixed;bottom:24px;right:24px;z-index:99999;display:flex;flex-direction:column;gap:8px;}
+.toast-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:12px 18px;font-size:13px;box-shadow:var(--shadow);display:flex;align-items:center;gap:10px;
+  animation:slideIn .25s ease;}
+@keyframes slideIn{from{opacity:0;transform:translateX(30px);}to{opacity:1;transform:translateX(0);}}
+/* DETAIL PANEL */
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.detail-item .label{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:3px;}
+.detail-item .val{font-size:14px;color:var(--text);font-weight:500;}
+/* EMPTY */
+.empty{text-align:center;padding:40px;color:var(--text2);}
+.empty .icon{font-size:40px;margin-bottom:10px;}
+/* LOG */
+.log-entry{padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;}
+.log-entry:last-child{border-bottom:none;}
+.log-entry .action{font-weight:700;color:#a5b4fc;}
+.log-entry .ts{color:var(--text3);margin-left:8px;}
+/* RESPONSIVE */
+@media(max-width:768px){
+  .sidebar{position:fixed;left:-240px;z-index:100;transition:left .3s;height:100dvh;overflow-y:auto;}
+  .sidebar.open{left:0;box-shadow:4px 0 24px rgba(0,0,0,.4);}
+  /* Overlay del sidebar */
+  .sidebar-overlay{display:block !important;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99;backdrop-filter:blur(2px);}
+  .sidebar-overlay.hidden{display:none !important;}
+  .content{padding:12px;}
+  .stat-grid{grid-template-columns:1fr 1fr;}
+  .detail-grid{grid-template-columns:1fr;}
+  /* Topbar responsive */
+  .topbar{padding:12px 16px;gap:8px;}
+  .topbar h1{font-size:15px;}
+  /* Login responsive */
+  .login-box{padding:28px 20px;}
+  /* Modal responsive */
+  .modal-bg{align-items:flex-end;padding:0;}
+  .modal{border-radius:16px 16px 0 0;max-height:92dvh;max-width:100%;}
+  /* Tabla responsive */
+  .tbl-toolbar{padding:10px 12px;gap:8px;}
+  .search-inp{min-width:0;width:100%;}
+  /* Form rows en móvil */
+  .form-row{flex-direction:column;gap:8px;}
+  /* Stat cards más pequeñas */
+  .stat-card .val{font-size:22px;}
+  /* Toast en móvil */
+  #adminToast{bottom:16px;right:12px;left:12px;align-items:stretch;}
+  .toast-item{min-width:unset;}
+  /* Tablas — scroll horizontal */
+  table{min-width:500px;}
+  div[style*="overflow-x:auto"] table,
+  div[style*="overflow-x: auto"] table{min-width:500px;}
+  /* Dashboard grid 2 cols → 1 col */
+  #dashGrid{grid-template-columns:1fr !important;}
+  /* Inputs táctiles */
+  input,select,textarea{font-size:16px !important;}
+  .btn{min-height:40px;}
+  .btn-sm{min-height:36px;}
+}
+@media(max-width:480px){
+  .stat-grid{grid-template-columns:1fr;}
+  .stat-card .val{font-size:20px;}
+  #menuBtn{font-size:18px;}
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BLOQUE RESPONSIVE AVANZADO — ADMIN PANEL
+   ═══════════════════════════════════════════════════════════ */
+
+/* Topbar: layout base */
+.topbar{flex-wrap:nowrap;overflow:hidden;}
+.topbar > div:last-child{flex-shrink:0;gap:8px;display:flex;align-items:center;}
+
+/* Botón hamburguesa: oculto en desktop, visible en móvil */
+#menuBtn{display:none;}
+@media(max-width:768px){
+  #menuBtn{
+    display:flex !important;
+    align-items:center;
+    justify-content:center;
+    background:var(--surface2);
+    border:1px solid var(--border);
+    color:var(--text);
+    font-size:20px;
+    border-radius:8px;
+    width:40px;
+    height:40px;
+    cursor:pointer;
+    flex-shrink:0;
+    transition:background var(--transition);
+  }
+  #menuBtn:hover{background:var(--border);}
+
+  /* Topbar: asegurar que no hace overflow */
+  .topbar{gap:10px;}
+  .topbar > div:first-child{flex:1;overflow:hidden;}
+  .topbar h1{
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    font-size:15px;
+  }
+  .topbar .sub{font-size:11px;}
+
+  /* Sidebar overlay: z-index mayor que el sidebar */
+  .sidebar-overlay{z-index:200 !important;}
+  /* Sidebar: z-index mayor que el overlay */
+  .sidebar{z-index:300 !important;}
+
+  /* Contenido principal: no shrink el botón refresh */
+  .topbar > div:last-child .btn{white-space:nowrap;font-size:12px;padding:6px 10px;}
+  #serverBadge{display:none;}/* ocultar en móvil */
+}
+
+/* Tables en admin: siempre con overflow scroll */
+.tbl-wrap{overflow-x:auto !important;-webkit-overflow-scrolling:touch;}
+@media(max-width:768px){
+  /* Toolbar de tablas: stack vertical en móvil */
+  .tbl-toolbar{flex-direction:column;align-items:stretch;}
+  .tbl-toolbar .search-inp{width:100% !important;}
+  .tbl-toolbar select.filter-sel{width:100% !important;}
+  .tbl-toolbar .btn{width:100% !important;justify-content:center;}
+
+  /* Tabla: min-width para scroll horizontal */
+  table{min-width:540px !important;}
+
+  /* Stat grid: 2 columnas en móvil */
+  .stat-grid{grid-template-columns:1fr 1fr !important;}
+
+  /* Dashboard grid: 1 columna */
+  #dashGrid{grid-template-columns:1fr !important;gap:14px;}
+
+  /* Content padding */
+  .content{padding:12px 10px;}
+}
+@media(max-width:480px){
+  .stat-grid{grid-template-columns:1fr !important;}
+  .stat-card{padding:14px 16px;}
+  .stat-card .val{font-size:22px !important;}
+  .content{padding:10px 8px;}
+}
+
+/* Modal en admin: bottom sheet en móvil */
+@media(max-width:768px){
+  .modal-bg{
+    align-items:flex-end !important;
+    padding:0 !important;
+  }
+  .modal{
+    border-radius:16px 16px 0 0 !important;
+    max-width:100% !important;
+    max-height:92dvh !important;
+    overflow-y:auto !important;
+    -webkit-overflow-scrolling:touch;
+  }
+  /* Header del modal sticky */
+  .modal-hd{
+    position:sticky;
+    top:0;
+    background:var(--surface);
+    z-index:2;
+  }
+  /* Footer del modal sticky */
+  .modal-ft{
+    position:sticky;
+    bottom:0;
+    background:var(--surface);
+    z-index:2;
+  }
+  /* Botones del modal: columna en pantallas pequeñas */
+  .modal-ft{flex-direction:column;gap:8px;}
+  .modal-ft .btn{width:100% !important;justify-content:center;min-height:44px;}
+  /* Formularios dentro del modal */
+  .form-row{flex-direction:column !important;gap:8px !important;margin-bottom:8px;}
+  /* Inputs */
+  .fg input,.fg select,.fg textarea{
+    min-height:44px;
+    font-size:16px !important;
+  }
+  .form-field input,.form-field select{
+    min-height:44px;
+    font-size:16px !important;
+  }
+}
+
+/* Chat de soporte: scroll y altura */
+.chat{
+  max-height:340px;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+}
+@media(max-width:640px){
+  .chat{max-height:240px;}
+}
+
+/* Login responsive mejorado */
+@media(max-width:480px){
+  #loginScreen{padding:16px;}
+  .login-box{
+    padding:24px 16px !important;
+    border-radius:12px;
+  }
+  .login-logo span{font-size:22px;}
+  .login-box h2{font-size:18px;}
+  .login-box p{font-size:12px;}
+  .form-field input{
+    min-height:46px;
+    font-size:16px !important;
+    padding:10px 12px;
+  }
+  .btn.btn-primary.btn-w{min-height:46px;}
+}
+
+/* Sección activa: animación suave */
+.section.active{animation:fadeSection .2s ease;}
+@keyframes fadeSection{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+/* Accesibilidad táctil */
+@media(max-width:768px){
+  .btn,.nav-item{min-height:44px !important;}
+  .btn-sm{min-height:38px !important;}
+  .nav-item{padding:11px 16px !important;}
+
+  /* Tap highlight */
+  *{-webkit-tap-highlight-color:rgba(79,70,229,.15);}
+  .btn:active,.nav-item:active{opacity:.85;transform:scale(.98);}
+
+  /* Inputs táctiles */
+  input,select,textarea{
+    font-size:16px !important;
+    min-height:44px !important;
+  }
+
+  /* Toast en móvil */
+  #adminToast{
+    bottom:16px !important;
+    right:10px !important;
+    left:10px !important;
+    align-items:stretch;
+  }
+  .toast-item{min-width:unset;}
+}
+
+/* Detail grid: 1 columna en pantallas pequeñas */
+@media(max-width:640px){
+  .detail-grid{grid-template-columns:1fr !important;}
+}
+
+/* Sección de rates/monedas: responsive */
+@media(max-width:640px){
+  #sec-rates .tbl-wrap{overflow-x:auto;}
+  #sec-rates table{min-width:400px;}
+}
+
+/* Sección de revenue/estadísticas */
+@media(max-width:640px){
+  #sec-revenue .stat-grid{grid-template-columns:1fr 1fr !important;}
+}
+
+/* Log de acciones: texto compacto */
+@media(max-width:640px){
+  .log-entry{font-size:11px;padding:8px 12px;}
+  .log-entry .action{font-size:12px;}
+}
+
+/* iOS fixes para admin */
+@supports (-webkit-touch-callout:none){
+  .sidebar,.modal,.main{-webkit-overflow-scrolling:touch;}
+  input,select,textarea{font-size:16px !important;}
+  button{cursor:pointer;-webkit-tap-highlight-color:transparent;}
+}
+
+/* Tabla de auditoría: más compacta en móvil */
+@media(max-width:640px){
+  #sec-audit table th,
+  #sec-audit table td{padding:8px 10px;font-size:12px;}
+}
+
+/* Orientación landscape en móvil */
+@media(max-width:768px) and (orientation:landscape){
+  .modal{max-height:96dvh !important;border-radius:0 !important;}
+  .modal-bg{align-items:flex-start !important;}
+  .stat-grid{grid-template-columns:repeat(3,1fr) !important;}
+}
+
+/* Pantallas muy pequeñas */
+@media(max-width:360px){
+  .stat-grid{grid-template-columns:1fr !important;}
+  .content{padding:8px 6px;}
+  .topbar{padding:10px 12px;}
+  .topbar h1{font-size:14px;}
+}
+
+/* ── Safe Area — Notch iOS / Android ── */
+@supports (padding: max(0px)){
+  .topbar{
+    padding-top: max(14px, env(safe-area-inset-top));
+    padding-left: max(24px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+  .sidebar{
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
+  }
+  #loginScreen{
+    padding-top: max(20px, env(safe-area-inset-top));
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
+  #adminToast{
+    bottom: max(16px, env(safe-area-inset-bottom));
+  }
+}
+@media(max-width:768px){
+  @supports (padding: max(0px)){
+    .sidebar{
+      padding-top: max(16px, env(safe-area-inset-top));
+    }
+    .content{
+      padding-bottom: max(24px, env(safe-area-inset-bottom));
+    }
+  }
+}
+
+/* ── iOS fixes ── */
+@supports (-webkit-touch-callout: none){
+  .sidebar,.modal,.main,.content{-webkit-overflow-scrolling:touch;}
+  input,select,textarea{font-size:16px !important;}
+  button{-webkit-tap-highlight-color:transparent;cursor:pointer;}
+  .topbar h1{letter-spacing:-.2px;}
+}
+
+/* ── Focus accesible ── */
+:focus-visible{
+  outline:2px solid var(--primary) !important;
+  outline-offset:2px !important;
+  border-radius:4px;
+}
+:focus:not(:focus-visible){outline:none !important;}
+
+/* ── Área táctil mínima en dispositivos touch ── */
+@media(pointer:coarse){
+  .btn,button,select,[role="button"]{min-height:44px !important;}
+  .btn-sm{min-height:38px !important;}
+  .nav-item{min-height:48px !important;padding:13px 16px !important;}
+  .form-field input,.form-field select{min-height:46px !important;}
+  .fg input,.fg select,.fg textarea{min-height:44px !important;}
+}
+</style>
+</head>
+<body>
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">
+      <span>⚡ FIX PRO</span><small>ADMIN</small>
+    </div>
+    <h2>Panel de Administrador</h2>
+    <p>Ingresa con tu cuenta de administrador para continuar</p>
+    <div id="loginErr" class="err-msg"></div>
+    <form id="loginForm" onsubmit="doLogin(event)">
+      <div class="form-field">
+        <label>Correo electrónico</label>
+        <input type="email" id="loginEmail" placeholder="admin@correo.com" required autocomplete="email"/>
+      </div>
+      <div class="form-field">
+        <label>Contraseña</label>
+        <input type="password" id="loginPass" placeholder="••••••••" required autocomplete="current-password"/>
+      </div>
+      <button type="submit" class="btn btn-primary btn-w" id="loginBtn">
+        <span id="loginBtnTxt">Entrar al panel</span>
+        <span id="loginSpin" style="display:none">⏳</span>
+      </button>
+    </form>
+    <p style="margin-top:16px;text-align:center;font-size:12px;color:var(--text3);">
+      <a href="/" style="color:#a5b4fc;">← Volver a la aplicación</a>
+    </p>
+  </div>
+</div>
+
+<!-- APP PRINCIPAL -->
+<div id="adminApp">
+  <!-- OVERLAY para sidebar móvil -->
+  <div class="sidebar-overlay hidden" id="sidebarOverlay" onclick="closeSidebar()"></div>
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div style="font-size:22px;font-weight:800;color:var(--text);">
+        ⚡ FIX PRO <span style="color:#a5b4fc;">MAX</span>
+      </div>
+      <div style="font-size:11px;color:var(--text2);margin-top:2px;">Panel de Administrador</div>
+    </div>
+    <nav>
+      <div class="nav-label">General</div>
+      <button class="nav-item active" onclick="nav('dashboard')"><span class="icon">📊</span> Dashboard</button>
+      <div class="nav-label">Usuarios</div>
+      <button class="nav-item" onclick="nav('users')"><span class="icon">👥</span> Todos los usuarios</button>
+      <button class="nav-item" onclick="nav('unpaid')"><span class="icon">💸</span> Sin suscripción</button>
+      <div class="nav-label">Soporte</div>
+      <button class="nav-item" onclick="nav('tickets')"><span class="icon">🎫</span> Tickets <span class="badge-count" id="newTicketsBadge" style="display:none"></span></button>
+      <div class="nav-label">Monetización</div>
+      <button class="nav-item" onclick="nav('plans')"><span class="icon">💳</span> Planes</button>
+      <button class="nav-item" onclick="nav('payments')"><span class="icon">💰</span> Pagos <span class="badge-count" id="pendingPaysBadge" style="display:none"></span></button>
+      <button class="nav-item" onclick="nav('pay-methods')"><span class="icon">🔧</span> Métodos de pago</button>
+      <button class="nav-item" onclick="nav('subs')"><span class="icon">🔄</span> Suscripciones</button>
+      <button class="nav-item" onclick="nav('income')"><span class="icon">💵</span> Ingresos</button>
+      <button class="nav-item" onclick="nav('revenue')"><span class="icon">📈</span> Estadísticas</button>
+      <button class="nav-item" onclick="nav('wa')"><span class="icon">📲</span> Alertas WhatsApp</button>
+      <div class="nav-label">Datos ERP</div>
+      <button class="nav-item" onclick="nav('companies')"><span class="icon">🏢</span> Empresas</button>
+      <button class="nav-item" onclick="nav('erp-data')"><span class="icon">📊</span> Datos de App</button>
+      <div class="nav-label">Sistema</div>
+      <button class="nav-item" onclick="nav('rates')"><span class="icon">💱</span> Tasas de cambio</button>
+      <button class="nav-item" onclick="nav('employees')"><span class="icon">👨‍💼</span> Permisos empleados</button>
+      <button class="nav-item" onclick="nav('audit')"><span class="icon">🔍</span> Auditoría</button>
+      <button class="nav-item" onclick="nav('log')"><span class="icon">📋</span> Registro acciones</button>
+      <button class="nav-item" onclick="nav('settings')"><span class="icon">⚙️</span> Configuración</button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="admin-card">
+        <div class="admin-av" id="adminAvatar">AD</div>
+        <div class="admin-info">
+          <div class="name" id="adminName">—</div>
+          <div class="role">👑 Administrador</div>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-w btn-sm" onclick="doLogout()">🚪 Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <header class="topbar">
+      <button style="background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:20px;border-radius:8px;width:38px;height:38px;cursor:pointer;flex-shrink:0;" id="menuBtn" onclick="toggleSidebar()">☰</button>
+      <div>
+        <h1 id="pageTitle">Dashboard</h1>
+        <div class="sub" id="pageSub">Vista general del sistema</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span style="font-size:12px;color:var(--text2);" id="serverBadge">🟢 Servidor</span>
+        <button class="btn btn-ghost btn-sm" onclick="refreshPage()">🔄 Actualizar</button>
+      </div>
+    </header>
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="section active" id="sec-dashboard">
+        <div class="stat-grid" id="statsGrid">
+          <div class="stat-card blue"><div class="val" id="st-total">—</div><div class="lbl">Usuarios totales</div></div>
+          <div class="stat-card green"><div class="val" id="st-today">—</div><div class="lbl">Registrados hoy</div></div>
+          <div class="stat-card purple"><div class="val" id="st-trial">—</div><div class="lbl">En prueba gratuita</div></div>
+          <div class="stat-card green"><div class="val" id="st-sub">—</div><div class="lbl">Suscripciones activas</div></div>
+          <div class="stat-card red"><div class="val" id="st-expired">—</div><div class="lbl">Pruebas expiradas</div></div>
+          <div class="stat-card yellow"><div class="val" id="st-tickets">—</div><div class="lbl">Tickets nuevos</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;" id="dashGrid">
+          <div class="tbl-wrap" id="dashUsers"></div>
+          <div class="tbl-wrap" id="dashTickets"></div>
+        </div>
+      </div>
+
+      <!-- USUARIOS -->
+      <div class="section" id="sec-users">
+        <div class="tbl-wrap">
+          <div class="tbl-toolbar">
+            <input class="search-inp" id="usersSearch" placeholder="🔍 Buscar por nombre, correo o empresa..." oninput="filterUsers()"/>
+            <select class="filter-sel" id="usersFilter" onchange="filterUsers()">
+              <option value="">Todos</option>
+              <option value="trial">En prueba</option>
+              <option value="trial_expired">Prueba expirada</option>
+              <option value="subscribed">Suscritos</option>
+              <option value="no_sub">Sin suscripción</option>
+              <option value="inactive">Inactivos</option>
+              <option value="admin">Administradores</option>
+            </select>
+          </div>
+          <div style="overflow-x:auto;">
+            <table id="usersTable">
+              <thead><tr>
+                <th>Usuario</th><th>Estado acceso</th><th>Suscripción</th>
+                <th>Prueba</th><th>Registrado</th><th>Cuenta</th><th>Acciones</th>
+              </tr></thead>
+              <tbody id="usersTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SIN SUSCRIPCIÓN -->
+      <div class="section" id="sec-unpaid">
+        <div class="tbl-wrap">
+          <div class="tbl-toolbar">
+            <input class="search-inp" id="unpaidSearch" placeholder="🔍 Buscar..." oninput="filterUnpaid()"/>
+            <select class="filter-sel" id="unpaidFilter" onchange="filterUnpaid()">
+              <option value="">Todos sin suscripción</option>
+              <option value="trial">Prueba activa</option>
+              <option value="trial_expired">Prueba terminada</option>
+              <option value="no_access">Sin acceso</option>
+            </select>
+          </div>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead><tr>
+                <th>Usuario</th><th>Correo</th><th>Registrado</th>
+                <th>Fin de prueba</th><th>Días sin pagar</th><th>Estado</th><th>Acciones</th>
+              </tr></thead>
+              <tbody id="unpaidTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TICKETS -->
+      <div class="section" id="sec-tickets">
+        <div class="tbl-wrap">
+          <div class="tbl-toolbar">
+            <input class="search-inp" id="ticketsSearch" placeholder="🔍 Buscar ticket..." oninput="filterTickets()"/>
+            <select class="filter-sel" id="ticketsStatusFilter" onchange="filterTickets()">
+              <option value="">Todos los estados</option>
+              <option value="new">Nuevo</option>
+              <option value="in_progress">En proceso</option>
+              <option value="resolved">Resuelto</option>
+              <option value="closed">Cerrado</option>
+            </select>
+            <select class="filter-sel" id="ticketsPriorityFilter" onchange="filterTickets()">
+              <option value="">Todas las prioridades</option>
+              <option value="critica">Crítica</option>
+              <option value="alta">Alta</option>
+              <option value="media">Media</option>
+              <option value="baja">Baja</option>
+            </select>
+          </div>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead><tr>
+                <th>ID</th><th>Usuario</th><th>Categoría</th><th>Título</th>
+                <th>Prioridad</th><th>Estado</th><th>Creado</th><th>Acción</th>
+              </tr></thead>
+              <tbody id="ticketsTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- PLANES -->
+      <div class="section" id="sec-plans">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+          <div>
+            <h2 style="font-size:17px;font-weight:700;margin:0;">💳 Planes de suscripción</h2>
+            <div style="font-size:13px;color:var(--text2);margin-top:2px;">Configura los planes disponibles para los usuarios</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="openNewPlanForm()">+ Nuevo plan</button>
+          <button class="btn btn-ghost btn-sm" onclick="loadPlans()">🔄 Actualizar</button>
+        </div>
+        <div id="plansGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;"></div>
+
+        <!-- Editor de plan -->
+        <div id="planEditor" style="display:none;margin-top:20px;">
+          <div class="tbl-wrap" style="padding:20px;">
+            <h3 style="font-size:15px;font-weight:700;margin-bottom:16px;" id="planEditorTitle">Editar plan</h3>
+            <div class="form-row">
+              <div class="fg"><label>Nombre</label><input id="pe_name" type="text"/></div>
+              <div class="fg"><label>Precio (USD)</label><input id="pe_price" type="number" step="0.01" min="0"/></div>
+            </div>
+            <div class="form-row">
+              <div class="fg"><label>Duración (días)</label><input id="pe_duration" type="number" min="1"/></div>
+              <div class="fg"><label>Período (texto)</label><input id="pe_period" placeholder="ej: 1 mes"/></div>
+            </div>
+            <div class="form-row">
+              <div class="fg"><label>Máx. usuarios</label><input id="pe_maxUsers" type="number" min="1"/></div>
+              <div class="fg"><label>Máx. productos (-1 = ilimitado)</label><input id="pe_maxProducts" type="number" min="-1"/></div>
+            </div>
+            <div class="form-row">
+              <div class="fg"><label>Badge (ej: ⭐ RECOMENDADO)</label><input id="pe_badge"/></div>
+              <div class="fg" style="display:flex;align-items:center;gap:16px;padding-top:18px;">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+                  <input type="checkbox" id="pe_multiUser"/> Multiusuario
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+                  <input type="checkbox" id="pe_recommended"/> Recomendado
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+                  <input type="checkbox" id="pe_active"/> Activo
+                </label>
+              </div>
+            </div>
+            <div class="fg" style="margin-bottom:12px;">
+              <label>Descripción</label>
+              <input id="pe_description" type="text"/>
+            </div>
+            <div class="fg" style="margin-bottom:12px;">
+              <label>Características (una por línea)</label>
+              <textarea id="pe_features" rows="4" style="width:100%;resize:vertical;"></textarea>
+            </div>
+            <div class="fg" style="margin-bottom:16px;">
+              <label>No incluye (una por línea)</label>
+              <textarea id="pe_notIncluded" rows="2" style="width:100%;resize:vertical;"></textarea>
+            </div>
+            <div style="display:flex;gap:10px;">
+              <button class="btn btn-primary btn-sm" id="btnSavePlan" onclick="savePlan()">💾 Guardar cambios</button>
+              <button class="btn btn-ghost btn-sm" onclick="document.getElementById('planEditor').style.display='none';const ir=document.getElementById('pe_id_row');if(ir)ir.style.display='none';">Cancelar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGOS -->
+      <div class="section" id="sec-payments">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+          <div>
+            <h2 style="font-size:17px;font-weight:700;margin:0;">💰 Historial de pagos</h2>
+            <div style="font-size:13px;color:var(--text2);margin-top:2px;">Pagos registrados y pendientes de verificación</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <select class="filter-sel" id="payStatusFilter" onchange="loadPayments()">
+              <option value="">Todos los estados</option>
+              <option value="completed">✅ Completados</option>
+              <option value="pending">⏳ Pendientes</option>
+              <option value="failed">❌ Fallidos</option>
+              <option value="refunded">↩️ Reembolsados</option>
+            </select>
+            <select class="filter-sel" id="payPlanFilter" onchange="loadPayments()">
+              <option value="">Todos los planes</option>
+              <option value="basic">Plan Básico</option>
+              <option value="pro">Plan Pro</option>
+              <option value="semestral">Plan Semestral</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" onclick="loadPayments()">🔄 Actualizar</button>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <div style="overflow-x:auto;">
+            <table>
+              <thead><tr>
+                <th>Fecha</th><th>Usuario</th><th>Plan</th>
+                <th>Monto</th><th>Método</th><th>Estado</th><th>Acciones</th>
+              </tr></thead>
+              <tbody id="paymentsTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- MÉTODOS DE PAGO -->
+      <div class="section" id="sec-pay-methods">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+          <div>
+            <h2 style="font-size:17px;font-weight:700;margin:0;">🔧 Métodos de pago</h2>
+            <div style="font-size:13px;color:var(--text2);margin-top:2px;">
+              Configura los métodos disponibles en el POS y en el panel de suscripción de los usuarios
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-primary btn-sm" onclick="openAddMethodModal()">+ Nuevo método</button>
+            <button class="btn btn-ghost btn-sm" onclick="loadPaymentMethods()">🔄 Actualizar</button>
+          </div>
+        </div>
+
+        <!-- Leyenda de tipos -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;font-size:12px;">
+          <span style="background:#1e293b;border:1px solid #334155;border-radius:20px;padding:3px 10px;color:#94a3b8;">
+            🛒 <strong>POS</strong> — aparece en el punto de venta
+          </span>
+          <span style="background:#1e293b;border:1px solid #334155;border-radius:20px;padding:3px 10px;color:#94a3b8;">
+            💳 <strong>Suscripción</strong> — aparece al pagar un plan
+          </span>
+          <span style="background:#1e293b;border:1px solid #334155;border-radius:20px;padding:3px 10px;color:#94a3b8;">
+            🔄 <strong>Ambos</strong> — aparece en los dos lugares
+          </span>
+        </div>
+
+        <!-- Grid de métodos -->
+        <div id="payMethodsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;"></div>
+      </div>
+
+      <!-- Modal agregar/editar método -->
+      <div id="pmModal" style="display:none;position:fixed;inset:0;z-index:9000;
+           background:rgba(0,0,0,.65);align-items:center;justify-content:center;padding:16px;overflow-y:auto;">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;
+                    width:100%;max-width:560px;padding:24px;margin:auto;">
+          <h3 style="font-size:15px;font-weight:700;margin-bottom:18px;" id="pmModalTitle">Nuevo método de pago</h3>
+
+          <!-- SECCIÓN 1: Configuración básica -->
+          <div style="font-size:11px;font-weight:700;color:#a5b4fc;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;">⚙️ Configuración básica</div>
+          <div style="display:grid;gap:12px;margin-bottom:20px;">
+            <div class="fg">
+              <label>ID único (sin espacios, ej: PAGO_MOVIL)</label>
+              <input id="pm_id" placeholder="NUEVO_METODO" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase().replace(/\s+/g,'_')"/>
+            </div>
+            <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div class="fg">
+                <label>Nombre visible</label>
+                <input id="pm_label" placeholder="Transferencia bancaria"/>
+              </div>
+              <div class="fg">
+                <label>Emoji / Ícono</label>
+                <input id="pm_icon" placeholder="💳" maxlength="4"/>
+              </div>
+            </div>
+            <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div class="fg">
+                <label>Disponible en</label>
+                <select id="pm_type" onchange="pmShowDataFields()" style="width:100%;padding:8px 10px;border-radius:8px;
+                    border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit;font-size:13px;outline:none;">
+                  <option value="pos">🛒 Solo POS</option>
+                  <option value="sub">💳 Solo Suscripción</option>
+                  <option value="both">🔄 Ambos</option>
+                </select>
+              </div>
+              <div class="fg" style="display:flex;align-items:flex-end;gap:16px;padding-bottom:2px;">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
+                  <input type="checkbox" id="pm_isManual"/> Requiere verificación manual
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECCIÓN 2: Datos de cuenta (aparecen al usuario cuando selecciona este método) -->
+          <div id="pmDataSection" style="border-top:1px solid var(--border);padding-top:16px;margin-bottom:16px;">
+            <div style="font-size:11px;font-weight:700;color:#10b981;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;">💳 Datos de tu cuenta (visibles al usuario al pagar)</div>
+            <div style="font-size:11px;color:var(--text2);margin-bottom:12px;">Estos datos aparecerán en pantalla cuando el usuario seleccione este método de pago.</div>
+
+            <!-- Campos dinámicos según el tipo de método (se muestran/ocultan por JS) -->
+            <div id="pmFields_zelle" style="display:none;gap:10px;flex-direction:column;">
+              <div class="fg"><label>📧 Número o Email Zelle</label>
+                <input id="pm_zelle_account" placeholder="Ej: +1 (555) 000-0000 o email@zelle.com"/></div>
+              <div class="fg"><label>👤 Nombre del titular</label>
+                <input id="pm_zelle_name" placeholder="Ej: Angelica Aguado"/></div>
+            </div>
+
+            <div id="pmFields_usdt" style="display:none;gap:10px;flex-direction:column;">
+              <div class="fg"><label>🔑 Dirección de billetera / Binance ID</label>
+                <input id="pm_usdt_address" placeholder="Ej: 0x123... o Binance ID: 12345678"/></div>
+              <div class="fg"><label>🌐 Red (TRC20, BEP20, etc.)</label>
+                <input id="pm_usdt_network" placeholder="Ej: USDT / TRC20" value="USDT / TRC20"/></div>
+            </div>
+
+            <div id="pmFields_pago_movil" style="display:none;gap:10px;flex-direction:column;">
+              <div class="fg"><label>🏦 Banco destino</label>
+                <input id="pm_pm_bank" placeholder="Ej: Banesco (0134)"/></div>
+              <div class="fg"><label>📱 Teléfono</label>
+                <input id="pm_pm_phone" placeholder="Ej: 0412-5669426"/></div>
+              <div class="fg"><label>🪪 Cédula / RIF</label>
+                <input id="pm_pm_cedula" placeholder="Ej: V-12345678"/></div>
+              <div class="fg"><label>👤 Nombre del titular</label>
+                <input id="pm_pm_name" placeholder="Ej: Angelica Aguado"/></div>
+            </div>
+
+            <div id="pmFields_bank" style="display:none;gap:10px;flex-direction:column;">
+              <div class="fg"><label>🏦 Banco</label>
+                <input id="pm_bank_bank" placeholder="Ej: Banesco / Bank of America"/></div>
+              <div class="fg"><label>🔢 Número de cuenta</label>
+                <input id="pm_bank_account" placeholder="Ej: 0134-0000-0000000000"/></div>
+              <div class="fg"><label>👤 Nombre del titular</label>
+                <input id="pm_bank_name" placeholder="Ej: Fix Pro Max C.A."/></div>
+              <div class="fg"><label>🪪 RIF / ID fiscal</label>
+                <input id="pm_bank_cedula" placeholder="Ej: J-000000000"/></div>
+            </div>
+
+            <div id="pmFields_paypal" style="display:none;gap:10px;flex-direction:column;">
+              <div class="fg"><label>📧 Email de PayPal</label>
+                <input id="pm_paypal_email" placeholder="Ej: pagos@tuempresa.com" type="email"/></div>
+              <div class="fg"><label>👤 Nombre de la cuenta</label>
+                <input id="pm_paypal_name" placeholder="Ej: Fix Pro Max"/></div>
+            </div>
+
+            <!-- Campo extra siempre visible para instrucciones adicionales -->
+            <div class="fg" style="margin-top:10px;">
+              <label>📝 Instrucciones adicionales (opcional)</label>
+              <textarea id="pm_info" rows="2" placeholder="Ej: Realiza el pago y envía el comprobante al WhatsApp 0412-5669426"></textarea>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;justify-content:flex-end;">
+            <button class="btn btn-ghost btn-sm" onclick="closePmModal()">Cancelar</button>
+            <button class="btn btn-primary btn-sm" onclick="savePmModal()">💾 Guardar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- INGRESOS -->
+      <div class="section" id="sec-revenue">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+          <div>
+            <h2 style="font-size:17px;font-weight:700;margin:0;">📈 Estadísticas de ingresos</h2>
+            <div style="font-size:13px;color:var(--text2);margin-top:2px;">Análisis de suscripciones y conversión</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="loadRevenue()">🔄 Actualizar</button>
+        </div>
+
+        <!-- KPIs -->
+        <div class="stat-grid" id="revenueStats" style="margin-bottom:20px;"></div>
+
+        <!-- Por plan -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;" id="revenueSplit">
+          <div class="tbl-wrap" id="revByPlan" style="padding:16px;">
+            <h4 style="font-size:13px;font-weight:700;margin-bottom:12px;">Suscriptores por plan</h4>
+            <div id="revByPlanBody"></div>
+          </div>
+          <div class="tbl-wrap" id="revByStatus" style="padding:16px;">
+            <h4 style="font-size:13px;font-weight:700;margin-bottom:12px;">Usuarios por estado</h4>
+            <div id="revByStatusBody"></div>
+          </div>
+        </div>
+
+        <!-- Pagos recientes -->
+        <div class="tbl-wrap">
+          <h4 style="font-size:13px;font-weight:700;padding:14px 16px;border-bottom:1px solid var(--border);margin:0;">
+            Últimos 20 pagos completados
+          </h4>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead><tr><th>Fecha</th><th>Usuario</th><th>Plan</th><th>Monto</th><th>Método</th></tr></thead>
+              <tbody id="recentPaysTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOG -->
+      <div class="section" id="sec-log">
+        <div class="tbl-wrap">
+          <div class="tbl-toolbar" style="justify-content:space-between;">
+            <span style="font-size:13px;font-weight:600;">Registro de acciones administrativas</span>
+            <button class="btn btn-ghost btn-sm" onclick="loadLog()">🔄 Actualizar</button>
+          </div>
+          <div id="logList"></div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="section" id="sec-settings">
+        <div style="max-width:680px;display:flex;flex-direction:column;gap:16px;">
+
+          <!-- WhatsApp -->
+          <div class="tbl-wrap" style="padding:24px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+              <span style="font-size:28px;">📱</span>
+              <div>
+                <h3 style="margin:0;font-size:16px;font-weight:700;">Notificaciones WhatsApp Automáticas</h3>
+                <div style="font-size:12px;color:var(--text2);margin-top:2px;">Proveedor: <strong style="color:#a5b4fc;">UltraMsg</strong> — 250 mensajes/mes gratis. Funciona 24/7 desde el servidor.</div>
+              </div>
+            </div>
+
+            <!-- Instrucciones -->
+            <div style="background:#0f172a;border:1px solid #334155;border-radius:10px;padding:16px;margin-bottom:20px;">
+              <div style="font-size:12px;font-weight:700;color:#a5b4fc;margin-bottom:10px;">📋 CÓMO CONFIGURAR (solo una vez):</div>
+              <div style="display:flex;flex-direction:column;gap:10px;font-size:12px;color:var(--text2);">
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <span style="background:#4f46e5;color:#fff;border-radius:50%;width:22px;height:22px;min-width:22px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">1</span>
+                  <span>Ve a <a href="https://app.ultramsg.com/register" target="_blank" style="color:#818cf8;text-decoration:underline;">app.ultramsg.com/register</a> y crea una cuenta gratuita.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <span style="background:#4f46e5;color:#fff;border-radius:50%;width:22px;height:22px;min-width:22px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">2</span>
+                  <span>Crea una <strong style="color:#f1f5f9;">instancia nueva</strong> → escanea el código QR con tu WhatsApp (igual que WhatsApp Web).</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <span style="background:#4f46e5;color:#fff;border-radius:50%;width:22px;height:22px;min-width:22px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">3</span>
+                  <span>En el dashboard de UltraMsg copia el <strong style="color:#f1f5f9;">Instance ID</strong> (ej: <em>instance12345</em>) y el <strong style="color:#f1f5f9;">Token</strong>.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <span style="background:#4f46e5;color:#fff;border-radius:50%;width:22px;height:22px;min-width:22px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">4</span>
+                  <span>Pega esos datos en los campos abajo junto con tu número → <strong style="color:#f1f5f9;">Guardar</strong> → <strong style="color:#f1f5f9;">Enviar prueba</strong>.</span>
+                </div>
+              </div>
+              <!-- Aviso importante número destino -->
+              <div style="margin-top:12px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);border-radius:8px;padding:10px 12px;">
+                <div style="color:#fbbf24;font-weight:700;font-size:12px;margin-bottom:4px;">⚠️ IMPORTANTE — Número destino</div>
+                <div style="color:var(--text2);font-size:12px;line-height:1.6;">
+                  WhatsApp <strong style="color:#f1f5f9;">no entrega mensajes que un número se envía a sí mismo</strong>.<br>
+                  El número destino debe ser <strong style="color:#f1f5f9;">diferente</strong> al número que escaneó el QR.<br>
+                  <strong>Opciones:</strong> usar un número de familiar, un segundo celular, o el ID de un grupo de WhatsApp.<br>
+                  Para usar un grupo: crea un grupo en WhatsApp, obtén su ID desde UltraMsg → Groups, y ponlo en "Número destino".
+                </div>
+              </div>
+            </div>
+
+            <!-- Formulario -->
+            <div class="form-row" style="margin-bottom:12px;">
+              <div class="fg">
+                <label>📱 Número de la instancia <span style="color:var(--text3);font-weight:400;">(el que escaneó el QR)</span></label>
+                <input type="text" id="cfgWaPhone" placeholder="584125669426" style="font-size:14px;"/>
+                <div style="font-size:11px;color:var(--text3);margin-top:3px;">Con el que escaneaste el QR en UltraMsg</div>
+              </div>
+              <div class="fg">
+                <label>📞 Número destino <span style="color:var(--text3);font-weight:400;">(donde recibirás alertas)</span></label>
+                <input type="text" id="cfgWaDestPhone" placeholder="584125669426" style="font-size:14px;"/>
+                <div style="font-size:11px;color:#f59e0b;margin-top:3px;">⚠️ Debe ser DIFERENTE al número de la instancia</div>
+              </div>
+            </div>
+            <div class="form-row" style="margin-bottom:12px;">
+              <div class="fg">
+                <label>🔑 Instance ID <span style="color:var(--text3);font-weight:400;">(de tu dashboard UltraMsg)</span></label>
+                <input type="text" id="cfgWaInstance" placeholder="instance12345" style="font-size:14px;"/>
+              </div>
+              <div class="fg">
+                <label>🗝️ Token <span style="color:var(--text3);font-weight:400;">(de tu dashboard UltraMsg)</span></label>
+                <input type="password" id="cfgWaToken" placeholder="••••••••••••••••" style="font-size:14px;"/>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
+              <button class="btn btn-primary" onclick="saveWASettings()" style="padding:10px 24px;">💾 Guardar</button>
+              <button class="btn btn-ghost" onclick="testWA()" style="padding:10px 24px;">🧪 Enviar prueba</button>
+              <button class="btn btn-ghost btn-sm" onclick="loadWAGroups()" style="padding:10px 16px;" title="Cargar grupos de WhatsApp disponibles en tu instancia">👥 Ver mis grupos</button>
+            </div>
+            <div id="waGroupsList" style="display:none;margin-top:10px;background:#0f172a;border:1px solid #334155;border-radius:8px;padding:12px;max-height:180px;overflow-y:auto;"></div>
+            <div id="waStatus" style="margin-top:14px;"></div>
+          </div>
+
+          <!-- Config general -->
+          <div class="tbl-wrap" style="padding:20px;">
+            <h3 style="margin-bottom:16px;font-size:15px;">⚙️ Configuración global del sistema</h3>
+            <div class="form-row">
+              <div class="fg">
+                <label>Nombre de la aplicación</label>
+                <input type="text" id="cfgAppName" placeholder="FIX PRO MAX"/>
+              </div>
+              <div class="fg">
+                <label>Días de prueba gratuita</label>
+                <input type="number" id="cfgTrialDays" value="3" min="1" max="30"/>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="fg">
+                <label>Email de soporte</label>
+                <input type="email" id="cfgSupportEmail" placeholder="soporte@fixpromax.app"/>
+              </div>
+            </div>
+            <div class="form-row" style="gap:20px;">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
+                <input type="checkbox" id="cfgRegistrationOpen" checked/> Registro abierto (nuevos usuarios pueden registrarse)
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
+                <input type="checkbox" id="cfgMaintenanceMode"/> Modo mantenimiento
+              </label>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="saveAdminSettings()">💾 Guardar configuración global</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUSCRIPCIONES -->
+      <div class="section" id="sec-subs">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+          <div>
+            <h2 style="font-size:17px;font-weight:700;margin:0;">🔄 Suscripciones</h2>
+            <div style="font-size:13px;color:var(--text2);margin-top:2px;">Estado de todas las suscripciones activas, vencidas y en prueba</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <select class="filter-sel" id="subsFilter" onchange="loadSubs()">
+              <option value="">Todas</option>
+              <option value="active">✅ Activas</option>
+              <option value="trial">🆓 En prueba</option>
+              <option value="expired">❌ Vencidas</option>
+              <option value="cancelled">🔄 Canceladas</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" onclick="loadSubs()">🔄 Actualizar</button>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <div style="overflow-x:auto;">
+            <table>
+              <thead><tr>
+                <th>Usuario</th><th>Empresa</th><th>Plan</th><th>Estado</th>
+                <th>Inicio</th><th>Vencimiento</th><th>Días restantes</th><th>Último pago</th><th>Acción</th>
+              </tr></thead>
+              <tbody id="subsTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- INGRESOS AVANZADO -->
+      <div class="section" id="sec-income">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+          <div>
+            <h2 style="font-size:17px;font-weight:700;margin:0;">💵 Ingresos</h2>
+            <div style="font-size:13px;color:var(--text2);margin-top:2px;">Análisis detallado de ingresos por período, plan y método</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <select class="filter-sel" id="incomePeriod" onchange="loadIncome()">
+              <option value="7d">7 días</option>
+              <option value="30d" selected>30 días</option>
+              <option value="90d">90 días</option>
+              <option value="180d">180 días</option>
+              <option value="365d">1 año</option>
+              <option value="all">Todo</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" onclick="loadIncome()">🔄 Actualizar</button>
+          </div>
+        </div>
+        <!-- KPIs -->
+        <div class="stat-grid" id="incomeKpis" style="margin-bottom:20px;"></div>
+        <!-- Desglose -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:20px;">
+          <div class="tbl-wrap" style="padding:16px;" id="incomeByPlan">
+            <h4 style="font-size:13px;font-weight:700;margin-bottom:12px;">Por plan</h4>
+            <div id="incomeByPlanBody"></div>
+          </div>
+          <div class="tbl-wrap" style="padding:16px;" id="incomeByMethod">
+            <h4 style="font-size:13px;font-weight:700;margin-bottom:12px;">Por método de pago</h4>
+            <div id="incomeByMethodBody"></div>
+          </div>
+          <div class="tbl-wrap" style="padding:16px;" id="incomeByCurr">
+            <h4 style="font-size:13px;font-weight:700;margin-bottom:12px;">Por moneda</h4>
+            <div id="incomeByCurrBody"></div>
+          </div>
+        </div>
+        <!-- Gráfico de barras (CSS puro) -->
+        <div class="tbl-wrap" style="padding:16px;">
+          <h4 style="font-size:13px;font-weight:700;margin-bottom:12px;">📊 Ingresos por día</h4>
+          <div id="incomeChart" style="display:flex;align-items:flex-end;gap:3px;height:120px;overflow-x:auto;padding-bottom:4px;"></div>
+        </div>
+      </div>
+
+      <!-- ALERTAS WHATSAPP -->
+      <div class="section" id="sec-wa">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+          <div>
+            <h2 style="font-size:17px;font-weight:700;margin:0;">📲 Alertas WhatsApp</h2>
+            <div style="font-size:13px;color:var(--text2);margin-top:2px;">Historial de notificaciones enviadas automáticamente</div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-warning btn-sm" onclick="retryWA()">🔄 Reintentar pendientes</button>
+            <button class="btn btn-ghost btn-sm" onclick="loadWAAlerts()">🔄 Actualizar</button>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <div style="overflow-x:auto;">
+            <table>
+              <thead><tr><th>Fecha</th><th>Mensaje</th><th>Estado</th><th>Reintentos</th></tr></thead>
+              <tbody id="waAlertsTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- EMPRESAS -->
+      <div class="section" id="sec-companies">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+          <div>
+            <h2 style="font-size:17px;font-weight:700;margin:0;">🏢 Empresas</h2>
+            <div style="font-size:13px;color:var(--text2);margin-top:2px;">Vista general de todas las empresas registradas</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="loadCompanies()">🔄 Actualizar</button>
+        </div>
+        <div class="stat-grid" id="companiesStats" style="margin-bottom:20px;"></div>
+        <div class="tbl-wrap">
+          <div style="overflow-x:auto;">
+            <table>
+              <thead><tr>
+                <th>Empresa / Owner</th><th>Plan</th><th>Estado</th>
+                <th>Días restantes</th><th>Ventas</th><th>Registrado</th><th>Equipo</th><th>Acciones</th>
+              </tr></thead>
+              <tbody id="companiesTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- DATOS ERP -->
+      <div class="section" id="sec-erp-data">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+          <div>
+            <h2 style="font-size:17px;font-weight:700;margin:0;">📊 Datos de la App</h2>
+            <div style="font-size:13px;color:var(--text2);margin-top:2px;">Ventas, gastos, facturas e inventario de las empresas</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <select class="filter-sel" id="erpCompanyFilter" onchange="loadErpData()">
+              <option value="">Selecciona una empresa...</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" onclick="loadErpData()">🔄 Actualizar</button>
+          </div>
+        </div>
+        <div id="erpSummaryCards" class="stat-grid" style="margin-bottom:20px;"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;" id="erpSplit">
+          <div class="tbl-wrap" style="padding:0;" id="erpSalesCard">
+            <div style="padding:12px 16px;font-weight:700;font-size:13px;border-bottom:1px solid var(--border);">🛒 Ventas recientes</div>
+            <div style="overflow-x:auto;"><table><thead><tr><th>Fecha</th><th>Total</th><th>Método</th><th>Estado</th></tr></thead>
+            <tbody id="erpSalesTbody"></tbody></table></div>
+          </div>
+          <div class="tbl-wrap" style="padding:0;" id="erpExpensesCard">
+            <div style="padding:12px 16px;font-weight:700;font-size:13px;border-bottom:1px solid var(--border);">💸 Gastos recientes</div>
+            <div style="overflow-x:auto;"><table><thead><tr><th>Fecha</th><th>Descripción</th><th>Monto</th></tr></thead>
+            <tbody id="erpExpensesTbody"></tbody></table></div>
+          </div>
+        </div>
+        <div class="tbl-wrap" style="padding:0;">
+          <div style="padding:12px 16px;font-weight:700;font-size:13px;border-bottom:1px solid var(--border);">🧾 Facturas</div>
+          <div style="overflow-x:auto;"><table>
+            <thead><tr><th>Número</th><th>Fecha</th><th>Total</th><th>Pagado</th><th>Pendiente</th><th>Estado</th></tr></thead>
+            <tbody id="erpInvoicesTbody"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- TASAS DE CAMBIO -->
+      <div class="section" id="sec-rates">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+          <div>
+            <h2 style="font-size:17px;font-weight:700;margin:0;">💱 Tasas de cambio</h2>
+            <div style="font-size:13px;color:var(--text2);margin-top:2px;">Gestión centralizada — los cambios se propagan a todas las empresas</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-warning btn-sm" onclick="fetchBCV()">🌐 Actualizar desde BCV</button>
+            <button class="btn btn-ghost btn-sm" onclick="loadRates()">🔄 Actualizar</button>
+          </div>
+        </div>
+        <!-- Tasas actuales -->
+        <div class="stat-grid" id="ratesKpis" style="margin-bottom:20px;"></div>
+        <!-- Ingresar tasa manual -->
+        <div class="tbl-wrap" style="padding:20px;margin-bottom:20px;">
+          <h3 style="font-size:14px;font-weight:700;margin-bottom:14px;">✏️ Ingresar tasa manual</h3>
+          <div class="form-row">
+            <div class="fg">
+              <label>Moneda origen</label>
+              <select id="rateFromCurrency">
+                <option value="USD">🇺🇸 USD → VES</option>
+                <option value="EUR">🇪🇺 EUR → VES</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label>Tasa (1 USD o EUR = X Bs.)</label>
+              <input type="number" id="rateValue" placeholder="36.00" step="0.01" min="0"/>
+            </div>
+            <div class="fg">
+              <label>Notas (opcional)</label>
+              <input type="text" id="rateNotes" placeholder="Fuente, observaciones..."/>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="saveRate()">💾 Guardar y propagar a todas las empresas</button>
+          <div id="rateMsg" style="margin-top:10px;font-size:13px;"></div>
+        </div>
+        <!-- Historial -->
+        <div class="tbl-wrap">
+          <div style="padding:12px 16px;font-weight:700;font-size:13px;border-bottom:1px solid var(--border);">Historial de tasas</div>
+          <div style="overflow-x:auto;"><table>
+            <thead><tr><th>Fecha</th><th>Par</th><th>Tasa</th><th>Fuente</th><th>Por</th><th>Activa</th></tr></thead>
+            <tbody id="ratesHistoryTbody"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- PERMISOS DE EMPLEADOS -->
+      <div class="section" id="sec-employees">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+          <div>
+            <h2 style="font-size:17px;font-weight:700;margin:0;">👨‍💼 Permisos de empleados</h2>
+            <div style="font-size:13px;color:var(--text2);margin-top:2px;">Gestiona permisos y estado de empleados de cualquier empresa</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <select class="filter-sel" id="empCompanyFilter" onchange="loadEmployees()">
+              <option value="">Selecciona una empresa...</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" onclick="loadEmployees()">🔄 Actualizar</button>
+          </div>
+        </div>
+        <div id="employeesList"></div>
+      </div>
+
+      <!-- AUDITORÍA -->
+      <div class="section" id="sec-audit">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+          <div>
+            <h2 style="font-size:17px;font-weight:700;margin:0;">🔍 Auditoría completa</h2>
+            <div style="font-size:13px;color:var(--text2);margin-top:2px;">Registro de todos los cambios con valores antes/después</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <input class="search-inp" id="auditSearch" placeholder="🔍 Buscar acción o email..." style="min-width:200px;" oninput="filterAudit()"/>
+            <select class="filter-sel" id="auditActionFilter" onchange="filterAudit()">
+              <option value="">Todas las acciones</option>
+              <option value="plan_update">Planes</option>
+              <option value="suspend">Suspensiones</option>
+              <option value="reactivate">Reactivaciones</option>
+              <option value="subscription">Suscripciones</option>
+              <option value="payment">Pagos</option>
+              <option value="exchange_rate">Tasas</option>
+              <option value="permission">Permisos</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" onclick="loadAudit()">🔄 Actualizar</button>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <div style="overflow-x:auto;"><table>
+            <thead><tr><th>Fecha/Hora</th><th>Admin</th><th>Acción</th><th>Afectado</th><th>Detalle</th></tr></thead>
+            <tbody id="auditTbody"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /adminApp -->
+<div id="adminToast"></div>
+
+<!-- MODAL: DETALLE DE USUARIO -->
+<div class="modal-bg" id="userModal">
+  <div class="modal">
+    <div class="modal-hd">
+      <h3 id="userModalTitle">Detalle de usuario</h3>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('userModal')">✕</button>
+    </div>
+    <div class="modal-body" id="userModalBody"></div>
+    <div class="modal-ft">
+      <button class="btn btn-danger btn-sm" id="btnSuspend" onclick="userAction('suspend')">🚫 Suspender</button>
+      <button class="btn btn-success btn-sm" id="btnActivate" onclick="userAction('reactivate')" style="display:none">✅ Reactivar</button>
+      <button class="btn btn-warning btn-sm" onclick="userAction('grant_access')">🎁 Extender acceso</button>
+      <button class="btn btn-ghost btn-sm" onclick="userAction('force_logout')">🔐 Cerrar sesión</button>
+      <button class="btn btn-primary btn-sm" onclick="openSubModal()">💳 Gestionar suscripción</button>
+      <button class="btn btn-sm" id="btnDeleteUser"
+        style="background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.3);margin-left:auto;"
+        onclick="deleteUserFromModal()">🗑️ Eliminar usuario</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: GESTIONAR SUSCRIPCIÓN -->
+<div class="modal-bg" id="subModal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-hd">
+      <h3>💳 Gestionar suscripción</h3>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('subModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="subModalInfo" style="margin-bottom:16px;font-size:13px;color:var(--text2);"></div>
+      <div class="form-row">
+        <div class="fg">
+          <label>Plan</label>
+          <select id="subPlanSel">
+            <option value="basic">📦 Plan Básico (30 días)</option>
+            <option value="pro">🚀 Plan Pro (90 días)</option>
+            <option value="semestral">💎 Plan Semestral (180 días)</option>
+            <option value="manual">🔧 Personalizado</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Días (si personalizado)</label>
+          <input type="number" id="subDays" value="30" min="1" max="3650"/>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-danger btn-sm" onclick="adminSubAction('cancel')">❌ Cancelar suscripción</button>
+      <button class="btn btn-success btn-sm" onclick="adminSubAction('activate')">✅ Activar / Extender</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: TICKET DETALLE -->
+<div class="modal-bg" id="ticketModal">
+  <div class="modal" style="max-width:700px;">
+    <div class="modal-hd">
+      <h3 id="ticketModalTitle">Ticket</h3>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('ticketModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="ticketMetaBar" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;"></div>
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+        <div class="fg" style="flex:1;min-width:130px;">
+          <label>Estado</label>
+          <select id="tkStatusSel" onchange="quickUpdateTicket()">
+            <option value="new">🆕 Nuevo</option>
+            <option value="in_progress">🔧 En proceso</option>
+            <option value="resolved">✅ Resuelto</option>
+            <option value="closed">🔒 Cerrado</option>
+          </select>
+        </div>
+        <div class="fg" style="flex:1;min-width:130px;">
+          <label>Prioridad</label>
+          <select id="tkPrioritySel" onchange="quickUpdateTicket()">
+            <option value="baja">🟢 Baja</option>
+            <option value="media">🟡 Media</option>
+            <option value="alta">🔴 Alta</option>
+            <option value="critica">🚨 Crítica</option>
+          </select>
+        </div>
+      </div>
+      <div class="chat" id="ticketChat"></div>
+      <div style="margin-top:14px;">
+        <div class="fg" style="margin-bottom:8px;">
+          <label>Respuesta al usuario</label>
+          <textarea id="tkReplyTxt" placeholder="Escribe una respuesta para el usuario..."></textarea>
+        </div>
+        <div class="fg" style="margin-bottom:8px;">
+          <label>Nota interna <span style="font-size:11px;color:var(--warning);">(solo visible para admins)</span></label>
+          <textarea id="tkNoteTxt" placeholder="Nota privada de administración..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost btn-sm" onclick="sendTicketNote()">📌 Guardar nota interna</button>
+      <button class="btn btn-primary btn-sm" onclick="sendTicketReply()">📨 Enviar respuesta</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CONFIRMACIÓN -->
+<div class="modal-bg" id="confirmModal">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-hd">
+      <h3 id="confirmTitle">⚠️ Confirmar acción</h3>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('confirmModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="confirmMsg" style="color:var(--text2);font-size:14px;"></p>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('confirmModal')">Cancelar</button>
+      <button class="btn btn-danger btn-sm" id="confirmOkBtn">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ── Constantes ─────────────────────────────────────────────── */
+const API = window.location.origin;
+const TK  = 'fixpromax_admin_token';
+
+/* ── Estado ─────────────────────────────────────────────────── */
+let _token    = null;
+let _admin    = null;
+let _users    = [];
+let _tickets  = [];
+let _currentUserId = null;
+let _currentTicketId = null;
+let _confirmCb = null;
+
+/* ── HTTP ───────────────────────────────────────────────────── */
+async function api(method, path, body, auth) {
+    const h = { 'Content-Type': 'application/json' };
+    const tok = auth !== false ? (_token || localStorage.getItem(TK)) : null;
+    if (tok) h['Authorization'] = 'Bearer ' + tok;
+    try {
+        const r = await fetch(API + path, { method, headers: h, body: body ? JSON.stringify(body) : undefined });
+        return await r.json();
+    } catch { return { ok: false, error: 'Sin conexión' }; }
+}
+
+/* ── Toast ──────────────────────────────────────────────────── */
+function toast(icon, msg, type) {
+    const c = document.getElementById('adminToast');
+    const d = document.createElement('div');
+    const colors = { error:'rgba(239,68,68,.15)', success:'rgba(16,185,129,.15)', warn:'rgba(245,158,11,.15)' };
+    d.className = 'toast-item';
+    d.style.background = colors[type] || 'var(--surface)';
+    d.innerHTML = `<span>${icon}</span><span>${msg}</span>`;
+    c.appendChild(d);
+    setTimeout(() => d.remove(), 4000);
+}
+
+/* ── Formateo ───────────────────────────────────────────────── */
+function fmtDate(iso) { if (!iso) return '—'; return new Date(iso).toLocaleDateString('es',{day:'2-digit',month:'short',year:'numeric'}); }
+function fmtTs(iso)   { if (!iso) return '—'; return new Date(iso).toLocaleString('es',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }
+function daysAgo(iso) { if (!iso) return '—'; return Math.floor((Date.now()-new Date(iso).getTime())/86400000)+'d'; }
+function statusBadge(s) {
+    const map = {
+        trial:'<span class="badge badge-trial">🆓 Prueba</span>',
+        trial_expired:'<span class="badge badge-expired">❌ Expirada</span>',
+        subscribed:'<span class="badge badge-subscribed">✅ Suscrito</span>',
+        cancelled_active:'<span class="badge badge-trial">⚠️ Cancel. activo</span>',
+        admin:'<span class="badge badge-admin">👑 Admin</span>',
+        no_access:'<span class="badge badge-expired">🔒 Sin acceso</span>',
+    };
+    return map[s] || `<span class="badge">${s}</span>`;
+}
+function ticketBadge(s) { return `<span class="badge badge-${s}">${s.replace('_',' ')}</span>`; }
+function priorBadge(p)  { return `<span class="badge badge-${p}">${p}</span>`; }
+
+/* ════════════════════════════════════════════════════════════════
+   AUTENTICACIÓN
+   ════════════════════════════════════════════════════════════════ */
+async function doLogin(e) {
+    e.preventDefault();
+    const err = document.getElementById('loginErr');
+    err.style.display = 'none';
+    const email = document.getElementById('loginEmail').value.trim();
+    const pass  = document.getElementById('loginPass').value;
+    document.getElementById('loginBtn').disabled = true;
+    document.getElementById('loginBtnTxt').style.display = 'none';
+    document.getElementById('loginSpin').style.display   = 'inline';
+
+    const j = await api('POST', '/api/auth/login', { email, password: pass }, false);
+
+    document.getElementById('loginBtn').disabled = false;
+    document.getElementById('loginBtnTxt').style.display = 'inline';
+    document.getElementById('loginSpin').style.display   = 'none';
+
+    if (!j.ok) { err.textContent = j.error || 'Error al iniciar sesión'; err.style.display = 'block'; return; }
+    if (j.data.user.role !== 'admin') { err.textContent = 'Acceso denegado — se requiere rol de administrador'; err.style.display = 'block'; return; }
+
+    _token = j.data.token;
+    _admin = j.data.user;
+    localStorage.setItem(TK, _token);
+    enterAdmin();
+}
+
+async function doLogout() {
+    await api('POST', '/api/auth/logout');
+    localStorage.removeItem(TK);
+    _token = null; _admin = null;
+    document.getElementById('adminApp').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('loginPass').value = '';
+}
+
+async function checkSession() {
+    const tok = localStorage.getItem(TK);
+    if (!tok) return;
+    _token = tok;
+    const j = await api('GET', '/api/auth/me');
+    if (!j.ok || j.data.role !== 'admin') { localStorage.removeItem(TK); _token = null; return; }
+    _admin = j.data;
+    enterAdmin();
+}
+
+function enterAdmin() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('adminApp').style.display    = 'flex';
+    document.getElementById('adminName').textContent   = _admin.name;
+    document.getElementById('adminAvatar').textContent = _admin.avatar || _admin.name.slice(0,2).toUpperCase();
+    loadDashboard();
+    // Precargar lista de empresas (para los selectores de Datos ERP y Empleados)
+    setTimeout(() => loadCompanies(), 800);
+    // Auto-refresh del dashboard cada 60 segundos
+    clearInterval(window._dashTimer);
+    window._dashTimer = setInterval(() => {
+        const active = document.querySelector('.section.active')?.id;
+        if (active === 'sec-dashboard') loadDashboard();
+    }, 60000);
+    // Conectar SSE para actualizaciones en tiempo real
+    setTimeout(() => connectSSE(), 1200);
+    // Cargar config de WhatsApp en segundo plano
+    loadWASettings();
+    loadGlobalSettings();
+}
+
+/* ════════════════════════════════════════════════════════════════
+   NAVEGACIÓN
+   ════════════════════════════════════════════════════════════════ */
+const SECTIONS = { dashboard:'Dashboard', users:'Usuarios', unpaid:'Sin suscripción', tickets:'Tickets de Soporte', log:'Registro de acciones', settings:'Configuración', plans:'Planes', payments:'Pagos', revenue:'Estadísticas', 'pay-methods':'Métodos de pago', subs:'Suscripciones', income:'Ingresos', wa:'Alertas WhatsApp', companies:'Empresas', 'erp-data':'Datos de la App', rates:'Tasas de cambio', employees:'Permisos empleados', audit:'Auditoría' };
+const SUBS     = { dashboard:'Vista general del sistema', users:'Gestiona todos los usuarios', unpaid:'Usuarios sin plan activo', tickets:'Soporte al cliente', log:'Historial de acciones administrativas', settings:'Configuración del panel', plans:'Configura y edita los planes', payments:'Historial de pagos y verificación', revenue:'Análisis de ingresos y conversión', 'pay-methods':'Configura los métodos de pago disponibles para usuarios', subs:'Estado de todas las suscripciones', income:'Ingresos por período, plan y método', wa:'Historial de notificaciones WhatsApp automáticas', companies:'Vista de todas las empresas registradas', 'erp-data':'Ventas, gastos, facturas e inventario de las empresas', rates:'Gestión centralizada de tasas de cambio', employees:'Gestiona permisos y estado de empleados', audit:'Registro completo de cambios con antes/después' };
+
+function nav(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    document.getElementById('sec-'+id)?.classList.add('active');
+    document.querySelector(`.nav-item[onclick*="'${id}'"]`)?.classList.add('active');
+    document.getElementById('pageTitle').textContent = SECTIONS[id] || id;
+    document.getElementById('pageSub').textContent   = SUBS[id] || '';
+    if (id === 'users')        loadUsers();
+    if (id === 'unpaid')       loadUnpaid();
+    if (id === 'tickets')      loadTickets();
+    if (id === 'log')          loadLog();
+    if (id === 'plans')        loadPlans();
+    if (id === 'payments')     loadPayments();
+    if (id === 'revenue')      loadRevenue();
+    if (id === 'pay-methods')  loadPaymentMethods();
+    if (id === 'subs')         loadSubs();
+    if (id === 'income')       loadIncome();
+    if (id === 'wa')           loadWAAlerts();
+    if (id === 'settings')     { loadWASettings(); loadGlobalSettings(); }
+    if (id === 'companies')    loadCompanies();
+    if (id === 'erp-data')     initErpData();
+    if (id === 'rates')        loadRates();
+    if (id === 'employees')    initEmployees();
+    if (id === 'audit')        loadAudit();
+}
+
+function refreshPage() { const sec = document.querySelector('.section.active')?.id?.replace('sec-',''); if (sec) { if(sec==='dashboard') loadDashboard(); else nav(sec); } }
+
+/* ════════════════════════════════════════════════════════════════
+   DASHBOARD
+   ════════════════════════════════════════════════════════════════ */
+async function loadDashboard() {
+    const j = await api('GET', '/api/admin/stats');
+    if (!j.ok) { toast('⚠️', 'Error cargando estadísticas', 'error'); return; }
+    const s = j.data;
+    const r = s.revenue || {};
+
+    document.getElementById('st-total').textContent   = s.users.total;
+    document.getElementById('st-today').textContent   = s.users.today;
+    document.getElementById('st-trial').textContent   = s.trial.active;
+    document.getElementById('st-sub').textContent     = s.subscription.active;
+    document.getElementById('st-expired').textContent = s.trial.expired;
+    document.getElementById('st-tickets').textContent = s.tickets.new;
+
+    // KPIs adicionales de ingresos
+    const grid = document.getElementById('statsGrid');
+    const revenueCards = `
+        <div class="stat-card green"><div class="val">$${(r.today||0).toFixed(2)}</div><div class="lbl">💰 Ingresos hoy</div></div>
+        <div class="stat-card green"><div class="val">$${(r.week||0).toFixed(2)}</div><div class="lbl">💰 Ingresos (7d)</div></div>
+        <div class="stat-card green"><div class="val">$${(r.month||0).toFixed(2)}</div><div class="lbl">💰 Ingresos (30d)</div></div>
+        <div class="stat-card purple"><div class="val">$${(r.total||0).toFixed(2)}</div><div class="lbl">💵 Total acumulado</div></div>
+        <div class="stat-card red"><div class="val">${r.failedPayments||0}</div><div class="lbl">❌ Pagos fallidos</div></div>
+        <div class="stat-card yellow"><div class="val">${r.pendingPayments||0}</div><div class="lbl">⏳ Pagos pendientes</div></div>
+        <div class="stat-card yellow"><div class="val">${s.subscription.expiring||0}</div><div class="lbl">⚠️ Vencen en 7 días</div></div>`;
+    // Insertar tarjetas de ingresos después de las existentes
+    const existing = grid.innerHTML;
+    if (!grid.dataset.hasRevenue) {
+        grid.innerHTML = existing + revenueCards;
+        grid.dataset.hasRevenue = '1';
+    } else {
+        // Actualizar solo los valores
+        grid.querySelectorAll('.stat-card').forEach((card, i) => {
+            if (i === 0) card.querySelector('.val').textContent = s.users.total;
+            if (i === 1) card.querySelector('.val').textContent = s.users.today;
+            if (i === 2) card.querySelector('.val').textContent = s.trial.active;
+            if (i === 3) card.querySelector('.val').textContent = s.subscription.active;
+            if (i === 4) card.querySelector('.val').textContent = s.trial.expired;
+            if (i === 5) card.querySelector('.val').textContent = s.tickets.new;
+        });
+    }
+
+    // Badge tickets en sidebar
+    const nb = document.getElementById('newTicketsBadge');
+    if (s.tickets.new > 0) { nb.textContent = s.tickets.new; nb.style.display = 'inline'; }
+    else nb.style.display = 'none';
+
+    // Mini tabla usuarios recientes
+    const jU = await api('GET', '/api/admin/users?sort=createdAt&order=desc');
+    if (jU.ok) {
+        const recent = jU.data.slice(0, 5);
+        document.getElementById('dashUsers').innerHTML = `
+            <div style="padding:12px 14px;font-size:12px;font-weight:700;color:var(--text2);border-bottom:1px solid var(--border);">👥 Usuarios recientes</div>
+            ${recent.map(u => `<div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+                <div><div style="font-weight:600;font-size:13px;">${u.name}</div><div style="font-size:11px;color:var(--text2);">${u.email}</div></div>
+                ${statusBadge(u.accessStatus)}
+            </div>`).join('')}`;
+    }
+
+    // Mini tabla tickets
+    const jT = await api('GET', '/api/admin/tickets?status=new');
+    if (jT.ok) {
+        const nt = jT.data.slice(0, 5);
+        document.getElementById('dashTickets').innerHTML = `
+            <div style="padding:12px 14px;font-size:12px;font-weight:700;color:var(--text2);border-bottom:1px solid var(--border);">🎫 Tickets pendientes</div>
+            ${nt.length === 0 ? '<div class="empty"><div>✅</div><div>Sin tickets nuevos</div></div>' :
+            nt.map(t => `<div style="padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;" onclick="nav('tickets')">
+                <div style="font-weight:600;font-size:13px;">${t.title}</div>
+                <div style="display:flex;gap:6px;margin-top:4px;">${ticketBadge(t.status)} ${priorBadge(t.priority)}</div>
+            </div>`).join('')}`;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   USUARIOS
+   ════════════════════════════════════════════════════════════════ */
+async function loadUsers() {
+    const j = await api('GET', '/api/admin/users');
+    if (!j.ok) { toast('⚠️', 'Error cargando usuarios', 'error'); return; }
+    _users = j.data;
+    renderUsers(_users);
+}
+
+function filterUsers() {
+    const q = document.getElementById('usersSearch').value.toLowerCase();
+    const f = document.getElementById('usersFilter').value;
+    let list = _users;
+    if (q) list = list.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || (u.company||'').toLowerCase().includes(q));
+    if (f) list = list.filter(u => {
+        if (f==='subscribed') return u.accessStatus==='subscribed'||u.accessStatus==='cancelled_active';
+        if (f==='no_sub')     return u.accessStatus==='trial_expired'||u.accessStatus==='no_access';
+        if (f==='inactive')   return !u.active;
+        return u.accessStatus === f || u.role === f;
+    });
+    renderUsers(list);
+}
+
+function renderUsers(list) {
+    const tb = document.getElementById('usersTbody');
+    if (!list.length) { tb.innerHTML = '<tr><td colspan="7" class="empty">No hay usuarios</td></tr>'; return; }
+    tb.innerHTML = list.map(u => `<tr>
+        <td><div style="font-weight:600;">${u.name}</div><div style="font-size:11px;color:var(--text2);">${u.email}</div></td>
+        <td>${statusBadge(u.accessStatus)}</td>
+        <td>${u.subscriptionPlan ? `<span class="badge badge-subscribed">${u.subscriptionPlan}</span>` : '<span style="color:var(--text3)">—</span>'}</td>
+        <td style="font-size:12px;">${fmtDate(u.trialEnd)}</td>
+        <td style="font-size:12px;">${fmtDate(u.createdAt)}</td>
+        <td>${u.active ? '<span class="badge badge-subscribed">✅ Activa</span>' : '<span class="badge badge-expired">🚫 Suspendida</span>'}</td>
+        <td style="white-space:nowrap;">
+          <button class="btn btn-ghost btn-sm" onclick="openUserDetail('${u.id}')">Ver →</button>
+          ${u.role !== 'admin' ? `<button class="btn btn-sm btn-danger" style="margin-left:4px;" onclick="deleteUser('${u.id}','${u.email.replace(/'/g,"\\'")}')" title="Eliminar usuario">🗑️</button>` : ''}
+        </td>
+    </tr>`).join('');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SIN SUSCRIPCIÓN
+   ════════════════════════════════════════════════════════════════ */
+async function loadUnpaid() {
+    const j = await api('GET', '/api/admin/users');
+    if (!j.ok) return;
+    const now = Date.now();
+    _users = j.data;
+    const unpaid = _users.filter(u => u.role !== 'admin' && u.accessStatus !== 'subscribed' && u.accessStatus !== 'cancelled_active');
+    renderUnpaid(unpaid);
+}
+
+function filterUnpaid() {
+    const q  = document.getElementById('unpaidSearch').value.toLowerCase();
+    const f  = document.getElementById('unpaidFilter').value;
+    const now = Date.now();
+    let list = (_users||[]).filter(u => u.role !== 'admin' && u.accessStatus !== 'subscribed' && u.accessStatus !== 'cancelled_active');
+    if (q) list = list.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
+    if (f) list = list.filter(u => u.accessStatus === f);
+    renderUnpaid(list);
+}
+
+function renderUnpaid(list) {
+    const tb = document.getElementById('unpaidTbody');
+    const now = Date.now();
+    if (!list.length) { tb.innerHTML = '<tr><td colspan="7" class="empty">No hay usuarios sin suscripción</td></tr>'; return; }
+    tb.innerHTML = list.map(u => {
+        const trialEndMs = u.trialEnd ? new Date(u.trialEnd).getTime() : null;
+        const daysSince  = trialEndMs && trialEndMs < now ? Math.floor((now - trialEndMs)/86400000) : 0;
+        return `<tr>
+            <td><div style="font-weight:600;">${u.name}</div></td>
+            <td style="font-size:12px;">${u.email}</td>
+            <td style="font-size:12px;">${fmtDate(u.createdAt)}</td>
+            <td style="font-size:12px;">${fmtDate(u.trialEnd)}</td>
+            <td style="font-size:12px;color:${daysSince>3?'var(--danger)':'var(--text2)'};">${daysSince > 0 ? daysSince+'d' : '—'}</td>
+            <td>${statusBadge(u.accessStatus)}</td>
+            <td><button class="btn btn-ghost btn-sm" onclick="openUserDetail('${u.id}')">Ver</button>
+                <button class="btn btn-primary btn-sm" onclick="quickGrant('${u.id}')">🎁 Dar acceso</button></td>
+        </tr>`;
+    }).join('');
+}
+
+async function quickGrant(userId) {
+    confirm2('¿Extender acceso gratuito 7 días a este usuario?', async () => {
+        const j = await api('POST', `/api/admin/users/${userId}/action`, { action:'grant_access' });
+        if (j.ok) { toast('✅', 'Acceso extendido 7 días', 'success'); loadUnpaid(); }
+        else toast('⚠️', j.error, 'error');
+    });
+}
+
+/* ════════════════════════════════════════════════════════════════
+   DETALLE DE USUARIO
+   ════════════════════════════════════════════════════════════════ */
+async function openUserDetail(id) {
+    const j = await api('GET', '/api/admin/users/'+id);
+    if (!j.ok) { toast('⚠️', 'Error cargando usuario', 'error'); return; }
+    const u = j.data;
+    _currentUserId = id;
+
+    document.getElementById('userModalTitle').textContent = '👤 ' + u.name;
+    document.getElementById('userModalBody').innerHTML = `
+        <div class="detail-grid">
+            <div class="detail-item"><div class="label">Nombre</div><div class="val">${u.name}</div></div>
+            <div class="detail-item"><div class="label">Correo</div><div class="val">${u.email}</div></div>
+            <div class="detail-item"><div class="label">Empresa</div><div class="val">${u.company||'—'}</div></div>
+            <div class="detail-item"><div class="label">Rol</div><div class="val">${u.role==='admin'?'👑 Admin':'👤 Usuario'}</div></div>
+            <div class="detail-item"><div class="label">Registrado</div><div class="val">${fmtDate(u.createdAt)}</div></div>
+            <div class="detail-item"><div class="label">Estado cuenta</div><div class="val">${u.active?'✅ Activa':'🚫 Suspendida'}</div></div>
+        </div>
+        <hr style="border-color:var(--border);margin:12px 0;"/>
+        <div class="detail-grid">
+            <div class="detail-item"><div class="label">Estado de acceso</div><div class="val">${statusBadge(u.accessStatus.status||u.accessStatus)}</div></div>
+            <div class="detail-item"><div class="label">Días restantes</div><div class="val">${u.accessStatus.daysLeft??'—'}</div></div>
+            <div class="detail-item"><div class="label">Inicio de prueba</div><div class="val">${fmtDate(u.trialStart)}</div></div>
+            <div class="detail-item"><div class="label">Fin de prueba</div><div class="val">${fmtDate(u.accessStatus.trialEnd||u.trialEnd)}</div></div>
+        </div>
+        <hr style="border-color:var(--border);margin:12px 0;"/>
+        <div class="detail-grid">
+            <div class="detail-item"><div class="label">Plan</div><div class="val">${u.subscriptionPlan||'—'}</div></div>
+            <div class="detail-item"><div class="label">Estado suscripción</div><div class="val">${u.subscriptionStatus||'—'}</div></div>
+            <div class="detail-item"><div class="label">Inicio suscripción</div><div class="val">${fmtDate(u.subscriptionStart)}</div></div>
+            <div class="detail-item"><div class="label">Vencimiento</div><div class="val">${fmtDate(u.subscriptionEnd)}</div></div>
+            <div class="detail-item"><div class="label">Fuente</div><div class="val">${u.subscriptionSource||'—'}</div></div>
+            <div class="detail-item"><div class="label">Tickets</div><div class="val">${u.ticketCount}</div></div>
+        </div>`;
+
+    const btnS = document.getElementById('btnSuspend');
+    const btnA = document.getElementById('btnActivate');
+    const btnD = document.getElementById('btnDeleteUser');
+    if (u.active) { btnS.style.display='inline-flex'; btnA.style.display='none'; }
+    else          { btnS.style.display='none'; btnA.style.display='inline-flex'; }
+    // Ocultar eliminar si es admin o si es el propio usuario logueado
+    if (btnD) btnD.style.display = (u.role === 'admin') ? 'none' : 'inline-flex';
+
+    document.getElementById('subModalInfo').innerHTML = `Usuario: <strong>${u.name}</strong> — ${u.email}<br>
+        Estado actual: ${statusBadge(typeof u.accessStatus==='object'?u.accessStatus.status:u.accessStatus)}`;
+
+    openModal('userModal');
+}
+
+async function userAction(action) {
+    if (!_currentUserId) return;
+    const msgs = { suspend:'¿Suspender esta cuenta? El usuario no podrá iniciar sesión.',
+                   reactivate:'¿Reactivar esta cuenta?',
+                   grant_access:'¿Extender 7 días de acceso gratuito?',
+                   revoke_access:'¿Revocar el acceso a este usuario?',
+                   force_logout:'¿Cerrar todas las sesiones activas de este usuario?' };
+    confirm2(msgs[action]||'¿Confirmar?', async () => {
+        const j = await api('POST', `/api/admin/users/${_currentUserId}/action`, { action });
+        if (j.ok) { toast('✅', 'Acción ejecutada: '+action, 'success'); closeModal('userModal'); loadUsers(); }
+        else toast('⚠️', j.error, 'error');
+    });
+}
+
+function openSubModal() { closeModal('userModal'); openModal('subModal'); }
+
+/* ── Eliminar usuario ── */
+async function deleteUser(userId, userEmail) {
+    confirm2(
+        `⚠️ ¿Eliminar permanentemente al usuario "${userEmail}"?\n\nEsta acción NO se puede deshacer. Se eliminarán su cuenta y todas sus sesiones activas.`,
+        async () => {
+            const j = await api('DELETE', `/api/admin/users/${userId}`);
+            if (!j.ok) { toast('⚠️', j.error || 'Error al eliminar', 'error'); return; }
+            toast('✅', `Usuario "${userEmail}" eliminado`, 'success');
+            loadUsers();
+            loadDashboard();
+        }
+    );
+}
+
+async function deleteUserFromModal() {
+    if (!_currentUserId) return;
+    // Obtener el email del modal actual
+    const title = document.getElementById('userModalTitle')?.textContent?.replace('👤 ', '') || _currentUserId;
+    confirm2(
+        `⚠️ ¿Eliminar permanentemente al usuario "${title}"?\n\nEsta acción NO se puede deshacer.`,
+        async () => {
+            const j = await api('DELETE', `/api/admin/users/${_currentUserId}`);
+            if (!j.ok) { toast('⚠️', j.error || 'Error al eliminar', 'error'); return; }
+            toast('✅', `Usuario eliminado correctamente`, 'success');
+            closeModal('userModal');
+            _currentUserId = null;
+            loadUsers();
+            loadDashboard();
+        }
+    );
+}
+
+async function adminSubAction(act) {
+    if (!_currentUserId) return;
+    const planId = document.getElementById('subPlanSel').value;
+    const days   = parseInt(document.getElementById('subDays').value)||30;
+    confirm2(act==='cancel'?'¿Cancelar la suscripción de este usuario?':'¿Activar/extender la suscripción?', async () => {
+        const j = await api('POST', `/api/admin/users/${_currentUserId}/subscription`, { planId, durationDays: days, action: act });
+        if (j.ok) { toast('✅', 'Suscripción actualizada', 'success'); closeModal('subModal'); loadUsers(); }
+        else toast('⚠️', j.error, 'error');
+    });
+}
+
+/* ════════════════════════════════════════════════════════════════
+   TICKETS
+   ════════════════════════════════════════════════════════════════ */
+async function loadTickets() {
+    const j = await api('GET', '/api/admin/tickets');
+    if (!j.ok) { toast('⚠️', 'Error cargando tickets', 'error'); return; }
+    _tickets = j.data;
+    renderTickets(_tickets);
+}
+
+function filterTickets() {
+    const q  = document.getElementById('ticketsSearch').value.toLowerCase();
+    const st = document.getElementById('ticketsStatusFilter').value;
+    const pr = document.getElementById('ticketsPriorityFilter').value;
+    let list = _tickets;
+    if (q)  list = list.filter(t => t.title.toLowerCase().includes(q) || t.userEmail?.toLowerCase().includes(q) || t.id.toLowerCase().includes(q));
+    if (st) list = list.filter(t => t.status === st);
+    if (pr) list = list.filter(t => t.priority === pr);
+    renderTickets(list);
+}
+
+function renderTickets(list) {
+    const tb = document.getElementById('ticketsTbody');
+    if (!list.length) { tb.innerHTML = '<tr><td colspan="8" class="empty">No hay tickets</td></tr>'; return; }
+    tb.innerHTML = list.map(t => `<tr>
+        <td style="font-size:11px;font-weight:700;color:var(--text2);">${t.id}</td>
+        <td><div style="font-size:13px;">${t.userName||'—'}</div><div style="font-size:11px;color:var(--text2);">${t.userEmail||'—'}</div></td>
+        <td style="font-size:12px;">${t.category||'—'}</td>
+        <td style="font-size:13px;font-weight:500;">${t.title}</td>
+        <td>${priorBadge(t.priority)}</td>
+        <td>${ticketBadge(t.status)}</td>
+        <td style="font-size:11px;color:var(--text2);">${fmtTs(t.createdAt)}</td>
+        <td><button class="btn btn-primary btn-sm" onclick="openTicketDetail('${t.id}')">Abrir →</button></td>
+    </tr>`).join('');
+}
+
+async function openTicketDetail(id) {
+    const j = await api('GET', '/api/admin/tickets/'+id);
+    if (!j.ok) { toast('⚠️', 'Error', 'error'); return; }
+    const t = j.data;
+    _currentTicketId = id;
+
+    document.getElementById('ticketModalTitle').textContent = `🎫 ${t.id} — ${t.title}`;
+    document.getElementById('tkStatusSel').value   = t.status;
+    document.getElementById('tkPrioritySel').value = t.priority;
+    document.getElementById('tkReplyTxt').value    = '';
+    document.getElementById('tkNoteTxt').value     = '';
+
+    document.getElementById('ticketMetaBar').innerHTML = `
+        <span style="font-size:12px;color:var(--text2);">👤 ${t.userName} (${t.userEmail})</span>
+        <span style="font-size:12px;color:var(--text2);">📂 ${t.category}</span>
+        <span style="font-size:12px;color:var(--text2);">🕐 ${fmtTs(t.createdAt)}</span>`;
+
+    const chat = document.getElementById('ticketChat');
+    chat.innerHTML = t.messages.map(m => {
+        const cls = m.from==='user' ? 'user' : (m.internal ? 'admin-int' : 'admin-pub');
+        const who = m.from==='user' ? m.userName : (m.internal ? '🔒 Nota interna — '+m.adminName : '👑 '+m.adminName);
+        return `<div class="chat-msg ${cls}"><div>${m.text}</div><div class="meta">${who} · ${fmtTs(m.ts)}</div></div>`;
+    }).join('');
+    chat.scrollTop = chat.scrollHeight;
+    openModal('ticketModal');
+}
+
+async function quickUpdateTicket() {
+    if (!_currentTicketId) return;
+    const status   = document.getElementById('tkStatusSel').value;
+    const priority = document.getElementById('tkPrioritySel').value;
+    const j = await api('PUT', '/api/admin/tickets/'+_currentTicketId, { status, priority });
+    if (j.ok) toast('✅', 'Ticket actualizado', 'success');
+    else toast('⚠️', j.error, 'error');
+    loadTickets();
+}
+
+async function sendTicketReply() {
+    const text = document.getElementById('tkReplyTxt').value.trim();
+    if (!text) { toast('⚠️', 'Escribe una respuesta', 'warn'); return; }
+    const j = await api('POST', `/api/admin/tickets/${_currentTicketId}/reply`, { text, internal: false });
+    if (j.ok) { toast('✅', 'Respuesta enviada', 'success'); document.getElementById('tkReplyTxt').value=''; openTicketDetail(_currentTicketId); loadTickets(); }
+    else toast('⚠️', j.error, 'error');
+}
+
+async function sendTicketNote() {
+    const text = document.getElementById('tkNoteTxt').value.trim();
+    if (!text) { toast('⚠️', 'Escribe una nota', 'warn'); return; }
+    const j = await api('POST', `/api/admin/tickets/${_currentTicketId}/reply`, { text, internal: true });
+    if (j.ok) { toast('✅', 'Nota guardada', 'success'); document.getElementById('tkNoteTxt').value=''; openTicketDetail(_currentTicketId); }
+    else toast('⚠️', j.error, 'error');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   LOG
+   ════════════════════════════════════════════════════════════════ */
+async function loadLog() {
+    const j = await api('GET', '/api/admin/log?limit=100');
+    if (!j.ok) { toast('⚠️', 'Error cargando log', 'error'); return; }
+    const el = document.getElementById('logList');
+    if (!j.data.length) { el.innerHTML = '<div class="empty"><div class="icon">📋</div><div>Sin acciones registradas</div></div>'; return; }
+    el.innerHTML = j.data.map(e => `<div class="log-entry">
+        <span class="action">${e.action}</span>
+        <span style="color:var(--text2);">— ${e.adminEmail}</span>
+        ${e.targetEmail ? `<span style="color:var(--text3);"> → ${e.targetEmail}</span>` : ''}
+        ${e.detail ? `<span style="color:var(--text3);font-style:italic;"> (${e.detail})</span>` : ''}
+        <span class="ts">${fmtTs(e.ts)}</span>
+    </div>`).join('');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   MODALES Y UTILITARIOS
+   ════════════════════════════════════════════════════════════════ */
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function confirm2(msg, cb) {
+    _confirmCb = cb;
+    document.getElementById('confirmMsg').textContent = msg;
+    openModal('confirmModal');
+}
+document.getElementById('confirmOkBtn').onclick = async () => {
+    closeModal('confirmModal');
+    if (_confirmCb) { await _confirmCb(); _confirmCb = null; }
+};
+
+// saveAdminSettings se define más abajo con la lógica completa
+
+/* ════════════════════════════════════════════════════════════════
+   WHATSAPP CONFIG
+   ════════════════════════════════════════════════════════════════ */
+async function loadWASettings() {
+    const j = await api('GET', '/api/admin/settings/whatsapp');
+    if (!j.ok) return;
+    const d = j.data;
+    const elPhone    = document.getElementById('cfgWaPhone');
+    const elInstance = document.getElementById('cfgWaInstance');
+    const elToken    = document.getElementById('cfgWaToken');
+    if (elPhone)    elPhone.value    = d.phone    || '';
+    if (elInstance) elInstance.value = d.instance || '';
+    if (elToken && d.tokenSet) elToken.placeholder = '•••••••••••••••• (guardado — escribe para cambiar)';
+    const elDest = document.getElementById('cfgWaDestPhone');
+    if (elDest) elDest.value = d.destPhone || d.phone || '';
+
+    const st = document.getElementById('waStatus');
+    if (!st) return;
+    if (d.configured) {
+        const sameWarn = d.sameNumber
+            ? `<div style="background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);border-radius:6px;padding:8px 12px;margin-top:8px;font-size:12px;color:#fbbf24;">
+               ⚠️ <strong>El número de la instancia y el destino son el mismo.</strong> WhatsApp no entrega mensajes enviados a uno mismo. Configura un número destino diferente.
+               </div>` : '';
+        st.innerHTML = `<div style="background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);
+            border-radius:8px;padding:12px 16px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:22px;">✅</span>
+              <div>
+                <div style="color:#6ee7b7;font-weight:700;font-size:13px;">UltraMsg activo — WhatsApp conectado</div>
+                <div style="color:var(--text2);font-size:12px;margin-top:2px;">
+                  Instancia: <strong style="color:#f1f5f9;">${d.instance}</strong> →
+                  Destino: <strong style="color:#f1f5f9;">+${d.destPhone||d.phone}</strong>
+                </div>
+              </div>
+            </div>${sameWarn}
+        </div>`;
+    } else if (d.phone && d.instance && !d.tokenSet) {
+        st.innerHTML = `<div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);
+            border-radius:8px;padding:12px 16px;">
+            <div style="color:#fbbf24;font-weight:700;margin-bottom:4px;">⚠️ Falta el Token de UltraMsg</div>
+            <div style="color:var(--text2);font-size:12px;">Cópialo desde tu dashboard en <a href="https://app.ultramsg.com" target="_blank" style="color:#818cf8;">app.ultramsg.com</a></div>
+        </div>`;
+    } else {
+        st.innerHTML = `<div style="background:rgba(71,85,105,.15);border:1px solid #334155;
+            border-radius:8px;padding:12px 16px;color:var(--text2);font-size:12px;">
+            ℹ️ Completa los campos y guarda para activar las notificaciones automáticas.
+        </div>`;
+    }
+}
+
+async function saveWASettings() {
+    const phone     = document.getElementById('cfgWaPhone')?.value.trim();
+    const destPhone = document.getElementById('cfgWaDestPhone')?.value.trim();
+    const instance  = document.getElementById('cfgWaInstance')?.value.trim();
+    const token     = document.getElementById('cfgWaToken')?.value.trim();
+    if (!phone)     { toast('⚠️', 'Ingresa el número de la instancia', 'error'); return; }
+    if (!destPhone) { toast('⚠️', 'Ingresa el número destino donde recibirás las alertas', 'error'); return; }
+    if (!instance)  { toast('⚠️', 'Ingresa el Instance ID de UltraMsg', 'error'); return; }
+    if (!token)     { toast('⚠️', 'Ingresa el Token de UltraMsg', 'error'); return; }
+    if (phone.replace(/\D/g,'') === destPhone.replace(/\D/g,'')) {
+        toast('⚠️', 'El número destino debe ser DIFERENTE al número de la instancia', 'error');
+        return;
+    }
+    const j = await api('PUT', '/api/admin/settings/whatsapp', { phone, destPhone, instance, token });
+    if (!j.ok) { toast('⚠️', j.error || 'Error al guardar', 'error'); return; }
+    toast('✅', 'Configuración de UltraMsg guardada', 'success');
+    loadWASettings();
+}
+
+async function testWA() {
+    const j = await api('POST', '/api/admin/wa-test');
+    if (!j.ok) { toast('⚠️', j.error || 'Error', 'error'); return; }
+    toast('✅', 'Mensaje de prueba enviado — revisa tu WhatsApp', 'success');
+}
+
+async function loadWAGroups() {
+    const gl = document.getElementById('waGroupsList');
+    if (!gl) return;
+    gl.style.display = 'block';
+    gl.innerHTML = '<div style="color:var(--text2);font-size:12px;">⏳ Cargando grupos...</div>';
+    const j = await api('GET', '/api/admin/wa-groups');
+    if (!j.ok || !j.data.length) {
+        gl.innerHTML = '<div style="color:var(--text2);font-size:12px;">Sin grupos disponibles. Crea un grupo en WhatsApp primero.</div>';
+        return;
+    }
+    gl.innerHTML = `<div style="font-size:11px;font-weight:700;color:#a5b4fc;margin-bottom:8px;">
+        Haz click en un grupo para usarlo como destino:
+    </div>` + j.data.map(g => `
+        <div onclick="useGroupAsDestination('${g.id}','${(g.name||'').replace(/'/g,"\\'")}')"
+             style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;
+                    cursor:pointer;border:1px solid #334155;margin-bottom:4px;
+                    background:#1e293b;transition:background .15s;"
+             onmouseover="this.style.background='#263348'" onmouseout="this.style.background='#1e293b'">
+            <span style="font-size:16px;">👥</span>
+            <div>
+                <div style="font-size:12px;font-weight:600;color:#f1f5f9;">${g.name || 'Sin nombre'}</div>
+                <div style="font-size:10px;color:var(--text3);">${g.id}</div>
+            </div>
+            <span style="margin-left:auto;font-size:11px;color:#4f46e5;font-weight:700;">Usar →</span>
+        </div>`).join('');
+}
+
+function useGroupAsDestination(groupId, groupName) {
+    const el = document.getElementById('cfgWaDestPhone');
+    if (el) {
+        // UltraMsg usa el ID del grupo como destino, sin el +
+        el.value = groupId.replace('@g.us','').replace('@c.us','');
+        toast('✅', `Grupo "${groupName}" seleccionado como destino`, 'success');
+        document.getElementById('waGroupsList').style.display = 'none';
+    }
+}
+
+async function retryWA() {
+    const j = await api('POST', '/api/admin/wa-retry');
+    if (!j.ok) { toast('⚠️', j.error || 'Error', 'error'); return; }
+    toast('✅', j.data?.message || 'Reintentando alertas', 'success');
+    setTimeout(loadWAAlerts, 2000);
+}
+
+async function loadWAAlerts() {
+    const j = await api('GET', '/api/admin/wa-alerts');
+    if (!j.ok) { toast('⚠️', 'Error cargando alertas', 'error'); return; }
+    const tbody = document.getElementById('waAlertsTbody');
+    if (!tbody) return;
+    if (!j.data.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text2);padding:20px;">Sin alertas registradas aún</td></tr>';
+        return;
+    }
+    const STATUS_COLORS = { sent:'#6ee7b7', pending:'#fbbf24', error:'#fca5a5', retrying:'#a5b4fc' };
+    const STATUS_LABELS = { sent:'✅ Enviado', pending:'⏳ Pendiente', error:'❌ Error', retrying:'🔄 Reintentando' };
+    tbody.innerHTML = j.data.map(e => `<tr>
+        <td style="font-size:12px;white-space:nowrap;">${fmtTs(e.ts)}</td>
+        <td style="font-size:12px;max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e.message||'—'}</td>
+        <td><span style="color:${STATUS_COLORS[e.status]||'#94a3b8'};font-weight:700;font-size:12px;">${STATUS_LABELS[e.status]||e.status}</span>
+            ${e.error ? `<div style="font-size:10px;color:var(--danger);">${e.error}</div>` : ''}
+        </td>
+        <td style="font-size:12px;color:var(--text2);">${e.retries||0}</td>
+    </tr>`).join('');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SUSCRIPCIONES
+   ════════════════════════════════════════════════════════════════ */
+async function loadSubs() {
+    const filter = document.getElementById('subsFilter')?.value || '';
+    const url = '/api/admin/subscriptions' + (filter ? `?filter=${filter}` : '');
+    const j = await api('GET', url);
+    if (!j.ok) { toast('⚠️', 'Error cargando suscripciones', 'error'); return; }
+
+    const tbody = document.getElementById('subsTbody');
+    if (!tbody) return;
+    if (!j.data.length) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text2);padding:20px;">Sin resultados</td></tr>';
+        return;
+    }
+
+    const daysColor = d => d === null ? '#94a3b8' : d <= 3 ? '#fca5a5' : d <= 7 ? '#fbbf24' : '#6ee7b7';
+
+    tbody.innerHTML = j.data.map(u => `<tr>
+        <td>
+          <div style="font-weight:600;font-size:13px;">${u.name}</div>
+          <div style="font-size:11px;color:var(--text2);">${u.email}</div>
+        </td>
+        <td style="font-size:12px;">${u.company||'—'}</td>
+        <td><span style="font-weight:600;">${u.planName||'—'}</span></td>
+        <td>${statusBadge(u.status)}</td>
+        <td style="font-size:12px;">${fmtDate(u.start||u.trialEnd)}</td>
+        <td style="font-size:12px;">${fmtDate(u.end||u.trialEnd)}</td>
+        <td style="font-weight:700;color:${daysColor(u.daysLeft)};">${u.daysLeft !== null ? u.daysLeft+'d' : '—'}</td>
+        <td style="font-size:12px;">${u.lastPayment ? '$'+Number(u.lastPayment.amount).toFixed(2)+' · '+fmtDate(u.lastPayment.ts) : '—'}</td>
+        <td><button class="btn btn-ghost btn-sm" onclick="openUserDetail('${u.userId}')">Ver →</button></td>
+    </tr>`).join('');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   INGRESOS AVANZADOS
+   ════════════════════════════════════════════════════════════════ */
+async function loadIncome() {
+    const period = document.getElementById('incomePeriod')?.value || '30d';
+    const j = await api('GET', `/api/admin/revenue?period=${period}`);
+    if (!j.ok) { toast('⚠️', 'Error cargando ingresos', 'error'); return; }
+    const d = j.data;
+
+    // KPIs
+    document.getElementById('incomeKpis').innerHTML = [
+        { color:'green',  val:'$'+d.total.toFixed(2),     lbl:'Total en período' },
+        { color:'blue',   val:d.count,                     lbl:'Pagos completados' },
+        { color:'purple', val:'$'+(d.total/Math.max(d.count,1)).toFixed(2), lbl:'Promedio por pago' },
+    ].map(k => `<div class="stat-card ${k.color}"><div class="val">${k.val}</div><div class="lbl">${k.lbl}</div></div>`).join('');
+
+    // Por plan
+    const barFmt = (items, total) => items.map(i => {
+        const pct = total > 0 ? Math.round(i.amount/total*100) : 0;
+        return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <div style="flex:1;font-size:12px;">${i.name}</div>
+            <div style="width:100px;background:#1e293b;border-radius:4px;height:8px;overflow:hidden;">
+              <div style="width:${pct}%;background:var(--primary);height:100%;border-radius:4px;"></div>
+            </div>
+            <div style="font-size:12px;font-weight:700;color:var(--success);min-width:60px;text-align:right;">$${i.amount.toFixed(2)}</div>
+        </div>`;
+    }).join('') || '<div style="color:var(--text2);font-size:12px;">Sin datos</div>';
+
+    document.getElementById('incomeByPlanBody').innerHTML   = barFmt(d.byPlan,   d.total);
+    document.getElementById('incomeByMethodBody').innerHTML = barFmt(d.byMethod, d.total);
+    document.getElementById('incomeByCurrBody').innerHTML   = barFmt(d.byCurrency, d.total);
+
+    // Gráfico de barras por día (CSS puro)
+    const days = Object.entries(d.byDay).sort(([a],[b]) => a.localeCompare(b));
+    const maxVal = Math.max(...days.map(([,v]) => v), 1);
+    document.getElementById('incomeChart').innerHTML = days.length === 0
+        ? '<div style="color:var(--text2);font-size:12px;align-self:center;">Sin datos en este período</div>'
+        : days.map(([day, val]) => {
+            const h = Math.max(4, Math.round((val / maxVal) * 110));
+            return `<div title="${day}: $${val.toFixed(2)}" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:default;">
+                <div style="width:18px;height:${h}px;background:var(--primary);border-radius:3px 3px 0 0;opacity:.85;transition:opacity .2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.85"></div>
+                <div style="font-size:9px;color:var(--text3);writing-mode:vertical-rl;transform:rotate(180deg);max-height:32px;overflow:hidden;">${day.slice(5)}</div>
+            </div>`;
+        }).join('');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   PLANES
+   ════════════════════════════════════════════════════════════════ */
+let _plans = [];
+let _editingPlanId = null;
+
+const PLAN_ICONS = { basic:'📦', pro:'🚀', semestral:'💎' };
+const PLAN_COLORS = { basic:'#64748b', pro:'#4f46e5', semestral:'#f59e0b' };
+
+async function loadPlans() {
+    const j = await api('GET', '/api/admin/plans');
+    if (!j.ok) { toast('⚠️', 'Error cargando planes', 'error'); return; }
+    _plans = j.data;
+    const grid = document.getElementById('plansGrid');
+    if (!grid) return;
+
+    grid.innerHTML = _plans.map(p => {
+        const col   = PLAN_COLORS[p.id] || '#4f46e5';
+        const icon  = PLAN_ICONS[p.id]  || '📋';
+        const fList = (p.features || []).map(f => `<li style="font-size:12px;color:var(--text2);padding:2px 0;">✔ ${f}</li>`).join('');
+        const nList = (p.notIncluded || []).map(f => `<li style="font-size:12px;color:var(--text2);opacity:.5;padding:2px 0;">✖ ${f}</li>`).join('');
+        return `
+        <div style="background:var(--surface);border:2px solid ${p.active ? col + '44' : 'var(--border)'};
+                    border-radius:14px;overflow:hidden;opacity:${p.active ? 1 : .55};">
+          <div style="background:${col}22;padding:16px;border-bottom:1px solid ${col}33;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <span style="font-size:28px;">${icon}</span>
+              <div style="display:flex;gap:6px;">
+                ${p.recommended ? '<span style="background:#4f46e5;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;">⭐ REC</span>' : ''}
+                ${!p.active ? '<span style="background:#ef444433;color:#fca5a5;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;">INACTIVO</span>' : ''}
+              </div>
+            </div>
+            <div style="font-size:16px;font-weight:800;color:var(--text);">${p.name}</div>
+            <div style="font-size:12px;color:var(--text2);margin-top:2px;">${p.description || ''}</div>
+          </div>
+          <div style="padding:14px 16px;">
+            <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:4px;">
+              <span style="font-size:26px;font-weight:900;color:${col};">$${Number(p.price).toFixed(2)}</span>
+              <span style="font-size:12px;color:var(--text2);">/ ${p.period || p.duration + ' días'}</span>
+            </div>
+            <div style="font-size:11px;color:var(--text2);margin-bottom:10px;">
+              👥 ${p.maxUsers === 1 ? '1 usuario' : `Hasta ${p.maxUsers} usuarios`}
+              &nbsp;·&nbsp;
+              📦 ${p.maxProducts === -1 ? 'Inventario ilimitado' : `Hasta ${p.maxProducts} productos`}
+              &nbsp;·&nbsp;
+              ${p.multiUser ? '✅ Multiusuario' : '❌ Sin multiusuario'}
+            </div>
+            <ul style="list-style:none;padding:0;margin:0 0 12px;">${fList}${nList}</ul>
+            <button class="btn btn-sm" style="background:${col};color:#fff;border:none;width:100%;"
+                    onclick="openPlanEditor('${p.id}')">✏️ Editar plan</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    // Badge de pagos pendientes
+    loadPendingBadge();
+}
+
+function openNewPlanForm() {
+    _editingPlanId = null;
+    document.getElementById('planEditorTitle').textContent = '➕ Crear nuevo plan';
+    document.getElementById('pe_name').value        = '';
+    document.getElementById('pe_price').value       = 0;
+    document.getElementById('pe_duration').value    = 30;
+    document.getElementById('pe_period').value      = '1 mes';
+    document.getElementById('pe_maxUsers').value    = 1;
+    document.getElementById('pe_maxProducts').value = 500;
+    document.getElementById('pe_badge').value       = '';
+    document.getElementById('pe_description').value = '';
+    document.getElementById('pe_multiUser').checked   = false;
+    document.getElementById('pe_recommended').checked = false;
+    document.getElementById('pe_active').checked      = true;
+    document.getElementById('pe_features').value    = '';
+    document.getElementById('pe_notIncluded').value = '';
+    // Mostrar campo de ID solo para nuevo plan
+    let idRow = document.getElementById('pe_id_row');
+    if (!idRow) {
+        const fr = document.getElementById('pe_name').closest('.fg');
+        idRow = document.createElement('div');
+        idRow.className = 'fg';
+        idRow.id = 'pe_id_row';
+        idRow.innerHTML = '<label>ID único (sin espacios, ej: premium)</label><input id="pe_id" placeholder="premium" />';
+        fr.parentNode.insertBefore(idRow, fr);
+    }
+    idRow.style.display = 'block';
+    document.getElementById('planEditor').style.display = 'block';
+    document.getElementById('planEditor').scrollIntoView({ behavior:'smooth' });
+}
+
+async function createPlan() {
+    const idEl = document.getElementById('pe_id');
+    const id = idEl?.value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
+    if (!id) { toast('⚠️', 'El ID del plan es obligatorio', 'error'); return; }
+    const body = {
+        id,
+        name:        document.getElementById('pe_name').value.trim(),
+        price:       parseFloat(document.getElementById('pe_price').value) || 0,
+        duration:    parseInt(document.getElementById('pe_duration').value) || 30,
+        period:      document.getElementById('pe_period').value.trim(),
+        maxUsers:    parseInt(document.getElementById('pe_maxUsers').value) || 1,
+        maxProducts: parseInt(document.getElementById('pe_maxProducts').value) ?? -1,
+        badge:       document.getElementById('pe_badge').value.trim(),
+        description: document.getElementById('pe_description').value.trim(),
+        multiUser:   document.getElementById('pe_multiUser').checked,
+        recommended: document.getElementById('pe_recommended').checked,
+        active:      document.getElementById('pe_active').checked,
+        features:    document.getElementById('pe_features').value.split('\n').map(s => s.trim()).filter(Boolean),
+        notIncluded: document.getElementById('pe_notIncluded').value.split('\n').map(s => s.trim()).filter(Boolean),
+    };
+    if (!body.name) { toast('⚠️', 'El nombre del plan es obligatorio', 'error'); return; }
+    const j = await api('POST', '/api/admin/plans', body);
+    if (!j.ok) { toast('⚠️', j.error || 'Error al crear', 'error'); return; }
+    toast('✅', `Plan "${body.name}" creado`, 'success');
+    document.getElementById('planEditor').style.display = 'none';
+    const idRow = document.getElementById('pe_id_row');
+    if (idRow) idRow.style.display = 'none';
+    loadPlans();
+}
+
+function openPlanEditor(planId) {
+    const p = _plans.find(x => x.id === planId);
+    if (!p) return;
+    _editingPlanId = planId;
+    document.getElementById('planEditorTitle').textContent = `✏️ Editar: ${p.name}`;
+    document.getElementById('pe_name').value        = p.name        || '';
+    document.getElementById('pe_price').value       = p.price       || 0;
+    document.getElementById('pe_duration').value    = p.duration    || 30;
+    document.getElementById('pe_period').value      = p.period      || '';
+    document.getElementById('pe_maxUsers').value    = p.maxUsers    || 1;
+    document.getElementById('pe_maxProducts').value = p.maxProducts ?? -1;
+    document.getElementById('pe_badge').value       = p.badge       || '';
+    document.getElementById('pe_description').value = p.description || '';
+    document.getElementById('pe_multiUser').checked    = !!p.multiUser;
+    document.getElementById('pe_recommended').checked  = !!p.recommended;
+    document.getElementById('pe_active').checked        = p.active !== false;
+    document.getElementById('pe_features').value    = (p.features     || []).join('\n');
+    document.getElementById('pe_notIncluded').value = (p.notIncluded  || []).join('\n');
+    // Ocultar campo ID (solo visible para nuevos planes)
+    const idRow = document.getElementById('pe_id_row');
+    if (idRow) idRow.style.display = 'none';
+    document.getElementById('btnSavePlan').textContent = '💾 Guardar cambios';
+    document.getElementById('planEditor').style.display = 'block';
+    document.getElementById('planEditor').scrollIntoView({ behavior:'smooth' });
+}
+
+async function savePlan() {
+    if (!_editingPlanId) { await createPlan(); return; }
+    const body = {
+        name:        document.getElementById('pe_name').value.trim(),
+        price:       parseFloat(document.getElementById('pe_price').value) || 0,
+        duration:    parseInt(document.getElementById('pe_duration').value) || 30,
+        period:      document.getElementById('pe_period').value.trim(),
+        maxUsers:    parseInt(document.getElementById('pe_maxUsers').value) || 1,
+        maxProducts: parseInt(document.getElementById('pe_maxProducts').value) ?? -1,
+        badge:       document.getElementById('pe_badge').value.trim(),
+        description: document.getElementById('pe_description').value.trim(),
+        multiUser:   document.getElementById('pe_multiUser').checked,
+        recommended: document.getElementById('pe_recommended').checked,
+        active:      document.getElementById('pe_active').checked,
+        features:    document.getElementById('pe_features').value.split('\n').map(s => s.trim()).filter(Boolean),
+        notIncluded: document.getElementById('pe_notIncluded').value.split('\n').map(s => s.trim()).filter(Boolean),
+    };
+    const j = await api('PUT', `/api/admin/plans/${_editingPlanId}`, body);
+    if (!j.ok) { toast('⚠️', j.error || 'Error al guardar', 'error'); return; }
+    toast('✅', `Plan "${body.name}" actualizado`, 'success');
+    document.getElementById('planEditor').style.display = 'none';
+    _editingPlanId = null;
+    loadPlans();
+}
+
+/* ════════════════════════════════════════════════════════════════
+   MÉTODOS DE PAGO
+   ════════════════════════════════════════════════════════════════ */
+let _pmEditing = null;   // id del método que se está editando, null = nuevo
+
+const TYPE_LABELS = { pos:'🛒 POS', sub:'💳 Suscripción', both:'🔄 Ambos' };
+
+async function loadPaymentMethods() {
+    const j = await api('GET', '/api/admin/payment-methods');
+    if (!j.ok) { toast('⚠️', 'Error cargando métodos de pago', 'error'); return; }
+
+    const grid = document.getElementById('payMethodsGrid');
+    if (!grid) return;
+    const methods = j.data;
+
+    if (!methods.length) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text2);">Sin métodos configurados</div>';
+        return;
+    }
+
+    grid.innerHTML = methods.map(m => `
+    <div style="background:var(--surface);border:1.5px solid ${m.active ? 'var(--border)' : '#1e293b'};
+                border-radius:12px;padding:16px;opacity:${m.active ? 1 : .5};
+                display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:26px;line-height:1;">${m.icon || '💳'}</span>
+          <div>
+            <div style="font-weight:700;font-size:14px;color:var(--text);">${m.label}</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:1px;">
+              ID: <code style="background:#0f172a;padding:1px 5px;border-radius:4px;">${m.id}</code>
+            </div>
+          </div>
+        </div>
+        <span style="font-size:11px;font-weight:600;background:#1e293b;padding:3px 8px;
+                     border-radius:20px;color:#94a3b8;">${TYPE_LABELS[m.type] || m.type}</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:#64748b;">
+        ${m.isManual ? '<span style="background:rgba(245,158,11,.15);color:#fbbf24;padding:2px 8px;border-radius:20px;">⏳ Verificación manual</span>' : ''}
+        ${m.info ? `<span style="color:#94a3b8;font-size:11px;line-height:1.4;">${m.info}</span>` : ''}
+      </div>
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        <button class="btn btn-sm" style="flex:1;" onclick="editPaymentMethod('${m.id}')">✏️ Editar</button>
+        <button class="btn btn-sm" style="flex:1;background:${m.active ? 'rgba(239,68,68,.15)' : 'rgba(16,185,129,.15)'};
+                color:${m.active ? '#fca5a5' : '#6ee7b7'};border:none;"
+                onclick="togglePaymentMethod('${m.id}', ${!m.active})">
+          ${m.active ? '🔴 Desactivar' : '🟢 Activar'}
+        </button>
+        <button class="btn btn-sm btn-danger" onclick="deletePaymentMethod('${m.id}')">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+function openAddMethodModal() {
+    _pmEditing = null;
+    document.getElementById('pmModalTitle').textContent = '➕ Nuevo método de pago';
+    document.getElementById('pm_id').value       = '';
+    document.getElementById('pm_id').disabled    = false;
+    document.getElementById('pm_label').value    = '';
+    document.getElementById('pm_icon').value     = '💳';
+    document.getElementById('pm_type').value     = 'pos';
+    document.getElementById('pm_isManual').checked = false;
+    document.getElementById('pm_info').value     = '';
+    _pmClearDataFields();
+    pmShowDataFields();
+    document.getElementById('pmModal').style.display = 'flex';
+}
+
+async function editPaymentMethod(id) {
+    const j = await api('GET', '/api/admin/payment-methods');
+    if (!j.ok) return;
+    const m = j.data.find(x => x.id === id);
+    if (!m) return;
+    _pmEditing = id;
+    document.getElementById('pmModalTitle').textContent = `✏️ Editar: ${m.label}`;
+    document.getElementById('pm_id').value       = m.id;
+    document.getElementById('pm_id').disabled    = true;
+    document.getElementById('pm_label').value    = m.label;
+    document.getElementById('pm_icon').value     = m.icon || '💳';
+    document.getElementById('pm_type').value     = m.type || 'pos';
+    document.getElementById('pm_isManual').checked = !!m.isManual;
+    document.getElementById('pm_info').value     = m.info || '';
+    // Cargar datos de cuenta existentes
+    _pmClearDataFields();
+    const pd = m.paymentData || {};
+    const mid = m.id.toUpperCase();
+    if (mid === 'ZELLE') {
+        _s('pm_zelle_account', pd.account||'');
+        _s('pm_zelle_name',    pd.name||'');
+    } else if (mid === 'USDT') {
+        _s('pm_usdt_address', pd.address||pd.binanceId||'');
+        _s('pm_usdt_network', pd.network||'USDT / TRC20');
+    } else if (mid === 'PAGO_MOVIL') {
+        _s('pm_pm_bank',    pd.bank||'');
+        _s('pm_pm_phone',   pd.phone||'');
+        _s('pm_pm_cedula',  pd.cedula||'');
+        _s('pm_pm_name',    pd.name||'');
+    } else if (mid === 'BANK_TRANSFER') {
+        _s('pm_bank_bank',    pd.bank||'');
+        _s('pm_bank_account', pd.account||'');
+        _s('pm_bank_name',    pd.name||'');
+        _s('pm_bank_cedula',  pd.cedula||'');
+    } else if (mid === 'PAYPAL') {
+        _s('pm_paypal_email', pd.email||'');
+        _s('pm_paypal_name',  pd.name||'');
+    }
+    pmShowDataFields();
+    document.getElementById('pmModal').style.display = 'flex';
+}
+
+function _s(id, val) { const el = document.getElementById(id); if (el) el.value = val; }
+
+function _pmClearDataFields() {
+    ['pm_zelle_account','pm_zelle_name','pm_usdt_address','pm_usdt_network',
+     'pm_pm_bank','pm_pm_phone','pm_pm_cedula','pm_pm_name',
+     'pm_bank_bank','pm_bank_account','pm_bank_name','pm_bank_cedula',
+     'pm_paypal_email','pm_paypal_name'].forEach(id => _s(id, ''));
+}
+
+function pmShowDataFields() {
+    const id = (_pmEditing || '').toUpperCase() ||
+               document.getElementById('pm_id')?.value.toUpperCase() || '';
+    const type = document.getElementById('pm_type')?.value || 'pos';
+    // Solo mostrar campos de datos si el método es de suscripción o ambos
+    const showData = type === 'sub' || type === 'both' || !!_pmEditing;
+    document.getElementById('pmDataSection').style.display = showData ? 'block' : 'block'; // siempre visible
+    ['zelle','usdt','pago_movil','bank','paypal'].forEach(k => {
+        const el = document.getElementById('pmFields_' + k);
+        if (el) el.style.display = 'none';
+    });
+    if (id === 'ZELLE')         { const el = document.getElementById('pmFields_zelle');     if(el) el.style.display='flex'; }
+    else if (id === 'USDT')     { const el = document.getElementById('pmFields_usdt');      if(el) el.style.display='flex'; }
+    else if (id === 'PAGO_MOVIL'){ const el = document.getElementById('pmFields_pago_movil'); if(el) el.style.display='flex'; }
+    else if (id === 'BANK_TRANSFER'){ const el = document.getElementById('pmFields_bank'); if(el) el.style.display='flex'; }
+    else if (id === 'PAYPAL')   { const el = document.getElementById('pmFields_paypal');    if(el) el.style.display='flex'; }
+}
+
+function closePmModal() {
+    document.getElementById('pmModal').style.display = 'none';
+    _pmEditing = null;
+}
+
+async function savePmModal() {
+    const id       = document.getElementById('pm_id').value.trim().toUpperCase().replace(/\s+/g,'_');
+    const label    = document.getElementById('pm_label').value.trim();
+    const icon     = document.getElementById('pm_icon').value.trim() || '💳';
+    const type     = document.getElementById('pm_type').value;
+    const isManual = document.getElementById('pm_isManual').checked;
+    const info     = document.getElementById('pm_info').value.trim();
+
+    if (!id || !label) { toast('⚠️', 'ID y nombre son obligatorios', 'error'); return; }
+
+    // Recopilar datos de cuenta según el tipo de método
+    const _g = i => document.getElementById(i)?.value.trim() || '';
+    let paymentData = { extra: info };
+    if (id === 'ZELLE')          paymentData = { account: _g('pm_zelle_account'), name: _g('pm_zelle_name'), extra: info };
+    else if (id === 'USDT')      paymentData = { address: _g('pm_usdt_address'), network: _g('pm_usdt_network')||'USDT / TRC20', extra: info };
+    else if (id === 'PAGO_MOVIL') paymentData = { bank: _g('pm_pm_bank'), phone: _g('pm_pm_phone'), cedula: _g('pm_pm_cedula'), name: _g('pm_pm_name'), extra: info };
+    else if (id === 'BANK_TRANSFER') paymentData = { bank: _g('pm_bank_bank'), account: _g('pm_bank_account'), name: _g('pm_bank_name'), cedula: _g('pm_bank_cedula'), extra: info };
+    else if (id === 'PAYPAL')    paymentData = { email: _g('pm_paypal_email'), name: _g('pm_paypal_name'), extra: info };
+
+    let j;
+    if (_pmEditing) {
+        j = await api('PUT', `/api/admin/payment-methods/${_pmEditing}`, { label, icon, type, isManual, info, paymentData });
+    } else {
+        j = await api('POST', '/api/admin/payment-methods', { id, label, icon, type, isManual, info, paymentData });
+    }
+
+    if (!j.ok) { toast('⚠️', j.error || 'Error al guardar', 'error'); return; }
+    toast('✅', _pmEditing ? `"${label}" actualizado` : `"${label}" creado`, 'success');
+    closePmModal();
+    loadPaymentMethods();
+}
+
+async function togglePaymentMethod(id, newActive) {
+    const j = await api('PUT', `/api/admin/payment-methods/${id}`, { active: newActive });
+    if (!j.ok) { toast('⚠️', j.error || 'Error', 'error'); return; }
+    toast('✅', newActive ? 'Método activado' : 'Método desactivado', 'success');
+    loadPaymentMethods();
+}
+
+async function deletePaymentMethod(id) {
+    if (!confirm(`¿Eliminar el método "${id}"? Esta acción no se puede deshacer.`)) return;
+    const j = await api('DELETE', `/api/admin/payment-methods/${id}`);
+    if (!j.ok) { toast('⚠️', j.error || 'Error al eliminar', 'error'); return; }
+    toast('✅', 'Método eliminado', 'success');
+    loadPaymentMethods();
+}
+
+/* ════════════════════════════════════════════════════════════════
+   PAGOS
+   ════════════════════════════════════════════════════════════════ */
+async function loadPendingBadge() {
+    const j = await api('GET', '/api/admin/payments?status=pending&limit=100');
+    if (!j.ok) return;
+    const badge = document.getElementById('pendingPaysBadge');
+    if (badge) {
+        const count = j.data.length;
+        badge.textContent = count;
+        badge.style.display = count > 0 ? 'inline-block' : 'none';
+    }
+}
+
+async function loadPayments() {
+    const st    = document.getElementById('payStatusFilter')?.value || '';
+    const plan  = document.getElementById('payPlanFilter')?.value   || '';
+    let url = '/api/admin/payments?limit=200';
+    if (st)   url += `&status=${st}`;
+    if (plan) url += `&planId=${plan}`;
+    const j = await api('GET', url);
+    if (!j.ok) { toast('⚠️', 'Error cargando pagos', 'error'); return; }
+
+    const tbody = document.getElementById('paymentsTbody');
+    if (!tbody) return;
+
+    if (!j.data.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:20px;">Sin pagos registrados</td></tr>';
+        return;
+    }
+
+    const STATUS_LABELS = {
+        completed: '<span style="background:rgba(16,185,129,.15);color:#6ee7b7;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;">✅ Completado</span>',
+        pending:   '<span style="background:rgba(245,158,11,.15);color:#fbbf24;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;">⏳ Pendiente</span>',
+        failed:    '<span style="background:rgba(239,68,68,.15);color:#fca5a5;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;">❌ Fallido</span>',
+        refunded:  '<span style="background:rgba(148,163,184,.15);color:#94a3b8;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;">↩️ Reembolsado</span>',
+    };
+    const METHOD_ICONS = { card:'💳', paypal:'🅿️', zelle:'⚡', binance:'🟡', pago_movil:'📱', admin:'👑', google_play:'🎮', web:'🌐', unknown:'❓' };
+
+    tbody.innerHTML = j.data.map(p => `
+    <tr>
+      <td style="font-size:12px;">${fmtTs(p.ts)}</td>
+      <td>
+        <div style="font-weight:600;font-size:13px;">${p.userEmail || '—'}</div>
+        <div style="font-size:11px;color:var(--text2);">${p.userId}</div>
+      </td>
+      <td><span style="font-weight:600;">${p.planName || p.planId || '—'}</span></td>
+      <td style="font-weight:700;color:${p.amount > 0 ? '#10b981' : 'var(--text2)'};">
+        ${p.amount > 0 ? '$' + Number(p.amount).toFixed(2) : '—'}
+        <span style="font-size:10px;color:var(--text2);">${p.currency || ''}</span>
+      </td>
+      <td>${METHOD_ICONS[p.method] || '❓'} <span style="font-size:12px;">${p.method || '—'}</span></td>
+      <td>${STATUS_LABELS[p.status] || p.status}</td>
+      <td style="white-space:nowrap;">
+        ${p.status === 'pending' ? `
+          <button class="btn btn-sm" style="background:#10b981;color:#fff;border:none;"
+                  onclick="confirmPayment('${p.id}')">✅ Confirmar</button>
+          <button class="btn btn-sm btn-danger"
+                  onclick="rejectPayment('${p.id}')">❌</button>
+        ` : `<span style="font-size:11px;color:var(--text2);">
+          ${p.confirmedBy ? `Por: ${p.confirmedBy.split('@')[0]}` : p.note || '—'}
+        </span>`}
+      </td>
+    </tr>`).join('');
+}
+
+async function confirmPayment(payId) {
+    if (!confirm('¿Confirmar este pago y activar la suscripción del usuario?')) return;
+    const j = await api('POST', `/api/admin/payments/${payId}/confirm`);
+    if (!j.ok) { toast('⚠️', j.error || 'Error al confirmar', 'error'); return; }
+    toast('✅', 'Pago confirmado y suscripción activada', 'success');
+    loadPayments();
+    loadPendingBadge();
+}
+
+async function rejectPayment(payId) {
+    const reason = prompt('Motivo del rechazo (opcional):') ?? '';
+    const j = await api('POST', `/api/admin/payments/${payId}/reject`, { reason });
+    if (!j.ok) { toast('⚠️', j.error || 'Error al rechazar', 'error'); return; }
+    toast('✅', 'Pago rechazado', 'success');
+    loadPayments();
+    loadPendingBadge();
+}
+
+/* ════════════════════════════════════════════════════════════════
+   INGRESOS / ESTADÍSTICAS
+   ════════════════════════════════════════════════════════════════ */
+async function loadRevenue() {
+    const j = await api('GET', '/api/admin/plans/stats');
+    if (!j.ok) { toast('⚠️', 'Error cargando estadísticas', 'error'); return; }
+    const d = j.data;
+
+    // KPIs
+    const kpis = [
+        { icon:'💰', color:'green',  val:'$' + d.revenue.last30d.toFixed(2), lbl:'Ingresos (30 días)' },
+        { icon:'📅', color:'blue',   val:'$' + d.revenue.last7d.toFixed(2),  lbl:'Ingresos (7 días)' },
+        { icon:'💵', color:'purple', val:'$' + d.revenue.total.toFixed(2),   lbl:'Ingresos totales' },
+        { icon:'📊', color:'yellow', val:d.conversion.rate + '%',             lbl:'Conversión trial→pago' },
+        { icon:'🆓', color:'blue',   val:d.byStatus.trial || 0,              lbl:'En prueba ahora' },
+        { icon:'✅', color:'green',  val:(d.byStatus.subscribed || 0) + (d.byStatus.cancelled_active || 0), lbl:'Suscripciones activas' },
+        { icon:'❌', color:'red',    val:d.byStatus.trial_expired || 0,      lbl:'Pruebas vencidas' },
+        { icon:'👥', color:'purple', val:d.totalUsers,                        lbl:'Usuarios totales' },
+    ];
+    document.getElementById('revenueStats').innerHTML = kpis.map(k =>
+        `<div class="stat-card ${k.color}"><div class="val">${k.val}</div><div class="lbl">${k.lbl}</div></div>`
+    ).join('');
+
+    // Por plan
+    const planNames = { basic:'📦 Plan Básico', pro:'🚀 Plan Pro', semestral:'💎 Plan Semestral' };
+    const planColors = { basic:'#64748b', pro:'#4f46e5', semestral:'#f59e0b' };
+    const byPlanTotal = Object.values(d.byPlan).reduce((a, b) => a + b, 0) || 1;
+    document.getElementById('revByPlanBody').innerHTML = Object.entries(d.byPlan).length
+        ? Object.entries(d.byPlan).map(([id, count]) => {
+            const pct = Math.round(count / byPlanTotal * 100);
+            return `<div style="margin-bottom:10px;">
+              <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+                <span>${planNames[id] || id}</span>
+                <span style="font-weight:700;">${count} usuarios (${pct}%)</span>
+              </div>
+              <div style="background:var(--border);border-radius:4px;height:6px;">
+                <div style="background:${planColors[id] || '#4f46e5'};width:${pct}%;height:100%;border-radius:4px;"></div>
+              </div>
+            </div>`;
+          }).join('')
+        : '<div style="color:var(--text2);font-size:13px;">Sin suscriptores todavía</div>';
+
+    // Por estado
+    const statusLabels = { trial:'🆓 En prueba', subscribed:'✅ Suscrito', cancelled_active:'⚠️ Cancelado (activo)', trial_expired:'❌ Prueba vencida', no_access:'🔒 Sin acceso', admin:'👑 Admin' };
+    const statusColors = { trial:'#0ea5e9', subscribed:'#10b981', cancelled_active:'#f59e0b', trial_expired:'#ef4444', no_access:'#ef4444', admin:'#7c3aed' };
+    const byStatusTotal = Object.values(d.byStatus).reduce((a, b) => a + b, 0) || 1;
+    document.getElementById('revByStatusBody').innerHTML = Object.entries(d.byStatus)
+        .filter(([,v]) => v > 0)
+        .map(([id, count]) => {
+            const pct = Math.round(count / byStatusTotal * 100);
+            return `<div style="margin-bottom:10px;">
+              <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+                <span>${statusLabels[id] || id}</span>
+                <span style="font-weight:700;">${count} (${pct}%)</span>
+              </div>
+              <div style="background:var(--border);border-radius:4px;height:6px;">
+                <div style="background:${statusColors[id] || '#64748b'};width:${pct}%;height:100%;border-radius:4px;"></div>
+              </div>
+            </div>`;
+        }).join('');
+
+    // Pagos recientes
+    const tbody = document.getElementById('recentPaysTbody');
+    const METHOD_ICONS = { card:'💳', paypal:'🅿️', zelle:'⚡', binance:'🟡', pago_movil:'📱', admin:'👑', google_play:'🎮', web:'🌐', unknown:'❓' };
+    if (tbody) {
+        tbody.innerHTML = (d.recentPayments || []).length
+            ? d.recentPayments.map(p => `
+              <tr>
+                <td style="font-size:12px;">${fmtTs(p.ts)}</td>
+                <td style="font-size:12px;">${p.userEmail || '—'}</td>
+                <td>${p.planName || p.planId || '—'}</td>
+                <td style="font-weight:700;color:#10b981;">$${Number(p.amount).toFixed(2)}</td>
+                <td>${METHOD_ICONS[p.method] || '❓'} ${p.method || '—'}</td>
+              </tr>`).join('')
+            : '<tr><td colspan="5" style="text-align:center;color:var(--text2);padding:16px;">Sin pagos registrados</td></tr>';
+    }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ════════════════════════════════════════════════════════════════ */
+function checkResponsive() {
+    const btn = document.getElementById('menuBtn');
+    if (!btn) return;
+    // La visibilidad del botón se controla por CSS (media query), no por JS
+    // Solo gestionamos el sidebar y el dashGrid
+    if (window.innerWidth < 768) {
+        const dg = document.getElementById('dashGrid');
+        if (dg) dg.style.gridTemplateColumns = '1fr';
+    } else {
+        closeSidebar();
+    }
+}
+
+function toggleSidebar() {
+    const sb = document.getElementById('sidebar');
+    const ov = document.getElementById('sidebarOverlay');
+    if (sb.classList.contains('open')) {
+        closeSidebar();
+    } else {
+        sb.classList.add('open');
+        if (ov) ov.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeSidebar() {
+    const sb = document.getElementById('sidebar');
+    const ov = document.getElementById('sidebarOverlay');
+    if (sb) sb.classList.remove('open');
+    if (ov) ov.classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
+// Cerrar sidebar al navegar en móvil
+const _origNav = window.nav || nav;
+window.nav = function(id) {
+    if (typeof _origNav === 'function') _origNav(id);
+    if (window.innerWidth < 768) closeSidebar();
+};
+window.addEventListener('resize', checkResponsive);
+
+/* ════════════════════════════════════════════════════════════════
+   INIT
+   ════════════════════════════════════════════════════════════════ */
+checkResponsive();
+checkSession();
+
+/* ════════════════════════════════════════════════════════════════
+   EMPRESAS — vista global de todas las empresas
+   ════════════════════════════════════════════════════════════════ */
+let _companies = [];
+
+async function loadCompanies() {
+    const j = await api('GET', '/api/admin/companies/overview');
+    if (!j.ok) { toast('⚠️', 'Error cargando empresas', 'error'); return; }
+    _companies = j.data;
+
+    // Poblar selectores de empresa en otras secciones
+    ['erpCompanyFilter','empCompanyFilter'].forEach(selId => {
+        const sel = document.getElementById(selId);
+        if (!sel) return;
+        const current = sel.value;
+        sel.innerHTML = '<option value="">Selecciona una empresa...</option>' +
+            _companies.map(c => `<option value="${c.companyId}">${c.company || c.ownerEmail} (${c.ownerEmail})</option>`).join('');
+        if (current) sel.value = current;
+    });
+
+    // KPIs
+    const total    = _companies.length;
+    const active   = _companies.filter(c => c.access).length;
+    const expired  = _companies.filter(c => !c.access && c.status !== 'trial').length;
+    const trials   = _companies.filter(c => c.status === 'trial').length;
+    const totalSales = _companies.reduce((s, c) => s + (c.salesTotal || 0), 0);
+
+    document.getElementById('companiesStats').innerHTML = [
+        { color:'blue',   val: total,                lbl: '🏢 Total empresas' },
+        { color:'green',  val: active,               lbl: '✅ Con acceso activo' },
+        { color:'purple', val: trials,               lbl: '🆓 En prueba' },
+        { color:'red',    val: expired,              lbl: '❌ Sin acceso' },
+        { color:'green',  val: '$'+totalSales.toFixed(0), lbl: '💰 Ventas totales ERP' },
+    ].map(k => `<div class="stat-card ${k.color}"><div class="val">${k.val}</div><div class="lbl">${k.lbl}</div></div>`).join('');
+
+    // Tabla
+    const tb = document.getElementById('companiesTbody');
+    if (!_companies.length) { tb.innerHTML = '<tr><td colspan="8" class="empty">Sin empresas</td></tr>'; return; }
+    const SC = { trial:'<span class="badge badge-trial">🆓 Trial</span>', subscribed:'<span class="badge badge-subscribed">✅ Activo</span>', cancelled_active:'<span class="badge badge-trial">⚠️ Cancelado</span>', trial_expired:'<span class="badge badge-expired">❌ Expirado</span>', no_access:'<span class="badge badge-expired">🔒 Sin acceso</span>' };
+    tb.innerHTML = _companies.map(c => `<tr>
+        <td><div style="font-weight:600;font-size:13px;">${c.ownerName}</div><div style="font-size:11px;color:var(--text2);">${c.ownerEmail}</div><div style="font-size:11px;color:var(--text3);">${c.company}</div></td>
+        <td style="font-size:12px;font-weight:600;">${c.planName}</td>
+        <td>${SC[c.status] || `<span class="badge">${c.status}</span>`}</td>
+        <td style="font-weight:700;color:${(c.daysLeft||0)<=3?'var(--danger)':(c.daysLeft||0)<=7?'var(--warning)':'var(--success)'};">${c.daysLeft !== null ? c.daysLeft+'d' : '—'}</td>
+        <td style="font-weight:700;color:var(--success);">$${(c.salesTotal||0).toFixed(2)}</td>
+        <td style="font-size:12px;">${fmtDate(c.createdAt)}</td>
+        <td style="font-size:12px;">👥 ${c.teamMembers}</td>
+        <td>
+          <button class="btn btn-ghost btn-sm" onclick="viewCompanyData('${c.companyId}')">📊 Ver datos</button>
+          <button class="btn btn-ghost btn-sm" onclick="openUserDetail('${c.companyId}')">👤 Perfil</button>
+        </td>
+    </tr>`).join('');
+}
+
+function viewCompanyData(companyId) {
+    nav('erp-data');
+    setTimeout(() => {
+        const sel = document.getElementById('erpCompanyFilter');
+        if (sel) { sel.value = companyId; loadErpData(); }
+    }, 200);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   DATOS ERP — ventas, gastos, facturas, inventario por empresa
+   ════════════════════════════════════════════════════════════════ */
+async function initErpData() {
+    if (!_companies.length) await loadCompanies();
+}
+
+async function loadErpData() {
+    const companyId = document.getElementById('erpCompanyFilter')?.value;
+    if (!companyId) {
+        document.getElementById('erpSummaryCards').innerHTML = '<div style="color:var(--text2);font-size:13px;">Selecciona una empresa para ver sus datos.</div>';
+        return;
+    }
+    // Resumen
+    const jSum = await api('GET', `/api/admin/company/${companyId}/summary`);
+    if (!jSum.ok) { toast('⚠️', 'Error cargando datos', 'error'); return; }
+    const s = jSum.data;
+    document.getElementById('erpSummaryCards').innerHTML = [
+        { color:'green',  val:'$'+s.monthlySales.toFixed(2),    lbl:'Ventas (30d)' },
+        { color:'red',    val:'$'+s.monthlyExpenses.toFixed(2), lbl:'Gastos (30d)' },
+        { color:(s.monthlyProfit>=0?'green':'red'), val:'$'+s.monthlyProfit.toFixed(2), lbl:'Ganancia (30d)' },
+        { color:'blue',   val:s.products,                       lbl:'Productos' },
+        { color:'purple', val:s.salesCount,                     lbl:'Ventas totales' },
+        { color:'yellow', val:'$'+s.pendingInvoices.toFixed(2), lbl:'Facturas pendientes' },
+    ].map(k => `<div class="stat-card ${k.color}"><div class="val">${k.val}</div><div class="lbl">${k.lbl}</div></div>`).join('');
+
+    // Ventas
+    const jSales = await api('GET', `/api/admin/company/${companyId}/sales?limit=20`);
+    const salesTbody = document.getElementById('erpSalesTbody');
+    if (jSales.ok && salesTbody) {
+        salesTbody.innerHTML = jSales.data.length
+            ? jSales.data.map(x => `<tr>
+                <td style="font-size:12px;">${fmtDate(x.createdAt||x.date)}</td>
+                <td style="font-weight:700;color:var(--success);">$${Number(x.total||0).toFixed(2)} <span style="font-size:10px;color:var(--text2);">${x.currency||''}</span></td>
+                <td style="font-size:12px;">${x.method||'—'}</td>
+                <td style="font-size:12px;">${x.status||'—'}</td>
+              </tr>`).join('')
+            : '<tr><td colspan="4" class="empty">Sin ventas</td></tr>';
+    }
+
+    // Gastos
+    const jExp = await api('GET', `/api/admin/company/${companyId}/expenses?limit=20`);
+    const expTbody = document.getElementById('erpExpensesTbody');
+    if (jExp.ok && expTbody) {
+        expTbody.innerHTML = jExp.data.length
+            ? jExp.data.map(x => `<tr>
+                <td style="font-size:12px;">${fmtDate(x.createdAt||x.date)}</td>
+                <td style="font-size:12px;">${x.description||x.category||'—'}</td>
+                <td style="font-weight:700;color:var(--danger);">$${Number(x.amount||0).toFixed(2)} <span style="font-size:10px;color:var(--text2);">${x.currency||''}</span></td>
+              </tr>`).join('')
+            : '<tr><td colspan="3" class="empty">Sin gastos</td></tr>';
+    }
+
+    // Facturas
+    const jInv = await api('GET', `/api/admin/company/${companyId}/invoices?limit=30`);
+    const invTbody = document.getElementById('erpInvoicesTbody');
+    if (jInv.ok && invTbody) {
+        const STATUS_C = { Pagada:'#6ee7b7', Pendiente:'#fbbf24', Parcial:'#93c5fd', Anulada:'#94a3b8' };
+        invTbody.innerHTML = jInv.data.length
+            ? jInv.data.map(x => {
+                const pending = Math.max(0, (Number(x.total)||0) - (Number(x.paid)||0));
+                return `<tr>
+                  <td style="font-size:12px;font-weight:700;">${x.number||x.id}</td>
+                  <td style="font-size:12px;">${fmtDate(x.createdAt||x.date)}</td>
+                  <td style="font-weight:700;">$${Number(x.total||0).toFixed(2)}</td>
+                  <td style="color:var(--success);">$${Number(x.paid||0).toFixed(2)}</td>
+                  <td style="color:${pending>0?'var(--warning)':'var(--success)'};">$${pending.toFixed(2)}</td>
+                  <td><span style="color:${STATUS_C[x.status]||'#94a3b8'};font-weight:700;font-size:11px;">${x.status||'—'}</span></td>
+                </tr>`;
+              }).join('')
+            : '<tr><td colspan="6" class="empty">Sin facturas</td></tr>';
+    }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   TASAS DE CAMBIO
+   ════════════════════════════════════════════════════════════════ */
+async function loadRates() {
+    const j = await api('GET', '/api/admin/exchange-rates');
+    if (!j.ok) { toast('⚠️', 'Error cargando tasas', 'error'); return; }
+    const d = j.data;
+
+    // KPIs
+    const svcOk = d.serviceStatus?.status === 'ok';
+    document.getElementById('ratesKpis').innerHTML = [
+        { color:'green',  val: 'Bs. '+(d.currentUSD?.rate||'—'), lbl:'💵 USD → VES (actual)' },
+        { color:'purple', val: 'Bs. '+(d.currentEUR?.rate||'—'), lbl:'🇪🇺 EUR → VES (actual)' },
+        { color: svcOk?'green':'yellow', val: svcOk?'✅ Activo':'⚠️ Sin datos', lbl:'Servicio BCV automático' },
+        { color:'blue',   val: (d.currentUSD?.source||'—'),       lbl:'Fuente' },
+    ].map(k => `<div class="stat-card ${k.color}"><div class="val" style="font-size:18px;">${k.val}</div><div class="lbl">${k.lbl}</div></div>`).join('');
+
+    // Historial
+    const tb = document.getElementById('ratesHistoryTbody');
+    if (!d.history || !d.history.length) { tb.innerHTML = '<tr><td colspan="6" class="empty">Sin historial</td></tr>'; return; }
+    tb.innerHTML = d.history.map(r => `<tr>
+        <td style="font-size:12px;">${fmtTs(r.createdAt)}</td>
+        <td style="font-weight:700;">${r.fromCurrency} → ${r.toCurrency}</td>
+        <td style="font-weight:700;color:var(--success);">Bs. ${Number(r.rate).toLocaleString('es')}</td>
+        <td style="font-size:12px;color:var(--text2);">${r.source||'Manual'}</td>
+        <td style="font-size:12px;color:var(--text2);">${r.createdBy||'—'}</td>
+        <td>${r.isActive ? '<span style="color:var(--success);font-weight:700;">✅ Activa</span>' : '<span style="color:var(--text3);">Histórica</span>'}</td>
+    </tr>`).join('');
+}
+
+async function saveRate() {
+    const from  = document.getElementById('rateFromCurrency')?.value;
+    const rate  = parseFloat(document.getElementById('rateValue')?.value);
+    const notes = document.getElementById('rateNotes')?.value.trim();
+    const msgEl = document.getElementById('rateMsg');
+    if (!rate || rate <= 0) { if(msgEl) msgEl.innerHTML='<span style="color:var(--danger);">Ingresa una tasa válida.</span>'; return; }
+
+    confirm2(`¿Guardar tasa ${from}→VES = Bs. ${rate}? Esta tasa se propagará a TODAS las empresas.`, async () => {
+        const j = await api('POST', '/api/admin/exchange-rates', { fromCurrency: from, toCurrency: 'VES', rate, notes });
+        if (!j.ok) { toast('⚠️', j.error, 'error'); return; }
+        toast('✅', `Tasa guardada y propagada a ${j.data.propagated} empresas`, 'success');
+        if (msgEl) msgEl.innerHTML = `<span style="color:var(--success);">✅ Tasa guardada. Propagada a ${j.data.propagated} empresas.</span>`;
+        loadRates();
+    });
+}
+
+async function fetchBCV() {
+    const j = await api('POST', '/api/admin/exchange-rates/fetch-bcv');
+    if (!j.ok) { toast('⚠️', j.error || 'Error al consultar BCV', 'error'); return; }
+    toast('✅', j.data?.success ? `BCV: USD=${j.data.USD} EUR=${j.data.EUR}` : 'No se pudo obtener del BCV — usando caché', 'success');
+    loadRates();
+}
+
+/* ════════════════════════════════════════════════════════════════
+   PERMISOS DE EMPLEADOS
+   ════════════════════════════════════════════════════════════════ */
+async function initEmployees() {
+    if (!_companies.length) await loadCompanies();
+}
+
+async function loadEmployees() {
+    const companyId = document.getElementById('empCompanyFilter')?.value;
+    const container = document.getElementById('employeesList');
+    if (!companyId) { container.innerHTML = '<div style="color:var(--text2);padding:20px;text-align:center;">Selecciona una empresa para ver sus empleados.</div>'; return; }
+
+    const j = await api('GET', `/api/admin/company/${companyId}/team`);
+    if (!j.ok) { toast('⚠️', 'Error cargando empleados', 'error'); return; }
+
+    const team = j.data;
+    if (!team.length) { container.innerHTML = '<div class="tbl-wrap"><div class="empty"><div class="icon">👥</div>Sin empleados en esta empresa</div></div>'; return; }
+
+    const PERM_MODULES = ['inventory','sales','invoices','expenses','reports','accounting','users'];
+    const PERM_ACTIONS = { inventory:['view','create','edit','delete','import'], sales:['view','create','edit','cancel'], invoices:['view','create','edit','cancel'], expenses:['view','create','edit','delete'], reports:['view','export'], accounting:['view','edit'], users:['view','create','edit'] };
+
+    container.innerHTML = team.map(member => {
+        const isOwner = member.teamRole === 'owner';
+        const perms   = member.permissions || {};
+        return `
+        <div class="tbl-wrap" style="margin-bottom:16px;padding:20px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:36px;height:36px;border-radius:50%;background:${isOwner?'linear-gradient(135deg,#4f46e5,#7c3aed)':'#334155'};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#fff;">${(member.name||'?').slice(0,2).toUpperCase()}</div>
+              <div>
+                <div style="font-weight:700;font-size:14px;">${member.name} ${isOwner?'<span style="font-size:10px;background:#1e1b4b;color:#a5b4fc;padding:2px 8px;border-radius:20px;margin-left:4px;">👑 Propietario</span>':''}</div>
+                <div style="font-size:12px;color:var(--text2);">${member.email}</div>
+                <div style="font-size:11px;color:var(--text3);margin-top:1px;">Último acceso: ${member.lastLogin ? fmtTs(member.lastLogin) : 'Nunca'}</div>
+              </div>
+            </div>
+            ${!isOwner ? `<div style="display:flex;gap:8px;">
+              ${member.active
+                ? `<button class="btn btn-danger btn-sm" onclick="suspendEmployee('${member.id}','${member.name}')">🚫 Suspender</button>`
+                : `<button class="btn btn-success btn-sm" onclick="reactivateEmployee('${member.id}','${member.name}')">✅ Reactivar</button>`}
+            </div>` : ''}
+          </div>
+          ${isOwner ? '<div style="font-size:12px;color:var(--text2);">El propietario tiene acceso total. No se pueden restringir sus permisos.</div>' : `
+          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;">PERMISOS:</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:14px;">
+            ${PERM_MODULES.map(mod => {
+              const modPerms = perms[mod] || {};
+              const actions  = PERM_ACTIONS[mod] || [];
+              return `<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;">
+                <div style="font-weight:700;font-size:12px;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">${mod}</div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                  ${actions.map(act => {
+                    const checked = modPerms[act] === true;
+                    return `<label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;">
+                      <input type="checkbox" ${checked?'checked':''} data-emp="${member.id}" data-mod="${mod}" data-act="${act}" onchange="updatePermission(this)"/>
+                      ${act}
+                    </label>`;
+                  }).join('')}
+                </div>
+              </div>`;
+            }).join('')}
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-primary btn-sm" onclick="saveEmployeePermissions('${member.id}','${companyId}')">💾 Guardar permisos</button>
+          </div>`}
+        </div>`;
+    }).join('');
+
+    // Estado cuenta
+    team.filter(m => !m.teamRole || m.teamRole === 'employee').forEach(m => {
+        if (!m.active) {
+            const card = document.querySelector(`[data-emp-id="${m.id}"]`);
+            // No hay card con esa referencia, pero el estilo inactivo ya está en el nombre
+        }
+    });
+}
+
+// Mapa temporal de cambios de permisos por usuario
+const _permChanges = {};
+
+function updatePermission(checkbox) {
+    const empId = checkbox.dataset.emp;
+    const mod   = checkbox.dataset.mod;
+    const act   = checkbox.dataset.act;
+    if (!_permChanges[empId]) _permChanges[empId] = {};
+    if (!_permChanges[empId][mod]) _permChanges[empId][mod] = {};
+    _permChanges[empId][mod][act] = checkbox.checked;
+}
+
+async function saveEmployeePermissions(empId, companyId) {
+    const changes = _permChanges[empId];
+    if (!changes || !Object.keys(changes).length) {
+        toast('ℹ️', 'Sin cambios que guardar', 'warn');
+        return;
+    }
+    const j = await api('PUT', `/api/admin/employees/${empId}/permissions`, changes);
+    if (!j.ok) { toast('⚠️', j.error, 'error'); return; }
+    toast('✅', 'Permisos actualizados — el empleado verá los cambios en su próxima acción', 'success');
+    delete _permChanges[empId];
+    loadEmployees();
+}
+
+async function suspendEmployee(empId, name) {
+    const companyId = document.getElementById('empCompanyFilter')?.value;
+    confirm2(`¿Suspender la cuenta de ${name}? Perderá acceso inmediatamente.`, async () => {
+        const j = await api('POST', `/api/admin/employees/${empId}/status`, { action: 'suspend', reason: 'Suspendido por administrador' });
+        if (!j.ok) { toast('⚠️', j.error, 'error'); return; }
+        toast('✅', `${name} suspendido`, 'success');
+        loadEmployees();
+    });
+}
+
+async function reactivateEmployee(empId, name) {
+    confirm2(`¿Reactivar la cuenta de ${name}?`, async () => {
+        const j = await api('POST', `/api/admin/employees/${empId}/status`, { action: 'reactivate' });
+        if (!j.ok) { toast('⚠️', j.error, 'error'); return; }
+        toast('✅', `${name} reactivado`, 'success');
+        loadEmployees();
+    });
+}
+
+/* ════════════════════════════════════════════════════════════════
+   CONFIGURACIÓN GLOBAL
+   ════════════════════════════════════════════════════════════════ */
+async function loadGlobalSettings() {
+    const j = await api('GET', '/api/admin/global-settings');
+    if (!j.ok) return;
+    const d = j.data;
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val ?? ''; };
+    const chk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
+    set('cfgTrialDays',    d.trialDays ?? 3);
+    set('cfgAppName',      d.appName   ?? 'FIX PRO MAX');
+    set('cfgSupportEmail', d.supportEmail ?? '');
+    chk('cfgRegistrationOpen',  d.registrationOpen !== false);
+    chk('cfgMaintenanceMode',   d.maintenanceMode === true);
+}
+
+async function saveAdminSettings() {
+    const trialDays  = parseInt(document.getElementById('cfgTrialDays')?.value) || 3;
+    const appName    = document.getElementById('cfgAppName')?.value.trim()      || 'FIX PRO MAX';
+    const supportEmail = document.getElementById('cfgSupportEmail')?.value.trim() || '';
+    const registrationOpen  = document.getElementById('cfgRegistrationOpen')?.checked !== false;
+    const maintenanceMode   = document.getElementById('cfgMaintenanceMode')?.checked  === true;
+
+    const j = await api('PUT', '/api/admin/global-settings', { trialDays, appName, supportEmail, registrationOpen, maintenanceMode });
+    if (!j.ok) { toast('⚠️', j.error || 'Error al guardar', 'error'); return; }
+    toast('✅', 'Configuración global guardada', 'success');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   AUDITORÍA COMPLETA
+   ════════════════════════════════════════════════════════════════ */
+let _auditLog = [];
+
+async function loadAudit() {
+    const j = await api('GET', '/api/admin/audit?limit=500');
+    if (!j.ok) { toast('⚠️', 'Error cargando auditoría', 'error'); return; }
+    _auditLog = j.data;
+    renderAudit(_auditLog);
+}
+
+function filterAudit() {
+    const q   = document.getElementById('auditSearch')?.value.toLowerCase() || '';
+    const act = document.getElementById('auditActionFilter')?.value || '';
+    let list  = _auditLog;
+    if (q)   list = list.filter(e => (e.action||'').toLowerCase().includes(q) || (e.adminEmail||'').toLowerCase().includes(q) || (e.targetEmail||'').toLowerCase().includes(q));
+    if (act) list = list.filter(e => (e.action||'').includes(act));
+    renderAudit(list);
+}
+
+const ACTION_ICONS = {
+    plan_update:'📋', plan_create:'➕', suspend:'🚫', reactivate:'✅',
+    subscription_activate:'💳', subscription_cancel:'❌',
+    payment_confirm:'✅', payment_reject:'❌', ticket_reply:'📨',
+    exchange_rate:'💱', permission:'🔑', global_settings:'⚙️',
+    invite_employee:'👥', remove_employee:'🗑️', force_logout:'🔐',
+    whatsapp_config:'📱', grant_access:'🎁', revoke_access:'🔒',
+};
+
+function renderAudit(list) {
+    const tb = document.getElementById('auditTbody');
+    if (!list.length) { tb.innerHTML = '<tr><td colspan="5" class="empty">Sin registros</td></tr>'; return; }
+    tb.innerHTML = list.map(e => {
+        const icon = ACTION_ICONS[e.action] || Object.entries(ACTION_ICONS).find(([k]) => e.action.includes(k))?.[1] || '📝';
+        return `<tr>
+          <td style="font-size:11px;color:var(--text2);white-space:nowrap;">${fmtTs(e.ts)}</td>
+          <td style="font-size:12px;">${e.adminEmail||'—'}</td>
+          <td><span style="font-weight:700;font-size:12px;">${icon} ${e.action}</span></td>
+          <td style="font-size:12px;color:var(--text2);">${e.targetEmail||e.targetId||'—'}</td>
+          <td style="font-size:11px;color:var(--text3);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(e.detail||'').replace(/"/g,'&quot;')}">${e.detail||'—'}</td>
+        </tr>`;
+    }).join('');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SSE — Conexión en tiempo real con el servidor
+   ════════════════════════════════════════════════════════════════ */
+let _sseSource = null;
+
+function connectSSE() {
+    if (_sseSource) { _sseSource.close(); }
+    const tok = localStorage.getItem('fixpromax_admin_token');
+    if (!tok) return;
+
+    // SSE no soporta headers en el navegador directamente,
+    // así que usamos un endpoint que verifica el token via cookie o parámetro
+    _sseSource = new EventSource(`${API}/api/events/admin?token=${tok}`);
+
+    _sseSource.addEventListener('connected', () => {
+        document.getElementById('serverBadge').textContent = '🟢 Tiempo real';
+    });
+
+    _sseSource.addEventListener('user_status_updated', (e) => {
+        const d = JSON.parse(e.data);
+        toast('🔔', `Usuario ${d.email} → ${d.active ? 'reactivado' : 'suspendido'}`, d.active?'success':'warn');
+        // Si la sección activa muestra usuarios, actualizar
+        const active = document.querySelector('.section.active')?.id;
+        if (active === 'sec-users')   loadUsers();
+        if (active === 'sec-subs')    loadSubs();
+    });
+
+    _sseSource.addEventListener('user_subscription_updated', (e) => {
+        const d = JSON.parse(e.data);
+        toast('💳', `Suscripción actualizada: ${d.email}`, 'success');
+        const active = document.querySelector('.section.active')?.id;
+        if (active === 'sec-subs')    loadSubs();
+        if (active === 'sec-payments')loadPayments();
+    });
+
+    _sseSource.addEventListener('plan_updated', (e) => {
+        const d = JSON.parse(e.data);
+        toast('📋', `Plan ${d.planId} actualizado`, 'success');
+        const active = document.querySelector('.section.active')?.id;
+        if (active === 'sec-plans') loadPlans();
+    });
+
+    _sseSource.addEventListener('exchange_rate_updated', (e) => {
+        const d = JSON.parse(e.data);
+        toast('💱', `Tasa ${d.fromCurrency}→VES actualizada: Bs. ${d.rate}`, 'success');
+        const active = document.querySelector('.section.active')?.id;
+        if (active === 'sec-rates') loadRates();
+    });
+
+    _sseSource.onerror = () => {
+        document.getElementById('serverBadge').textContent = '🟡 Reconectando...';
+        // EventSource reconecta automáticamente
+    };
+}
+
+// El SSE para el admin requiere enviar el token — como EventSource no soporta headers,
+// el endpoint /api/events/admin lo acepta via query param con validación igual de estricta
+// (ver server.js — requireAdmin acepta ?token= en este endpoint)
+
+
+
+/* ── Gestos swipe para sidebar ── */
+(function(){
+    let tx=0,ty=0;
+    document.addEventListener('touchstart',function(e){tx=e.touches[0].clientX;ty=e.touches[0].clientY;},{passive:true});
+    document.addEventListener('touchend',function(e){
+        const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
+        const sb=document.getElementById('sidebar');
+        if(dx<-60&&Math.abs(dy)<60&&sb&&sb.classList.contains('open')) closeSidebar();
+        if(dx>60&&Math.abs(dy)<60&&tx<30&&sb&&!sb.classList.contains('open')) toggleSidebar();
+    },{passive:true});
+    document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeSidebar(); });
+})();
+
+</script>
+</body>
+</html>

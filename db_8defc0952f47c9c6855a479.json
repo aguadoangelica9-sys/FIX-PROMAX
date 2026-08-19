@@ -1,0 +1,253 @@
+{
+  "products": [],
+  "categories": [],
+  "warehouses": [
+    {
+      "id": "wh1",
+      "name": "Almacén Principal"
+    },
+    {
+      "id": "wh2",
+      "name": "Almacén Secundario"
+    }
+  ],
+  "customers": [],
+  "suppliers": [],
+  "sales": [],
+  "invoices": [],
+  "purchases": [],
+  "expenses": [],
+  "returns": [],
+  "inventoryMovements": [],
+  "inventoryHistory": [],
+  "alerts": [],
+  "chartOfAccounts": [
+    {
+      "code": "1-01-001",
+      "name": "Caja",
+      "type": "Activo",
+      "balance": 0
+    },
+    {
+      "code": "1-01-002",
+      "name": "Bancos",
+      "type": "Activo",
+      "balance": 0
+    },
+    {
+      "code": "1-02",
+      "name": "Cuentas por Cobrar",
+      "type": "Activo",
+      "balance": 0
+    },
+    {
+      "code": "1-03",
+      "name": "Inventario",
+      "type": "Activo",
+      "balance": 0
+    },
+    {
+      "code": "2-01",
+      "name": "Cuentas por Pagar",
+      "type": "Pasivo",
+      "balance": 0
+    },
+    {
+      "code": "2-02",
+      "name": "Impuestos por Pagar",
+      "type": "Pasivo",
+      "balance": 0
+    },
+    {
+      "code": "3-01",
+      "name": "Capital",
+      "type": "Patrimonio",
+      "balance": 0
+    },
+    {
+      "code": "4-01",
+      "name": "Ventas",
+      "type": "Ingreso",
+      "balance": 0
+    },
+    {
+      "code": "5-01",
+      "name": "Costo de Ventas",
+      "type": "Costo",
+      "balance": 0
+    },
+    {
+      "code": "5-02",
+      "name": "Gastos Administrativos",
+      "type": "Gasto",
+      "balance": 0
+    },
+    {
+      "code": "5-03",
+      "name": "Gastos de Ventas",
+      "type": "Gasto",
+      "balance": 0
+    }
+  ],
+  "journalEntries": [],
+  "balanceSheet": {
+    "assets": [],
+    "liabilities": [],
+    "equity": [],
+    "totalAssets": 0,
+    "totalLiabilitiesEquity": 0
+  },
+  "incomeStatement": {
+    "revenue": 0,
+    "costOfSales": 0,
+    "grossProfit": 0,
+    "expenses": 0,
+    "netIncome": 0
+  },
+  "importHistory": [],
+  "auditLog": [],
+  "payments": [],
+  "quotes": [],
+  "settings": {
+    "companyName": "",
+    "rif": "",
+    "country": "Venezuela",
+    "currency": "USD",
+    "defaultCurrency": "USD",
+    "darkMode": true,
+    "notifications": true,
+    "aiEnabled": true
+  },
+  "currencies": [
+    {
+      "code": "VES",
+      "name": "Bolívar venezolano",
+      "symbol": "Bs.",
+      "flag": "🇻🇪",
+      "active": true,
+      "isBase": true,
+      "format": "es-VE",
+      "decimals": 2
+    },
+    {
+      "code": "EUR",
+      "name": "Euro",
+      "symbol": "€",
+      "flag": "🇪🇺",
+      "active": true,
+      "isBase": false,
+      "format": "de-DE",
+      "decimals": 2
+    },
+    {
+      "code": "USD",
+      "name": "Dólar estadounidense",
+      "symbol": "$",
+      "flag": "🇺🇸",
+      "active": true,
+      "isBase": false,
+      "format": "en-US",
+      "decimals": 2
+    }
+  ],
+  "exchangeRates": [
+    {
+      "id": "rate-eur-init",
+      "fromCurrency": "EUR",
+      "toCurrency": "VES",
+      "rate": 40,
+      "date": "2026-08-19",
+      "createdAt": "2026-08-19T02:58:16.134Z",
+      "createdBy": "sistema",
+      "notes": "Tasa inicial — pendiente actualización BCV",
+      "source": "Manual inicial",
+      "updateType": "manual",
+      "isActive": false
+    },
+    {
+      "id": "rate-usd-init",
+      "fromCurrency": "USD",
+      "toCurrency": "VES",
+      "rate": 36,
+      "date": "2026-08-19",
+      "createdAt": "2026-08-19T02:58:16.134Z",
+      "createdBy": "sistema",
+      "notes": "Tasa inicial — pendiente actualización BCV",
+      "source": "Manual inicial",
+      "updateType": "manual",
+      "isActive": false
+    },
+    {
+      "id": "msziarflvvik",
+      "fromCurrency": "USD",
+      "toCurrency": "VES",
+      "rate": 773.3125,
+      "date": "2026-08-18",
+      "rawDate": "2026-08-18",
+      "effectiveDate": "2026-08-18",
+      "sourceUpdatedAt": "2026-08-17T22:18:45.668588+00:00",
+      "createdAt": "2026-08-19T03:02:46.881Z",
+      "updatedAt": "2026-08-19T03:02:46.881Z",
+      "createdBy": "inicio-servidor",
+      "notes": "🤖 Automática — BCV Today (primary)",
+      "source": "BCV (bcv.today)",
+      "sourceName": "BCV Today (primary)",
+      "updateType": "auto",
+      "isActive": false
+    },
+    {
+      "id": "msziarflu7u4",
+      "fromCurrency": "EUR",
+      "toCurrency": "VES",
+      "rate": 896.02946062,
+      "date": "2026-08-18",
+      "rawDate": "2026-08-18",
+      "effectiveDate": "2026-08-18",
+      "sourceUpdatedAt": "2026-08-17T22:18:45.668588+00:00",
+      "createdAt": "2026-08-19T03:02:46.881Z",
+      "updatedAt": "2026-08-19T03:02:46.881Z",
+      "createdBy": "inicio-servidor",
+      "notes": "🤖 Automática — BCV Today (primary)",
+      "source": "BCV (bcv.today)",
+      "sourceName": "BCV Today (primary)",
+      "updateType": "auto",
+      "isActive": false
+    },
+    {
+      "id": "msziargjnhxv",
+      "fromCurrency": "USD",
+      "toCurrency": "VES",
+      "rate": 773.3125,
+      "date": "2026-08-18",
+      "rawDate": "2026-08-18",
+      "effectiveDate": "2026-08-18",
+      "sourceUpdatedAt": "2026-08-17T22:18:45.668588+00:00",
+      "createdAt": "2026-08-19T03:02:46.915Z",
+      "updatedAt": "2026-08-19T03:02:46.915Z",
+      "createdBy": "inicio-servidor",
+      "notes": "🤖 Automática — BCV Today (primary)",
+      "source": "BCV (bcv.today)",
+      "sourceName": "BCV Today (primary)",
+      "updateType": "auto",
+      "isActive": true
+    },
+    {
+      "id": "msziargjp8rn",
+      "fromCurrency": "EUR",
+      "toCurrency": "VES",
+      "rate": 896.02946062,
+      "date": "2026-08-18",
+      "rawDate": "2026-08-18",
+      "effectiveDate": "2026-08-18",
+      "sourceUpdatedAt": "2026-08-17T22:18:45.668588+00:00",
+      "createdAt": "2026-08-19T03:02:46.915Z",
+      "updatedAt": "2026-08-19T03:02:46.915Z",
+      "createdBy": "inicio-servidor",
+      "notes": "🤖 Automática — BCV Today (primary)",
+      "source": "BCV (bcv.today)",
+      "sourceName": "BCV Today (primary)",
+      "updateType": "auto",
+      "isActive": true
+    }
+  ]
+}
