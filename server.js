@@ -2052,7 +2052,8 @@ function getAccessStatus(user) {
 }
 
 // â”€â”€ Middleware: bloquear endpoint si el mÃ³dulo no estÃ¡ en el plan â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-async function requireModule(moduleName) {
+// Middleware: bloquear endpoint si el módulo no está en el plan
+function requireModule(moduleName) {
     return async function(req, res, next) {
         if (!req.user) return next();
         if (req.user.role === 'admin') return next();
@@ -2895,13 +2896,11 @@ const DEFAULT_EMPLOYEE_PERMISSIONS = {
 };
 
 // Middleware de permisos: verifica que el empleado tenga acceso a un mÃ³dulo/acciÃ³n
-async function requirePermission(module, action) {
+function requirePermission(module, action) {
     return async (req, res, next) => {
         const u = req.user;
         if (!u) return res.status(401).json({ ok: false, error: 'No autenticado' });
-        // El propietario/owner siempre tiene acceso
         if (u.teamRole === 'owner' || u.role === 'admin') { next(); return; }
-        // Obtener permisos del usuario desde users.json
         const users = await readUsers();
         const full  = users.find(x => x.id === u.id);
         const perms = full?.permissions?.[module];
