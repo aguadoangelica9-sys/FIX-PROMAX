@@ -1,10 +1,10 @@
 ﻿/**
- * FIX PRO MAX â€” Backend API
- * Servidor Express con persistencia en MongoDB Atlas (vÃ­a db-mongo.js).
+ * FIX PRO MAX "” Backend API
+ * Servidor Express con persistencia en MongoDB Atlas (vía db-mongo.js).
  * Puerto: process.env.PORT || 3000
  */
 
-// Cargar variables de entorno (.env en desarrollo, variables del sistema en producciÃ³n)
+// Cargar variables de entorno (.env en desarrollo, variables del sistema en producción)
 require('dotenv').config();
 
 const express = require('express');
@@ -12,10 +12,10 @@ const cors    = require('cors');
 const fs      = require('fs');
 const path    = require('path');
 
-// â”€â”€ Capa de datos MongoDB (reemplaza lectura/escritura de archivos JSON) â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Capa de datos MongoDB (reemplaza lectura/escritura de archivos JSON) ❌”€❌”€❌”€❌”€❌”€❌”€
 const DB = require('./db-mongo');
 
-// â”€â”€ Servicio centralizado de tasas BCV â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Servicio centralizado de tasas BCV ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 const ExchangeRateService = require('./exchange-rate-service');
 
 const app  = express();
@@ -23,21 +23,21 @@ const PORT = process.env.PORT || 3000;
 // DB_PATH se mantiene solo para compatibilidad con exchange-rate-service que lo necesita como referencia de directorio
 const DB_PATH = path.join(__dirname, 'db.json');
 
-// FunciÃ³n para iniciar â€” conecta a MongoDB y luego escucha en el puerto
+// Función para iniciar "” conecta a MongoDB y luego escucha en el puerto
 async function startServer(port) {
     try {
         await DB.connectDB();
         // Aplicar overrides de planes guardados por el admin
         await applyPlansOverrides();
     } catch (e) {
-        console.error('âŒ No se pudo conectar a MongoDB:', e.message);
+        console.error('❌Œ No se pudo conectar a MongoDB:', e.message);
         process.exit(1);
     }
 
     const server = app.listen(port, '0.0.0.0', () => {
         console.log('');
-        console.log('  âš¡ FIX PRO MAX â€” Backend corriendo');
-        console.log(`  ðŸ–¥ï¸  URL: http://localhost:${port}`);
+        console.log('  ❌š¡ FIX PRO MAX "” Backend corriendo');
+        console.log(`  🖥️ï¸  URL: http://localhost:${port}`);
         console.log(`  ðŸ‘‘ Panel admin: http://localhost:${port}/admin`);
         console.log(`  ðŸƒ Base de datos: MongoDB Atlas`);
         console.log('');
@@ -49,38 +49,38 @@ async function startServer(port) {
     return server;
 }
 
-// â”€â”€ Middlewares â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Middlewares ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// MIDDLEWARE GLOBAL DE SUSCRIPCIÃ“N â€” corre en CADA peticiÃ³n /api/*
-// Protege TODOS los endpoints del ERP aunque no tengan requireAuth explÃ­cito.
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
+// MIDDLEWARE GLOBAL DE SUSCRIPCIÁ“N "” corre en CADA petición /api/*
+// Protege TODOS los endpoints del ERP aunque no tengan requireAuth explícito.
 // Exentas: /auth/, /subscription/, /admin/, /demo/, /config/payment-methods
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 app.use('/api', async (req, res, next) => {
     const exemptPrefixes = ['/auth/', '/subscription/', '/admin/', '/demo/', '/events'];
-    // Rutas pÃºblicas explÃ­citas que no necesitan suscripciÃ³n
+    // Rutas públicas explícitas que no necesitan suscripción
     const exemptExact = ['/subscription/plans', '/config/payment-methods', '/ping', '/run-migration'];
     const p = req.path;
     if (exemptPrefixes.some(e => p.startsWith(e) || p === e.slice(0, -1))) return next();
     if (exemptExact.some(e => p === e || p.startsWith(e + '/')))           return next();
 
     // Si no hay req.user (endpoint sin requireAuth) intentamos validar el token
-    // directamente para no dejar rutas sin protecciÃ³n.
+    // directamente para no dejar rutas sin protección.
     const header = req.headers['authorization'] || '';
     const token  = header.replace('Bearer ', '').trim();
     if (!token) {
-        // Sin token: devolver 401 para rutas que deberÃ­an ser privadas
-        // (las pÃºblicas como /api/subscription/plans ya pasaron por el filtro de arriba)
+        // Sin token: devolver 401 para rutas que deberían ser privadas
+        // (las públicas como /api/subscription/plans ya pasaron por el filtro de arriba)
         return res.status(401).json({ ok: false, error: 'No autenticado', code: 'AUTH_REQUIRED' });
     }
 
     // Validar token y obtener usuario (inline, sin AsyncLocalStorage)
     const sessions = await readSessions();
     const entry    = sessions[token];
-    if (!entry) return res.status(401).json({ ok: false, error: 'SesiÃ³n invÃ¡lida', code: 'AUTH_REQUIRED' });
+    if (!entry) return res.status(401).json({ ok: false, error: 'Sesión inválida', code: 'AUTH_REQUIRED' });
     const userId = typeof entry === 'object' ? entry.userId : entry;
     const users  = await readUsers();
     const user   = users.find(u => u.id === userId);
@@ -91,20 +91,20 @@ app.use('/api', async (req, res, next) => {
     // Admin: acceso total
     if (user.role === 'admin') return next();
 
-    // Verificar suscripciÃ³n del owner de la empresa
+    // Verificar suscripción del owner de la empresa
     const owner  = users.find(u => u.companyId === user.companyId && u.teamRole === 'owner') || user;
     const status = getAccessStatus(owner);
     if (!status.access) {
         return res.status(403).json({
             ok: false,
-            error: 'Tu perÃ­odo de prueba ha expirado. SuscrÃ­bete para continuar usando FIX PRO MAX.',
+            error: 'Tu período de prueba ha expirado. Suscríbete para continuar usando FIX PRO MAX.',
             code: 'SUBSCRIPTION_REQUIRED',
             subStatus: status.status,
             trialEnd: status.trialEnd || null,
         });
     }
 
-    // Si req.user aÃºn no fue establecido por requireAuth, lo establecemos aquÃ­
+    // Si req.user aún no fue establecido por requireAuth, lo establecemos aquí
     // para que los handlers subsiguientes puedan usarlo
     if (!req.user) {
         req.user = {
@@ -119,14 +119,14 @@ app.use('/api', async (req, res, next) => {
     next();
 });
 
-// â”€â”€ RUTA RAÃZ â€” debe ir ANTES de express.static para interceptar GET / â”€â”€â”€â”€â”€â”€â”€
-// Se define aquÃ­ como placeholder; la implementaciÃ³n real estÃ¡ mÃ¡s abajo
-// pero necesitamos que el router la vea antes que el middleware estÃ¡tico.
-// Por eso movemos express.static DESPUÃ‰S de las rutas de API y de la ruta raÃ­z.
+// ❌”€❌”€ RUTA RAÁZ "” debe ir ANTES de express.static para interceptar GET / ❌”€❌”€❌”€❌”€❌”€❌”€❌”€
+// Se define aquí como placeholder; la implementación real está más abajo
+// pero necesitamos que el router la vea antes que el middleware estático.
+// Por eso movemos express.static DESPUÁ‰S de las rutas de API y de la ruta raíz.
 
-// â”€â”€ Base de datos en MongoDB (reemplaza _readGlobalDB / _writeGlobalDB) â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Base de datos en MongoDB (reemplaza _readGlobalDB / _writeGlobalDB) ❌”€❌”€❌”€❌”€❌”€❌”€
 // Estos wrappers async se usan solo para la BD "global" (db.json legacy).
-// En producciÃ³n cada empresa tiene su propio documento en CompanyDB.
+// En producción cada empresa tiene su propio documento en CompanyDB.
 async function _readGlobalDB() {
     return DB.readCompanyDB('__global__');
 }
@@ -143,8 +143,8 @@ function defaultData() {
         products:           [],
         categories:         [],
         warehouses:         [
-            { id: 'wh1', name: 'AlmacÃ©n Principal' },
-            { id: 'wh2', name: 'AlmacÃ©n Secundario' },
+            { id: 'wh1', name: 'Almacén Principal' },
+            { id: 'wh2', name: 'Almacén Secundario' },
         ],
         customers:          [],
         suppliers:          [],
@@ -183,50 +183,50 @@ function defaultData() {
         importHistory: [],
         auditLog:      [],
         payments:      [],
-        quotes:        [],  // â† Cotizaciones
+        quotes:        [],  // ❌† Cotizaciones
         settings: {
             companyName:        '',
             rif:                '',
             country:            'Venezuela',
             currency:           'USD',
-            // â”€â”€ Sistema de monedas VES/EUR â”€â”€
+            // ❌”€❌”€ Sistema de monedas VES/EUR ❌”€❌”€
             defaultCurrency:    'USD',   // moneda principal de la empresa
             darkMode:           true,
             notifications:      true,
             aiEnabled:          true,
         },
-        // â”€â”€ MONEDAS GLOBALES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ❌”€❌”€ MONEDAS GLOBALES ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
         currencies: [
-            { code:'VES', name:'BolÃ­var venezolano',      symbol:'Bs.', flag:'ðŸ‡»ðŸ‡ª', active:true,  isBase:true,  format:'es-VE', decimals:2 },
-            { code:'EUR', name:'Euro',                    symbol:'â‚¬',   flag:'ðŸ‡ªðŸ‡º', active:true,  isBase:false, format:'de-DE', decimals:2 },
-            { code:'USD', name:'DÃ³lar estadounidense',    symbol:'$',   flag:'ðŸ‡ºðŸ‡¸', active:true,  isBase:false, format:'en-US', decimals:2 },
+            { code:'VES', name:'Bolívar venezolano',      symbol:'Bs.', flag:'ðŸ‡»ðŸ‡ª', active:true,  isBase:true,  format:'es-VE', decimals:2 },
+            { code:'EUR', name:'Euro',                    symbol:'❌‚¬',   flag:'ðŸ‡ªðŸ‡º', active:true,  isBase:false, format:'de-DE', decimals:2 },
+            { code:'USD', name:'Dólar estadounidense',    symbol:'$',   flag:'ðŸ‡ºðŸ‡¸', active:true,  isBase:false, format:'en-US', decimals:2 },
         ],
-        // â”€â”€ TASAS DE CAMBIO â€” pendientes de actualizaciÃ³n automÃ¡tica BCV â”€â”€
+        // ❌”€❌”€ TASAS DE CAMBIO "” pendientes de actualización automática BCV ❌”€❌”€
         exchangeRates: [
             {
                 id:'rate-eur-init', fromCurrency:'EUR', toCurrency:'VES',
                 rate:40.00, date:new Date().toISOString().slice(0,10),
                 createdAt:new Date().toISOString(), createdBy:'sistema',
-                notes:'Tasa inicial â€” pendiente actualizaciÃ³n BCV',
+                notes:'Tasa inicial "” pendiente actualización BCV',
                 source:'Manual inicial', updateType:'manual', isActive:true,
             },
             {
                 id:'rate-usd-init', fromCurrency:'USD', toCurrency:'VES',
                 rate:36.00, date:new Date().toISOString().slice(0,10),
                 createdAt:new Date().toISOString(), createdBy:'sistema',
-                notes:'Tasa inicial â€” pendiente actualizaciÃ³n BCV',
+                notes:'Tasa inicial "” pendiente actualización BCV',
                 source:'Manual inicial', updateType:'manual', isActive:true,
             },
         ],
     };
 }
 
-// â”€â”€ Helpers de respuesta â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Helpers de respuesta ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 const ok  = (res, data)    => res.json({ ok: true, data });
 const err = (res, msg, code = 400) => res.status(code).json({ ok: false, error: msg });
 
 
-// â”€â”€ Content-Security-Policy bÃ¡sico â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Content-Security-Policy básico ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.use(async (req, res, next) => {
     res.setHeader('Content-Security-Policy',
         "default-src 'self' https:; " +
@@ -239,19 +239,19 @@ app.use(async (req, res, next) => {
     next();
 });
 
-// â”€â”€ Headers de seguridad para todos los requests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Headers de seguridad para todos los requests ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.use(async (req, res, next) => {
-    // Seguridad bÃ¡sica â€” SIN COEP porque bloquea fetch() desde el navegador
+    // Seguridad básica "” SIN COEP porque bloquea fetch() desde el navegador
     res.setHeader('X-Content-Type-Options',  'nosniff');
     res.setHeader('X-Frame-Options',         'SAMEORIGIN');
     res.setHeader('Referrer-Policy',         'strict-origin-when-cross-origin');
     next();
 });
 
-// â”€â”€ RUTA RAÃZ â€” sirve el ERP con datos inyectados â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ RUTA RAÁZ "” sirve el ERP con datos inyectados ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/', async (req, res) => {
     try {
-        // Leer token desde Authorization header O desde cookie (el navegador envÃ­a la cookie automÃ¡ticamente)
+        // Leer token desde Authorization header O desde cookie (el navegador envía la cookie automáticamente)
         const authHeader = req.headers['authorization'] || req.headers['x-auth-token'] || '';
         // Parsear cookie manualmente sin necesitar cookie-parser
         const rawCookie = req.headers.cookie || '';
@@ -271,7 +271,7 @@ app.get('/', async (req, res) => {
                 const users = await readUsers();
                 const user  = users.find(u => u.id === userId);
                 if (user?.companyId) {
-                    // Solo inyectar BD si la sesiÃ³n es vÃ¡lida y la BD es la de la empresa
+                    // Solo inyectar BD si la sesión es válida y la BD es la de la empresa
                     const isDemo = user.isDemo || user.companyId === DEMO_COMPANY_ID;
                     db = isDemo ? await readDemoDB() : await readCompanyDB(user.companyId);
                     authenticatedUser = user;
@@ -280,28 +280,28 @@ app.get('/', async (req, res) => {
             }
         }
 
-        // CRÃTICO: si no hay sesiÃ³n vÃ¡lida, NO inyectar la BD global vacÃ­a.
-        // El frontend usarÃ¡ su token de localStorage para hacer fetch /api/db
-        // y obtener la BD correcta de su empresa. Esto evita mostrar datos vacÃ­os
-        // cuando la cookie expirÃ³ pero el token de localStorage sigue vÃ¡lido.
+        // CRÁTICO: si no hay sesión válida, NO inyectar la BD global vacía.
+        // El frontend usará su token de localStorage para hacer fetch /api/db
+        // y obtener la BD correcta de su empresa. Esto evita mostrar datos vacíos
+        // cuando la cookie expiró pero el token de localStorage sigue válido.
         if (!db) {
-            db = null; // el frontend detectarÃ¡ null y harÃ¡ fetch /api/db
-            console.log('  [GET /] Sin sesiÃ³n vÃ¡lida â€” el frontend cargarÃ¡ datos via /api/db');
+            db = null; // el frontend detectará null y hará fetch /api/db
+            console.log('  [GET /] Sin sesión válida "” el frontend cargará datos via /api/db');
         } else {
-            console.log(`  [GET /] SesiÃ³n vÃ¡lida: ${authenticatedUser?.email} â€” inyectando ${db.products?.length || 0} productos`);
+            console.log(`  [GET /] Sesión válida: ${authenticatedUser?.email} "” inyectando ${db.products?.length || 0} productos`);
         }
 
-        // Inyectar datos iniciales + planes + estado de suscripciÃ³n
+        // Inyectar datos iniciales + planes + estado de suscripción
         const activePlans = getActivePlans();
         const PLAN_COLORS = { basic:'#64748b', pro:'#4f46e5', semestral:'#f59e0b' };
-        const PLAN_ICONS  = { basic:'ðŸ“¦', pro:'ðŸš€', semestral:'ðŸ’Ž' };
+        const PLAN_ICONS  = { basic:'ðŸ“¦', pro:'🚀', semestral:'ðŸ’Ž' };
 
         // Generar HTML de los cards de planes directamente en el servidor
         const plansHtml = activePlans.map(p => {
             const color  = PLAN_COLORS[p.id] || '#4f46e5';
             const icon   = PLAN_ICONS[p.id]  || 'ðŸ“‹';
-            const fList  = (p.features || []).map(f => `<li style="font-size:12px;color:#94a3b8;padding:2px 0;">âœ” ${f}</li>`).join('');
-            const nList  = (p.notIncluded || []).filter(Boolean).map(f => `<li style="font-size:12px;color:#64748b;padding:2px 0;opacity:.6;">âœ– ${f}</li>`).join('');
+            const fList  = (p.features || []).map(f => `<li style="font-size:12px;color:#94a3b8;padding:2px 0;">❌œ” ${f}</li>`).join('');
+            const nList  = (p.notIncluded || []).filter(Boolean).map(f => `<li style="font-size:12px;color:#64748b;padding:2px 0;opacity:.6;">❌œ– ${f}</li>`).join('');
             const btnBg  = `linear-gradient(135deg,${color},${color}cc)`;
             const btnClr = p.id === 'semestral' ? '#000' : '#fff';
             return `
@@ -312,7 +312,7 @@ app.get('/', async (req, res) => {
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
                   <span style="font-size:28px;">${icon}</span>
                   <div style="display:flex;gap:6px;">
-                    ${p.recommended ? `<span style="background:#4f46e5;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;">â­ REC</span>` : ''}
+                    ${p.recommended ? `<span style="background:#4f46e5;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;">❌­ REC</span>` : ''}
                     ${p.badge && !p.recommended ? `<span style="background:${color};color:${p.id==='semestral'?'#000':'#fff'};font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;">${p.badge}</span>` : ''}
                   </div>
                 </div>
@@ -322,12 +322,12 @@ app.get('/', async (req, res) => {
               <div style="padding:14px 16px;">
                 <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:4px;">
                   <span style="font-size:26px;font-weight:900;color:${color};">$${Number(p.price).toFixed(2)}</span>
-                  <span style="font-size:12px;color:#64748b;">/ ${p.period || p.duration+' dÃ­as'}</span>
+                  <span style="font-size:12px;color:#64748b;">/ ${p.period || p.duration+' días'}</span>
                 </div>
                 <div style="font-size:11px;color:#64748b;margin-bottom:10px;">
                   ${p.maxUsers===1?'ðŸ‘¤ 1 usuario':`ðŸ‘¥ Hasta ${p.maxUsers} usuarios`}
-                  &nbsp;Â·&nbsp;ðŸ“¦ ${p.maxProducts===-1?'Inventario ilimitado':`Hasta ${p.maxProducts} productos`}
-                  &nbsp;Â·&nbsp;${p.multiUser?'âœ… Multiusuario':'âŒ Sin multiusuario'}
+                  &nbsp;·&nbsp;ðŸ“¦ ${p.maxProducts===-1?'Inventario ilimitado':`Hasta ${p.maxProducts} productos`}
+                  &nbsp;·&nbsp;${p.multiUser?'✅ Multiusuario':'❌Œ Sin multiusuario'}
                 </div>
                 <ul style="list-style:none;padding:0;margin:0 0 12px;">${fList}${nList}</ul>
                 <button onclick="window.startSubscription('${p.id}')"
@@ -343,8 +343,8 @@ app.get('/', async (req, res) => {
         let html = fs.readFileSync(path.join(__dirname, 'index2.html'), 'utf8');
 
         // Inyectar variables JS
-        // Si db === null significa que no hay sesiÃ³n vÃ¡lida en cookie/header.
-        // El frontend detectarÃ¡ __INITIAL_DATA__ === null y harÃ¡ fetch /api/db
+        // Si db === null significa que no hay sesión válida en cookie/header.
+        // El frontend detectará __INITIAL_DATA__ === null y hará fetch /api/db
         // con el token que tiene en localStorage para obtener la BD correcta.
         const injection = `<script>
 window.__INITIAL_DATA__ = ${db !== null ? JSON.stringify(db) : 'null'};
@@ -355,7 +355,7 @@ window.__INITIAL_SUB__ = ${JSON.stringify(subStatus)};
 
         // Reemplazar el placeholder "Cargando planes..." con el HTML real de los cards
         html = html.replace(
-            '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-3);">â³ Cargando planes...</div>',
+            '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-3);">❌³ Cargando planes...</div>',
             plansHtml
         );
         res.setHeader('Content-Type',  'text/html; charset=utf-8');
@@ -367,7 +367,7 @@ window.__INITIAL_SUB__ = ${JSON.stringify(subStatus)};
     }
 });
 
-// â”€â”€ Service Worker â€” sin cachÃ© para que siempre se sirva la versiÃ³n mÃ¡s nueva â”€
+// ❌”€❌”€ Service Worker "” sin caché para que siempre se sirva la versión más nueva ❌”€
 app.get('/sw.js', async (req, res) => {
     res.setHeader('Content-Type',  'application/javascript; charset=utf-8');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
@@ -375,14 +375,14 @@ app.get('/sw.js', async (req, res) => {
     res.sendFile(path.join(__dirname, 'sw.js'));
 });
 
-// â”€â”€ manifest.json â€” cachÃ© corta (1 hora) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ manifest.json "” caché corta (1 hora) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/manifest.json', async (req, res) => {
     res.setHeader('Content-Type',  'application/manifest+json; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=3600');
     res.sendFile(path.join(__dirname, 'manifest.json'));
 });
 
-// â”€â”€ subscription.js â€” sin cachÃ© (siempre fresco) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ subscription.js "” sin caché (siempre fresco) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/subscription.js', async (req, res) => {
     res.setHeader('Content-Type',  'application/javascript; charset=utf-8');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
@@ -395,7 +395,7 @@ app.get('/auth.js', async (req, res) => {
     res.sendFile(path.join(__dirname, 'auth.js'));
 });
 
-// â”€â”€ assetlinks.json (Digital Asset Links para TWA) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ assetlinks.json (Digital Asset Links para TWA) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/.well-known/assetlinks.json', async (req, res) => {
     const filePath = path.join(__dirname, '.well-known', 'assetlinks.json');
     res.setHeader('Content-Type',  'application/json');
@@ -403,7 +403,7 @@ app.get('/.well-known/assetlinks.json', async (req, res) => {
     res.sendFile(filePath);
 });
 
-// â”€â”€ Ãconos PWA â€” cachÃ© larga (7 dÃ­as) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Áconos PWA "” caché larga (7 días) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/icons/:file', async (req, res) => {
     const filePath = path.join(__dirname, 'icons', req.params.file);
     if (!fs.existsSync(filePath)) return res.status(404).end();
@@ -411,25 +411,25 @@ app.get('/icons/:file', async (req, res) => {
     res.sendFile(filePath);
 });
 
-// â”€â”€ Archivos estÃ¡ticos restantes (CSS, JS externos, imÃ¡genes) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// index: false para que GET / no sea interceptado aquÃ­
+// ❌”€❌”€ Archivos estáticos restantes (CSS, JS externos, imágenes) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
+// index: false para que GET / no sea interceptado aquí
 app.use(express.static(__dirname, {
     index:    false,
     maxAge:   '1d',
     etag:     true,
     setHeaders(res, filePath) {
-        // sw.js nunca en cachÃ© (ya tiene su ruta dedicada arriba pero por si acaso)
+        // sw.js nunca en caché (ya tiene su ruta dedicada arriba pero por si acaso)
         if (filePath.endsWith('sw.js')) {
             res.setHeader('Cache-Control', 'no-store');
         }
     }
 }));
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// MIDDLEWARE: Bloquear acceso al ERP si no hay suscripciÃ³n activa
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
+// MIDDLEWARE: Bloquear acceso al ERP si no hay suscripción activa
 // Se aplica a todos los endpoints de datos (/api/db, /api/products, etc.)
 // Exenciones: /api/auth/*, /api/subscription/*, /api/admin/*, /api/demo/*
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 function requireSubscription(req, res, next) {
     if (!req.user) return next();
     if (req.user.role === 'admin') return next();
@@ -448,15 +448,15 @@ function requireSubscription(req, res, next) {
     }).catch(() => next());
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 // ENDPOINT: Estado completo de la BD (usado por el frontend para sincronizar)
-// Ahora requiere autenticaciÃ³n y devuelve solo la BD de la empresa del usuario
-// â”€â”€ Ping pÃºblico â€” usado por el frontend para verificar disponibilidad â”€â”€â”€â”€â”€â”€â”€â”€
+// Ahora requiere autenticación y devuelve solo la BD de la empresa del usuario
+// ❌”€❌”€ Ping público "” usado por el frontend para verificar disponibilidad ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/ping', async (req, res) => {
     res.json({ ok: true, ts: Date.now() });
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 app.get('/api/db', requireAuth, requireSubscription, async (req, res) => {
     ok(res, await readDB()); // await readDB() ya usa el companyId del contexto async
 });
@@ -470,9 +470,9 @@ app.put('/api/db', requireAuth, requireSubscription, async (req, res) => {
     }
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 // PRODUCTOS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 app.get('/api/products', async (req, res) => {
     const db = await readDB();
     ok(res, db.products);
@@ -481,13 +481,13 @@ app.get('/api/products', async (req, res) => {
 app.post('/api/products', requireAuth, async (req, res) => {
     const db = await readDB();
 
-    // â”€â”€ Validar lÃ­mite de productos segÃºn plan â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ❌”€❌”€ Validar límite de productos según plan ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
     const users   = await readUsers();
     const owner   = users.find(u => u.companyId === req.user.companyId && u.teamRole === 'owner') || req.user;
     const status  = getAccessStatus(owner);
     const maxProd = status.maxProducts ?? -1;
     if (maxProd !== -1 && db.products.length >= maxProd) {
-        return err(res, `Tu plan permite hasta ${maxProd} productos. Actualiza tu plan para agregar mÃ¡s.`, 403);
+        return err(res, `Tu plan permite hasta ${maxProd} productos. Actualiza tu plan para agregar más.`, 403);
     }
 
     const product = { id: generateId(), createdAt: new Date().toISOString(),
@@ -516,9 +516,9 @@ app.delete('/api/products/:id', requireAuth, async (req, res) => {
     ok(res, { deleted: req.params.id });
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// CATEGORÃAS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
+// CATEGORÁAS
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 app.get('/api/categories', async (req, res) => ok(res, (await readDB()).categories));
 
 app.post('/api/categories', requireAuth, async (req, res) => {
@@ -532,7 +532,7 @@ app.post('/api/categories', requireAuth, async (req, res) => {
 app.put('/api/categories/:id', requireAuth, async (req, res) => {
     const db = await readDB();
     const idx = db.categories.findIndex(c => c.id === req.params.id);
-    if (idx === -1) return err(res, 'CategorÃ­a no encontrada', 404);
+    if (idx === -1) return err(res, 'Categoría no encontrada', 404);
     db.categories[idx] = { ...db.categories[idx], ...req.body, id: req.params.id };
     await writeDB(db);
     ok(res, db.categories[idx]);
@@ -545,9 +545,9 @@ app.delete('/api/categories/:id', requireAuth, async (req, res) => {
     ok(res, { deleted: req.params.id });
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 // ALMACENES
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 app.get('/api/warehouses', async (req, res) => ok(res, (await readDB()).warehouses));
 
 app.post('/api/warehouses', requireAuth, async (req, res) => {
@@ -561,7 +561,7 @@ app.post('/api/warehouses', requireAuth, async (req, res) => {
 app.put('/api/warehouses/:id', requireAuth, async (req, res) => {
     const db = await readDB();
     const idx = db.warehouses.findIndex(w => w.id === req.params.id);
-    if (idx === -1) return err(res, 'AlmacÃ©n no encontrado', 404);
+    if (idx === -1) return err(res, 'Almacén no encontrado', 404);
     db.warehouses[idx] = { ...db.warehouses[idx], ...req.body, id: req.params.id };
     await writeDB(db);
     ok(res, db.warehouses[idx]);
@@ -574,9 +574,9 @@ app.delete('/api/warehouses/:id', requireAuth, async (req, res) => {
     ok(res, { deleted: req.params.id });
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 // CLIENTES
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 app.get('/api/customers', async (req, res) => ok(res, (await readDB()).customers));
 
 app.post('/api/customers', requireAuth, async (req, res) => {
@@ -605,9 +605,9 @@ app.delete('/api/customers/:id', requireAuth, async (req, res) => {
     ok(res, { deleted: req.params.id });
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 // PROVEEDORES
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 app.get('/api/suppliers', async (req, res) => ok(res, (await readDB()).suppliers));
 
 app.post('/api/suppliers', requireAuth, async (req, res) => {
@@ -636,9 +636,9 @@ app.delete('/api/suppliers/:id', requireAuth, async (req, res) => {
     ok(res, { deleted: req.params.id });
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 // VENTAS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 app.get('/api/sales', async (req, res) => ok(res, (await readDB()).sales));
 
 app.post('/api/sales', requireAuth, async (req, res) => {
@@ -694,9 +694,9 @@ app.delete('/api/sales/:id', requireAuth, async (req, res) => {
     ok(res, { deleted: req.params.id });
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 // FACTURAS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 app.get('/api/invoices', async (req, res) => ok(res, (await readDB()).invoices));
 
 app.post('/api/invoices', requireAuth, async (req, res) => {
@@ -724,9 +724,9 @@ app.delete('/api/invoices/:id', requireAuth, async (req, res) => {
     ok(res, { deleted: req.params.id });
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 // COTIZACIONES  /api/quotes
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 app.get('/api/quotes', requireAuth, async (req, res) => {
     const db = await readDB();
     ok(res, db.quotes || []);
@@ -742,7 +742,7 @@ app.post('/api/quotes', requireAuth, requirePermission('invoices', 'create'), as
         updatedAt:   new Date().toISOString(),
         ...req.body,
     };
-    // Generar nÃºmero secuencial si no viene
+    // Generar número secuencial si no viene
     if (!qt.number) {
         const nums = db.quotes
             .map(q => { const m = String(q.number||'').match(/COT-(\d+)/); return m ? parseInt(m[1],10) : 0; })
@@ -759,40 +759,40 @@ app.put('/api/quotes/:id', requireAuth, requirePermission('invoices', 'edit'), a
     const db = await readDB();
     if (!Array.isArray(db.quotes)) db.quotes = [];
     const idx = db.quotes.findIndex(q => q.id === req.params.id);
-    if (idx === -1) return err(res, 'CotizaciÃ³n no encontrada', 404);
+    if (idx === -1) return err(res, 'Cotización no encontrada', 404);
     const existing = db.quotes[idx];
-    // No permitir editar una cotizaciÃ³n ya convertida o anulada
+    // No permitir editar una cotización ya convertida o anulada
     if (['Convertida', 'Anulada'].includes(existing.quoteStatus) && !req.body.quoteStatus) {
-        return err(res, `No se puede editar una cotizaciÃ³n con estado "${existing.quoteStatus}"`, 400);
+        return err(res, `No se puede editar una cotización con estado "${existing.quoteStatus}"`, 400);
     }
     db.quotes[idx] = { ...existing, ...req.body, id: req.params.id, updatedAt: new Date().toISOString() };
     await writeDB(db);
     ok(res, db.quotes[idx]);
 });
 
-// Cambiar solo el estado de una cotizaciÃ³n
+// Cambiar solo el estado de una cotización
 app.patch('/api/quotes/:id/status', requireAuth, async (req, res) => {
     const db  = await readDB();
     if (!Array.isArray(db.quotes)) db.quotes = [];
     const idx = db.quotes.findIndex(q => q.id === req.params.id);
-    if (idx === -1) return err(res, 'CotizaciÃ³n no encontrada', 404);
+    if (idx === -1) return err(res, 'Cotización no encontrada', 404);
     const allowed = ['Borrador','Enviada','Aceptada','Rechazada','Vencida','Convertida','Anulada'];
     const newStatus = req.body.quoteStatus;
-    if (!allowed.includes(newStatus)) return err(res, 'Estado no vÃ¡lido', 400);
+    if (!allowed.includes(newStatus)) return err(res, 'Estado no válido', 400);
     db.quotes[idx].quoteStatus = newStatus;
     db.quotes[idx].updatedAt   = new Date().toISOString();
     await writeDB(db);
     ok(res, db.quotes[idx]);
 });
 
-// Convertir cotizaciÃ³n en venta (valida en servidor que no se haya convertido ya)
+// Convertir cotización en venta (valida en servidor que no se haya convertido ya)
 app.post('/api/quotes/:id/convert', requireAuth, requirePermission('invoices', 'create'), async (req, res) => {
     const db = await readDB();
     if (!Array.isArray(db.quotes)) db.quotes = [];
     const qt = db.quotes.find(q => q.id === req.params.id);
-    if (!qt) return err(res, 'CotizaciÃ³n no encontrada', 404);
-    if (qt.quoteStatus === 'Convertida') return err(res, 'Esta cotizaciÃ³n ya fue convertida', 409);
-    if (qt.quoteStatus === 'Anulada')    return err(res, 'No se puede convertir una cotizaciÃ³n anulada', 400);
+    if (!qt) return err(res, 'Cotización no encontrada', 404);
+    if (qt.quoteStatus === 'Convertida') return err(res, 'Esta cotización ya fue convertida', 409);
+    if (qt.quoteStatus === 'Anulada')    return err(res, 'No se puede convertir una cotización anulada', 400);
 
     const { method = 'Efectivo', notes = '' } = req.body;
     const now         = new Date().toISOString();
@@ -813,8 +813,8 @@ app.post('/api/quotes/:id/convert', requireAuth, requirePermission('invoices', '
                     type: 'Salida', quantity: -it.qty,
                     warehouseId: prod.warehouseId, date: now,
                     user: req.user?.email || 'sistema',
-                    reason: 'Venta (desde cotizaciÃ³n)',
-                    reference: saleNumber, notes: `CotizaciÃ³n ${qt.number}`,
+                    reason: 'Venta (desde cotización)',
+                    reference: saleNumber, notes: `Cotización ${qt.number}`,
                     previousStock: prev, newStock: prod.stock,
                 });
             }
@@ -841,22 +841,22 @@ app.post('/api/quotes/:id/convert', requireAuth, requirePermission('invoices', '
     const invoice = {
         id: generateId(), number: saleNumber, customerId: qt.customerId,
         date: today, dueDate: '',
-        total: qt.total||0, paid: method === 'CrÃ©dito' ? 0 : qt.total||0,
-        notes: `Generada desde cotizaciÃ³n ${qt.number}. ${notes}`.trim(),
-        status: method === 'CrÃ©dito' ? 'Pendiente' : 'Pagada',
+        total: qt.total||0, paid: method === 'Crédito' ? 0 : qt.total||0,
+        notes: `Generada desde cotización ${qt.number}. ${notes}`.trim(),
+        status: method === 'Crédito' ? 'Pendiente' : 'Pagada',
         createdAt: now, updatedAt: now,
         fromQuoteId: qt.id, fromQuoteNumber: qt.number,
     };
     db.invoices = db.invoices || [];
     db.invoices.push(invoice);
 
-    // Saldo del cliente si es crÃ©dito
-    if (method === 'CrÃ©dito') {
+    // Saldo del cliente si es crédito
+    if (method === 'Crédito') {
         const cust = (db.customers||[]).find(c => c.id === qt.customerId);
         if (cust) cust.balance = (cust.balance||0) + invoice.total;
     }
 
-    // Marcar cotizaciÃ³n como convertida
+    // Marcar cotización como convertida
     qt.quoteStatus          = 'Convertida';
     qt.updatedAt            = now;
     qt.convertedToSaleId    = sale.id;
@@ -871,20 +871,20 @@ app.delete('/api/quotes/:id', requireAuth, requirePermission('invoices', 'cancel
     const db = await readDB();
     if (!Array.isArray(db.quotes)) db.quotes = [];
     const qt = db.quotes.find(q => q.id === req.params.id);
-    if (!qt) return err(res, 'CotizaciÃ³n no encontrada', 404);
-    if (qt.quoteStatus === 'Convertida') return err(res, 'No se puede eliminar una cotizaciÃ³n ya convertida', 400);
+    if (!qt) return err(res, 'Cotización no encontrada', 404);
+    if (qt.quoteStatus === 'Convertida') return err(res, 'No se puede eliminar una cotización ya convertida', 400);
     qt.quoteStatus = 'Anulada';
     qt.updatedAt   = new Date().toISOString();
     await writeDB(db);
     ok(res, { annulled: req.params.id });
 });
 
-// Alertas automÃ¡ticas de cotizaciones vencidas (integrado al endpoint /api/alerts existente)
-// â†’ ya se maneja en el cliente con la funciÃ³n renderQuotes()
+// Alertas automáticas de cotizaciones vencidas (integrado al endpoint /api/alerts existente)
+// ❌†’ ya se maneja en el cliente con la función renderQuotes()
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 // COMPRAS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 app.get('/api/purchases', async (req, res) => ok(res, (await readDB()).purchases));
 
 app.post('/api/purchases', requireAuth, async (req, res) => {
@@ -939,9 +939,9 @@ app.delete('/api/purchases/:id', requireAuth, async (req, res) => {
     ok(res, { deleted: req.params.id });
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 // GASTOS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 app.get('/api/expenses', async (req, res) => ok(res, (await readDB()).expenses));
 
 app.post('/api/expenses', requireAuth, async (req, res) => {
@@ -968,9 +968,9 @@ app.delete('/api/expenses/:id', requireAuth, async (req, res) => {
     ok(res, { deleted: req.params.id });
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 // DEVOLUCIONES
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 app.get('/api/returns', async (req, res) => ok(res, (await readDB()).returns));
 
 app.post('/api/returns', requireAuth, async (req, res) => {
@@ -992,7 +992,7 @@ app.post('/api/returns', requireAuth, async (req, res) => {
             warehouseId: prod.warehouseId,
             date: new Date().toISOString(),
             user: 'admin',
-            reason: 'DevoluciÃ³n',
+            reason: 'Devolución',
             reference: ret.id,
             notes: ret.reason || '',
             previousStock: prevStock,
@@ -1012,9 +1012,9 @@ app.delete('/api/returns/:id', requireAuth, async (req, res) => {
     ok(res, { deleted: req.params.id });
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 // MOVIMIENTOS DE INVENTARIO
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 app.get('/api/inventory-movements', async (req, res) => ok(res, (await readDB()).inventoryMovements));
 
 app.post('/api/inventory-movements', requireAuth, async (req, res) => {
@@ -1041,9 +1041,9 @@ app.post('/api/inventory-movements', requireAuth, async (req, res) => {
     ok(res, mov);
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 // PAGOS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 app.get('/api/payments', async (req, res) => ok(res, (await readDB()).payments));
 
 app.post('/api/payments', requireAuth, async (req, res) => {
@@ -1081,9 +1081,9 @@ app.delete('/api/payments/:id', async (req, res) => {
     ok(res, { deleted: req.params.id });
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 // CONTABILIDAD
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 app.get('/api/chart-of-accounts', async (req, res) => ok(res, (await readDB()).chartOfAccounts));
 
 app.put('/api/chart-of-accounts', async (req, res) => {
@@ -1121,9 +1121,9 @@ app.put('/api/income-statement', async (req, res) => {
     ok(res, db.incomeStatement);
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 // ALERTAS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 app.get('/api/alerts', requireAuth, async (req, res) => {
     const db  = await readDB();
     const now = new Date();
@@ -1137,7 +1137,7 @@ app.get('/api/alerts', requireAuth, async (req, res) => {
             level:   p.stock === 0 ? 'danger' : 'warning',
             message: p.stock === 0
                 ? `Stock agotado: ${p.name}`
-                : `Stock bajo: ${p.name} (${p.stock} unidades, mÃ­nimo ${p.minStock})`,
+                : `Stock bajo: ${p.name} (${p.stock} unidades, mínimo ${p.minStock})`,
             productId: p.id,
             createdAt: now.toISOString(),
         }));
@@ -1149,7 +1149,7 @@ app.get('/api/alerts', requireAuth, async (req, res) => {
             id:        `alert-invoice-${i.id}`,
             type:      'invoice',
             level:     'danger',
-            message:   `Factura vencida: ${i.number || i.id} â€” ${i.total}`,
+            message:   `Factura vencida: ${i.number || i.id} "” ${i.total}`,
             invoiceId: i.id,
             createdAt: now.toISOString(),
         }));
@@ -1172,9 +1172,9 @@ app.delete('/api/alerts/:id', async (req, res) => {
     ok(res, { deleted: req.params.id });
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// AUDITORÃA
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
+// AUDITORÁA
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 app.get('/api/audit-log', async (req, res) => ok(res, (await readDB()).auditLog));
 
 app.post('/api/audit-log', async (req, res) => {
@@ -1185,9 +1185,9 @@ app.post('/api/audit-log', async (req, res) => {
     ok(res, entry);
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 // HISTORIAL DE IMPORTACIONES
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 app.get('/api/import-history', async (req, res) => ok(res, (await readDB()).importHistory));
 
 app.post('/api/import-history', async (req, res) => {
@@ -1205,10 +1205,10 @@ app.delete('/api/import-history/:id', async (req, res) => {
     ok(res, { deleted: req.params.id });
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// IMPORTACIÃ“N MASIVA DE PRODUCTOS (sin lÃ­mite de plan, una sola escritura)
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
+// IMPORTACIÁ“N MASIVA DE PRODUCTOS (sin límite de plan, una sola escritura)
 // POST /api/import-bulk  { products: [...], historyEntry: {...} }
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 app.post('/api/import-bulk', requireAuth, async (req, res) => {
     try {
         const { products: incoming = [], categories: newCats = [],
@@ -1224,7 +1224,7 @@ app.post('/api/import-bulk', requireAuth, async (req, res) => {
 
         let created = 0, updated = 0;
 
-        // Agregar categorÃ­as nuevas
+        // Agregar categorías nuevas
         newCats.forEach(cat => {
             if (!db.categories.find(c => c.id === cat.id)) {
                 db.categories.push(cat);
@@ -1274,13 +1274,13 @@ app.post('/api/import-bulk', requireAuth, async (req, res) => {
         ok(res, { created, updated, total: incoming.length });
     } catch (e) {
         console.error('[import-bulk]', e);
-        err(res, 'Error en importaciÃ³n masiva: ' + e.message, 500);
+        err(res, 'Error en importación masiva: ' + e.message, 500);
     }
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// CONFIGURACIÃ“N
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
+// CONFIGURACIÁ“N
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 app.get('/api/settings', async (req, res) => ok(res, (await readDB()).settings));
 
 app.put('/api/settings', async (req, res) => {
@@ -1290,9 +1290,9 @@ app.put('/api/settings', async (req, res) => {
     ok(res, db.settings);
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// BACKUP / RESTAURACIÃ“N
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
+// BACKUP / RESTAURACIÁ“N
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 app.get('/api/backup', async (req, res) => {
     const db = await readDB();
     res.setHeader('Content-Disposition', `attachment; filename="fixpro-backup-${Date.now()}.json"`);
@@ -1305,7 +1305,7 @@ app.post('/api/restore', requireAuth, async (req, res) => {
         return err(res, 'Solo el propietario puede restaurar la base de datos', 403);
     }
     try {
-        if (!req.body || typeof req.body !== 'object') return err(res, 'Datos invÃ¡lidos');
+        if (!req.body || typeof req.body !== 'object') return err(res, 'Datos inválidos');
         await writeDB(req.body);
         ok(res, { restored: true });
     } catch (e) {
@@ -1313,9 +1313,9 @@ app.post('/api/restore', requireAuth, async (req, res) => {
     }
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 // RESET TOTAL
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 app.post('/api/reset', requireAuth, async (req, res) => {
     // Solo el owner puede resetear su propia empresa
     if (req.user.teamRole !== 'owner' && req.user.role !== 'admin') {
@@ -1326,9 +1326,9 @@ app.post('/api/reset', requireAuth, async (req, res) => {
     ok(res, { reset: true });
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 // REPORTES (generados al vuelo desde los datos)
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 app.get('/api/reports/:type', async (req, res) => {
     const db   = await readDB();
     const type = req.params.type;
@@ -1381,9 +1381,9 @@ app.get('/api/reports/:type', async (req, res) => {
     err(res, 'Tipo de reporte no reconocido', 400);
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// AI COPILOT â€” respuestas basadas en los datos reales
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
+// AI COPILOT "” respuestas basadas en los datos reales
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 app.post('/api/ai/ask', requireAuth, requireModule('ai'), async (req, res) => {
     const db       = await readDB();
     const question = (req.body.question || '').toLowerCase();
@@ -1401,20 +1401,20 @@ app.post('/api/ai/ask', requireAuth, requireModule('ai'), async (req, res) => {
         const total = monthlySales.reduce((a, s) => a + (s.total || 0), 0);
         answer = `Este mes registraste ${monthlySales.length} ventas por un total de $${total.toFixed(2)}.`;
 
-    } else if (question.includes('producto') && (question.includes('top') || question.includes('mÃ¡s vendido'))) {
+    } else if (question.includes('producto') && (question.includes('top') || question.includes('más vendido'))) {
         const counts = {};
         db.sales.forEach(s => (s.items || []).forEach(i => {
             counts[i.productId] = (counts[i.productId] || 0) + i.qty;
         }));
         const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 3);
         if (sorted.length === 0) {
-            answer = 'AÃºn no hay ventas registradas para calcular el top de productos.';
+            answer = 'Aún no hay ventas registradas para calcular el top de productos.';
         } else {
             const list = sorted.map(([id, qty]) => {
                 const p = db.products.find(x => x.id === id);
                 return `${p ? p.name : id} (${qty} unidades)`;
             }).join(', ');
-            answer = `Los productos mÃ¡s vendidos son: ${list}.`;
+            answer = `Los productos más vendidos son: ${list}.`;
         }
 
     } else if (question.includes('inventario') || question.includes('stock')) {
@@ -1427,7 +1427,7 @@ app.post('/api/ai/ask', requireAuth, requireModule('ai'), async (req, res) => {
         const debtors = db.customers.filter(c => c.balance > 0)
             .sort((a, b) => b.balance - a.balance).slice(0, 5);
         if (debtors.length === 0) {
-            answer = 'Todos tus clientes estÃ¡n al dÃ­a. No hay saldos pendientes.';
+            answer = 'Todos tus clientes están al día. No hay saldos pendientes.';
         } else {
             const list = debtors.map(c => `${c.firstName} ${c.lastName} ($${c.balance.toFixed(2)})`).join(', ');
             answer = `Clientes con saldo pendiente: ${list}.`;
@@ -1453,18 +1453,18 @@ app.post('/api/ai/ask', requireAuth, requireModule('ai'), async (req, res) => {
     ok(res, { answer });
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// AUTH â€” Registro, Login, Logout, Perfil
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
+// AUTH "” Registro, Login, Logout, Perfil
 // Usuarios guardados en users.json (separado de db.json para seguridad)
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 const USERS_PATH    = path.join(__dirname, 'users.json');
 const SESSIONS_PATH = path.join(__dirname, 'sessions.json');
 
-// â”€â”€ Helpers de usuarios (async â€” MongoDB) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Helpers de usuarios (async "” MongoDB) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 async function readUsers()       { return DB.readUsers(); }
 async function writeUsers(users) { return DB.writeUsers(users); }
 
-// â”€â”€ Helpers de sesiones (async â€” MongoDB) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Helpers de sesiones (async "” MongoDB) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 async function readSessions()    { return DB.readSessions(); }
 async function writeSessions(s)  { return DB.writeSessions(s); }
 
@@ -1473,13 +1473,13 @@ function makeToken() {
     return require('crypto').randomBytes(32).toString('hex');
 }
 
-// Hash simple de contraseÃ±a (SHA-256 â€” sin librerÃ­as extra)
+// Hash simple de contraseÁ±a (SHA-256 "” sin librerías extra)
 function hashPassword(plain) {
     return require('crypto').createHash('sha256').update(plain + 'fixpromax_salt_2026').digest('hex');
 }
 
-// Middleware de autenticaciÃ³n â€” extrae token del header Authorization
-const SESSION_TTL = 30 * 24 * 60 * 60 * 1000; // 30 dÃ­as
+// Middleware de autenticación "” extrae token del header Authorization
+const SESSION_TTL = 30 * 24 * 60 * 60 * 1000; // 30 días
 
 async function requireAuth(req, res, next) {
     const header = req.headers['authorization'] || '';
@@ -1487,14 +1487,14 @@ async function requireAuth(req, res, next) {
     if (!token) return res.status(401).json({ ok: false, error: 'No autenticado' });
     const sessions = await readSessions();
     const entry    = sessions[token];
-    if (!entry) return res.status(401).json({ ok: false, error: 'Tu sesiÃ³n ha expirado. Inicia sesiÃ³n nuevamente.' });
+    if (!entry) return res.status(401).json({ ok: false, error: 'Tu sesión ha expirado. Inicia sesión nuevamente.' });
     // Soporte para formato antiguo (string userId) y nuevo ({ userId, exp })
     const userId  = typeof entry === 'object' ? entry.userId : entry;
     const created = typeof entry === 'object' ? entry.created : 0;
     if (created && Date.now() - created > SESSION_TTL) {
         delete sessions[token];
         await writeSessions(sessions);
-        return res.status(401).json({ ok: false, error: 'Tu sesiÃ³n ha expirado. Inicia sesiÃ³n nuevamente.' });
+        return res.status(401).json({ ok: false, error: 'Tu sesión ha expirado. Inicia sesión nuevamente.' });
     }
     const users = await readUsers();
     const user  = users.find(u => u.id === userId);
@@ -1507,32 +1507,32 @@ async function requireAuth(req, res, next) {
                  teamRole:    user.teamRole    || (user.role === 'admin' ? 'owner' : 'employee'),
                  permissions: user.permissions || DEFAULT_EMPLOYEE_PERMISSIONS,
                  isDemo:      user.isDemo || user.companyId === DEMO_COMPANY_ID || false };
-    // Actualizar lastLogin (throttle: mÃ¡x 1 vez por minuto para no sobrecargar)
+    // Actualizar lastLogin (throttle: máx 1 vez por minuto para no sobrecargar)
     const now = Date.now();
     if (!user.lastLogin || now - new Date(user.lastLogin).getTime() > 60000) {
         user.lastLogin = new Date(now).toISOString();
         await writeUsers(users);
     }
     // Inyectar companyId en contexto async para que readDB/writeDB usen la BD correcta
-    // Si es demo â†’ siempre usa la BD demo, nunca la global ni la de otros
+    // Si es demo ❌†’ siempre usa la BD demo, nunca la global ni la de otros
     const ctxCompanyId = (user.isDemo || user.companyId === DEMO_COMPANY_ID)
         ? DEMO_COMPANY_ID
         : (user.companyId || user.id);
     reqContext.run({ companyId: ctxCompanyId, isDemo: req.user.isDemo }, next);
 }
 
-// â”€â”€ REGISTRO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ REGISTRO ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.post('/api/auth/register', async (req, res) => {
     const { name, email, password, company } = req.body;
     if (!name || !email || !password) {
-        return err(res, 'Nombre, email y contraseÃ±a son obligatorios');
+        return err(res, 'Nombre, email y contraseÁ±a son obligatorios');
     }
     if (password.length < 6) {
-        return err(res, 'La contraseÃ±a debe tener al menos 6 caracteres');
+        return err(res, 'La contraseÁ±a debe tener al menos 6 caracteres');
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-        return err(res, 'Email invÃ¡lido');
+        return err(res, 'Email inválido');
     }
     const users = await readUsers();
     if (users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
@@ -1548,7 +1548,7 @@ app.post('/api/auth/register', async (req, res) => {
         mode:      (req.body.mode === 'pro') ? 'pro' : 'basic',
         avatar:    name.trim().split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2),
         createdAt: new Date().toISOString(),
-        trialStart: new Date().toISOString(),   // inicio del trial de 3 dÃ­as
+        trialStart: new Date().toISOString(),   // inicio del trial de 3 días
         active:    true,
         // Sistema multiusuario: cada nuevo registro independiente crea su empresa
         companyId: generateId(),   // empresa propia
@@ -1567,7 +1567,7 @@ app.post('/api/auth/register', async (req, res) => {
     sessions[token] = { userId: newUser.id, created: Date.now() };
     await writeSessions(sessions);
 
-    console.log(`âœ… Nuevo usuario registrado: ${newUser.email} (${newUser.role}) modo:${newUser.mode}`);
+    console.log(`✅ Nuevo usuario registrado: ${newUser.email} (${newUser.role}) modo:${newUser.mode}`);
     ok(res, {
         token,
         user: { id: newUser.id, name: newUser.name, email: newUser.email,
@@ -1576,7 +1576,7 @@ app.post('/api/auth/register', async (req, res) => {
     });
 });
 
-// â”€â”€ LOGIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ LOGIN ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 const _loginAttempts = {};   // { email: { count, blockedUntil } }
 
 app.post('/api/auth/login', async (req, res) => {
@@ -1600,16 +1600,16 @@ app.post('/api/auth/login', async (req, res) => {
             entry.blockedUntil = Date.now() + 5 * 60 * 1000;  // 5 min
             entry.count = 0;
             _loginAttempts[key] = entry;
-            return err(res, 'Demasiados intentos. Tu cuenta estÃ¡ bloqueada por 5 minutos.', 429);
+            return err(res, 'Demasiados intentos. Tu cuenta está bloqueada por 5 minutos.', 429);
         }
         _loginAttempts[key] = entry;
         const remaining = 5 - entry.count;
-        return err(res, `El correo electrÃ³nico o la contraseÃ±a son incorrectos.${remaining <= 2 ? ` Te quedan ${remaining} intento(s).` : ''}`, 401);
+        return err(res, `El correo electrónico o la contraseÁ±a son incorrectos.${remaining <= 2 ? ` Te quedan ${remaining} intento(s).` : ''}`, 401);
     }
 
-    if (!user.active) return err(res, 'Esta cuenta estÃ¡ desactivada.', 403);
+    if (!user.active) return err(res, 'Esta cuenta está desactivada.', 403);
 
-    // Login exitoso â€” limpiar intentos
+    // Login exitoso "” limpiar intentos
     delete _loginAttempts[key];
 
     const token    = makeToken();
@@ -1623,12 +1623,12 @@ app.post('/api/auth/login', async (req, res) => {
     sessions[token] = { userId: user.id, created: Date.now() };
     await writeSessions(sessions);
 
-    console.log(`âœ… Login: ${user.email}`);
-    // Setear cookie de sesiÃ³n para que GET / pueda inyectar los datos correctos
+    console.log(`✅ Login: ${user.email}`);
+    // Setear cookie de sesión para que GET / pueda inyectar los datos correctos
     res.cookie('fixpromax_token', token, {
-        httpOnly: false,      // false para que el cliente JS tambiÃ©n pueda leerla si necesita
+        httpOnly: false,      // false para que el cliente JS también pueda leerla si necesita
         sameSite: 'Lax',
-        maxAge:   30 * 24 * 60 * 60 * 1000,  // 30 dÃ­as
+        maxAge:   30 * 24 * 60 * 60 * 1000,  // 30 días
         path:     '/'
     });
     ok(res, {
@@ -1641,22 +1641,22 @@ app.post('/api/auth/login', async (req, res) => {
     });
 });
 
-// â”€â”€ CAMBIO DE CONTRASEÃ‘A (autenticado, para mustChange) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ CAMBIO DE CONTRASEÁ‘A (autenticado, para mustChange) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.post('/api/auth/change-password', requireAuth, async (req, res) => {
     const { newPassword } = req.body;
     if (!newPassword || newPassword.length < 6)
-        return err(res, 'La contraseÃ±a debe tener al menos 6 caracteres');
+        return err(res, 'La contraseÁ±a debe tener al menos 6 caracteres');
     const users = await readUsers();
     const idx   = users.findIndex(u => u.id === req.user.id);
     if (idx === -1) return err(res, 'Usuario no encontrado', 404);
     users[idx].password    = hashPassword(newPassword);
     users[idx].mustChange  = false;
     await writeUsers(users);
-    console.log(`ðŸ”‘ ContraseÃ±a cambiada: ${users[idx].email}`);
+    console.log(`ðŸ”‘ ContraseÁ±a cambiada: ${users[idx].email}`);
     ok(res, { changed: true });
 });
 
-// â”€â”€ RECUPERACIÃ“N â€” solicitar cÃ³digo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ RECUPERACIÁ“N "” solicitar código ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 const _recoverCodes = {};   // { email: { code, exp } }  en memoria
 app.post('/api/auth/recover-request', async (req, res) => {
     const { email } = req.body;
@@ -1665,25 +1665,25 @@ app.post('/api/auth/recover-request', async (req, res) => {
     const user  = users.find(u => u.email.toLowerCase() === email.toLowerCase().trim());
     if (!user) return err(res, 'No existe una cuenta con ese correo', 404);
 
-    // Generar cÃ³digo de 6 dÃ­gitos
+    // Generar código de 6 dígitos
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     _recoverCodes[email.toLowerCase()] = { code, exp: Date.now() + 10 * 60 * 1000 }; // 10 min
 
-    console.log(`ðŸ” CÃ³digo de recuperaciÃ³n para ${email}: ${code}`);
-    // En producciÃ³n aquÃ­ se enviarÃ­a el email. Por ahora se devuelve en la respuesta (dev mode).
+    console.log(`ðŸ” Código de recuperación para ${email}: ${code}`);
+    // En producción aquí se enviaría el email. Por ahora se devuelve en la respuesta (dev mode).
     ok(res, { sent: true, devCode: code });   // devCode solo visible en desarrollo
 });
 
-// â”€â”€ RECUPERACIÃ“N â€” validar cÃ³digo y cambiar contraseÃ±a â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ RECUPERACIÁ“N "” validar código y cambiar contraseÁ±a ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.post('/api/auth/recover-reset', async (req, res) => {
     const { email, code, newPassword } = req.body;
     if (!email || !code || !newPassword) return err(res, 'Faltan datos requeridos');
-    if (newPassword.length < 6) return err(res, 'La contraseÃ±a debe tener al menos 6 caracteres');
+    if (newPassword.length < 6) return err(res, 'La contraseÁ±a debe tener al menos 6 caracteres');
 
     const stored = _recoverCodes[email.toLowerCase()];
-    if (!stored)                      return err(res, 'No hay cÃ³digo activo para este correo. Solicita uno nuevo.', 400);
-    if (Date.now() > stored.exp)      { delete _recoverCodes[email.toLowerCase()]; return err(res, 'El cÃ³digo ha expirado. Solicita uno nuevo.', 400); }
-    if (stored.code !== code.trim())  return err(res, 'El cÃ³digo es incorrecto. Verifica e intenta de nuevo.', 400);
+    if (!stored)                      return err(res, 'No hay código activo para este correo. Solicita uno nuevo.', 400);
+    if (Date.now() > stored.exp)      { delete _recoverCodes[email.toLowerCase()]; return err(res, 'El código ha expirado. Solicita uno nuevo.', 400); }
+    if (stored.code !== code.trim())  return err(res, 'El código es incorrecto. Verifica e intenta de nuevo.', 400);
 
     const users = await readUsers();
     const idx   = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
@@ -1692,7 +1692,7 @@ app.post('/api/auth/recover-reset', async (req, res) => {
     users[idx].mustChange = false;
     await writeUsers(users);
     delete _recoverCodes[email.toLowerCase()];
-    console.log(`âœ… ContraseÃ±a recuperada: ${email}`);
+    console.log(`✅ ContraseÁ±a recuperada: ${email}`);
     ok(res, { reset: true });
 });
 app.post('/api/auth/logout', async (req, res) => {
@@ -1701,17 +1701,17 @@ app.post('/api/auth/logout', async (req, res) => {
     const sessions = await readSessions();
     delete sessions[token];
     await writeSessions(sessions);
-    // Borrar la cookie de sesiÃ³n
+    // Borrar la cookie de sesión
     res.clearCookie('fixpromax_token', { path: '/' });
     ok(res, { loggedOut: true });
 });
 
-// â”€â”€ PERFIL del usuario actual â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ PERFIL del usuario actual ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/auth/me', requireAuth, async (req, res) => {
     ok(res, { ...req.user });
 });
 
-// â”€â”€ LISTAR usuarios (solo admin) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ LISTAR usuarios (solo admin) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/auth/users', requireAuth, async (req, res) => {
     if (req.user.role !== 'admin') return err(res, 'Sin permisos', 403);
     const users = (await readUsers()).map(u => ({
@@ -1722,7 +1722,7 @@ app.get('/api/auth/users', requireAuth, async (req, res) => {
     ok(res, users);
 });
 
-// â”€â”€ ACTUALIZAR perfil â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ ACTUALIZAR perfil ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.put('/api/auth/me', requireAuth, async (req, res) => {
     const users = await readUsers();
     const idx   = users.findIndex(u => u.id === req.user.id);
@@ -1733,9 +1733,9 @@ app.put('/api/auth/me', requireAuth, async (req, res) => {
     if (mode && ['basic','pro'].includes(mode)) users[idx].mode = mode;
     if (password && newPassword) {
         if (users[idx].password !== hashPassword(password)) {
-            return err(res, 'ContraseÃ±a actual incorrecta');
+            return err(res, 'ContraseÁ±a actual incorrecta');
         }
-        if (newPassword.length < 6) return err(res, 'La nueva contraseÃ±a debe tener al menos 6 caracteres');
+        if (newPassword.length < 6) return err(res, 'La nueva contraseÁ±a debe tener al menos 6 caracteres');
         users[idx].password = hashPassword(newPassword);
     }
     users[idx].avatar = users[idx].name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
@@ -1745,48 +1745,48 @@ app.put('/api/auth/me', requireAuth, async (req, res) => {
               mode: users[idx].mode || 'basic' });
 });
 
-// â”€â”€ PÃ¡gina de emergencia /entrar â€” SOLO DISPONIBLE EN LOCALHOST â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Página de emergencia /entrar "” SOLO DISPONIBLE EN LOCALHOST ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/entrar', async (req, res) => {
     const host = req.hostname || req.headers.host || '';
     const isLocal = host.startsWith('localhost') || host.startsWith('127.0.0.1') || host.startsWith('::1');
     if (!isLocal) return res.status(404).json({ ok: false, error: 'Not found' });
     const users = await readUsers();
     if (!users.length) {
-        return res.send('<h2>No hay usuarios. Ve a <a href="/">http://localhost:3000</a> y regÃ­strate.</h2>');
+        return res.send('<h2>No hay usuarios. Ve a <a href="/">http://localhost:3000</a> y regístrate.</h2>');
     }
     // Mostrar lista de usuarios para entrar directo
     const lista = users.map(u => `
         <div style="margin:8px 0;padding:12px;background:#f8fafc;border-radius:8px;display:flex;align-items:center;justify-content:space-between;">
             <div>
-                <strong>${u.name}</strong> â€” ${u.email}
+                <strong>${u.name}</strong> "” ${u.email}
                 <span style="font-size:12px;color:#64748b;margin-left:8px;">(${u.role})</span>
             </div>
             <a href="/entrar-como?id=${u.id}" style="background:#4f46e5;color:#fff;padding:8px 20px;border-radius:6px;text-decoration:none;font-weight:600;">
-                Entrar â†’
+                Entrar ❌†’
             </a>
         </div>
     `).join('');
 
     res.send(`<!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Acceso de Emergencia â€” FIX PRO MAX</title>
+<title>Acceso de Emergencia "” FIX PRO MAX</title>
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,sans-serif;background:#0f172a;color:#f8fafc;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
 .card{background:#1e293b;border-radius:16px;padding:32px;max-width:520px;width:100%;box-shadow:0 20px 40px rgba(0,0,0,.5)}
 h1{font-size:22px;margin-bottom:4px}p{color:#94a3b8;font-size:14px;margin-bottom:24px}
 </style></head><body>
 <div class="card">
     <h1>ðŸ”‘ Acceso de Emergencia</h1>
-    <p>Selecciona tu cuenta para entrar directamente sin contraseÃ±a.</p>
+    <p>Selecciona tu cuenta para entrar directamente sin contraseÁ±a.</p>
     ${lista}
     <div style="margin-top:20px;padding-top:16px;border-top:1px solid #334155;font-size:13px;color:#64748b;">
-        <strong>ContraseÃ±a temporal de todos los usuarios:</strong> <code style="background:#0f172a;padding:2px 8px;border-radius:4px;color:#a78bfa">Cambiar123</code>
-        <br><a href="/" style="color:#818cf8;text-decoration:none;margin-top:8px;display:inline-block;">â† Volver al inicio normal</a>
+        <strong>ContraseÁ±a temporal de todos los usuarios:</strong> <code style="background:#0f172a;padding:2px 8px;border-radius:4px;color:#a78bfa">Cambiar123</code>
+        <br><a href="/" style="color:#818cf8;text-decoration:none;margin-top:8px;display:inline-block;">❌† Volver al inicio normal</a>
     </div>
 </div>
 </body></html>`);
 });
 
-// Entrar como un usuario especÃ­fico â€” SOLO LOCALHOST
+// Entrar como un usuario específico "” SOLO LOCALHOST
 app.get('/entrar-como', async (req, res) => {
     const host = req.hostname || req.headers.host || '';
     const isLocal = host.startsWith('localhost') || host.startsWith('127.0.0.1') || host.startsWith('::1');
@@ -1805,31 +1805,31 @@ app.get('/entrar-como', async (req, res) => {
     res.redirect(`/?token=${token}&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}&role=${user.role}&mode=${user.mode||'basic'}&avatar=${encodeURIComponent(user.avatar||'')}&company=${encodeURIComponent(user.company||'')}`);
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// SUSCRIPCIÃ“N â€” Trial gratuito 3 dÃ­as + planes de pago
-// La validaciÃ³n se hace en el servidor para evitar manipulaciÃ³n del cliente.
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
+// SUSCRIPCIÁ“N "” Trial gratuito 3 días + planes de pago
+// La validación se hace en el servidor para evitar manipulación del cliente.
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 const TRIAL_DAYS = 3;
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// CONFIG GLOBAL â€” planes y mÃ©todos de pago persistentes en config.json
-// Cualquier cambio desde el panel admin se guarda aquÃ­ y aplica a todos
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
+// CONFIG GLOBAL "” planes y métodos de pago persistentes en config.json
+// Cualquier cambio desde el panel admin se guarda aquí y aplica a todos
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 const CONFIG_PATH = path.join(__dirname, 'config.json');
 
-// MÃ©todos de pago predeterminados (si config.json no existe aÃºn)
+// Métodos de pago predeterminados (si config.json no existe aún)
 const DEFAULT_PAYMENT_METHODS = [
     { id: 'CASH',          label: 'Efectivo',              icon: 'ðŸ’µ', active: true,  type: 'pos',  isManual: false },
-    { id: 'CREDIT_CARD',   label: 'Tarjeta CrÃ©dito',       icon: 'ðŸ’³', active: true,  type: 'pos',  isManual: false },
-    { id: 'DEBIT_CARD',    label: 'Tarjeta DÃ©bito',        icon: 'ðŸ’³', active: true,  type: 'pos',  isManual: false },
-    { id: 'ZELLE',         label: 'Zelle',                 icon: 'âš¡', active: true,  type: 'both', isManual: true  },
-    { id: 'USDT',          label: 'USDT / Cripto',         icon: 'ðŸŸ¡', active: true,  type: 'both', isManual: true  },
+    { id: 'CREDIT_CARD',   label: 'Tarjeta Crédito',       icon: 'ðŸ’³', active: true,  type: 'pos',  isManual: false },
+    { id: 'DEBIT_CARD',    label: 'Tarjeta Débito',        icon: 'ðŸ’³', active: true,  type: 'pos',  isManual: false },
+    { id: 'ZELLE',         label: 'Zelle',                 icon: '❌š¡', active: true,  type: 'both', isManual: true  },
+    { id: 'USDT',          label: 'USDT / Cripto',         icon: '🟡', active: true,  type: 'both', isManual: true  },
     { id: 'BANK_TRANSFER', label: 'Transferencia bancaria', icon: 'ðŸ¦', active: true, type: 'pos',  isManual: false },
-    { id: 'PAGO_MOVIL',    label: 'Pago MÃ³vil',            icon: 'ðŸ“±', active: true,  type: 'both', isManual: true  },
-    { id: 'PAYPAL',        label: 'PayPal',                icon: 'ðŸ…¿ï¸', active: false, type: 'sub',  isManual: false },
+    { id: 'PAGO_MOVIL',    label: 'Pago Móvil',            icon: 'ðŸ“±', active: true,  type: 'both', isManual: true  },
+    { id: 'PAYPAL',        label: 'PayPal',                icon: '🅿️', active: false, type: 'sub',  isManual: false },
 ];
 
-// â”€â”€ Config global (async â€” MongoDB) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Config global (async "” MongoDB) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 async function readConfig()      { return DB.getConfig(); }
 async function writeConfig(cfg)  { return DB.writeConfig(cfg); }
 async function getConfig()       { return DB.getConfig(); }
@@ -1845,13 +1845,13 @@ async function applyPlansOverrides() {
     });
 }
 
-// â”€â”€ Planes de suscripciÃ³n â€” estructura extensible â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Planes de suscripción "” estructura extensible ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 // Los planes se pueden editar sin reconstruir el sistema.
 // Los cambios del admin se persisten en config.json (plansOverride).
 const PLANS = {
     basic: {
         id:          'basic',
-        name:        'Plan BÃ¡sico',
+        name:        'Plan Básico',
         description: 'Perfecto para empezar. Acceso completo para 1 usuario.',
         icon:        'ðŸ“¦',
         price:       10.00,
@@ -1868,7 +1868,7 @@ const PLANS = {
         active:      true,
         order:       1,
         googlePlayId:'com.fixpromax.erp.basic',
-        // MÃ³dulos permitidos (true = acceso, false = bloqueado)
+        // Módulos permitidos (true = acceso, false = bloqueado)
         modules: {
             pos: true, sales: true, invoices: true, products: true,
             inventory: true, customers: true, suppliers: true,
@@ -1883,7 +1883,7 @@ const PLANS = {
             'Ventas ilimitadas',
             'Facturas ilimitadas',
             'Gastos',
-            'Reportes bÃ¡sicos',
+            'Reportes básicos',
         ],
         notIncluded: ['Multiusuario', 'Contabilidad', 'Finanzas P&L', 'Cuentas por cobrar/pagar', 'AI Copilot', 'Soporte prioritario'],
     },
@@ -1891,7 +1891,7 @@ const PLANS = {
         id:          'pro',
         name:        'Plan Pro',
         description: 'Para negocios en crecimiento. Multiusuario habilitado.',
-        icon:        'ðŸš€',
+        icon:        '🚀',
         price:       15.00,
         currency:    'USD',
         duration:    90,
@@ -1902,7 +1902,7 @@ const PLANS = {
         maxSales:    -1,
         maxInvoices: -1,
         recommended: true,
-        badge:       'â­ RECOMENDADO',
+        badge:       '❌­ RECOMENDADO',
         active:      true,
         order:       2,
         googlePlayId:'com.fixpromax.erp.pro',
@@ -1922,7 +1922,7 @@ const PLANS = {
             'Contabilidad completa',
             'Finanzas P&L',
             'AI Copilot',
-            'Todo el Plan BÃ¡sico',
+            'Todo el Plan Básico',
         ],
         notIncluded: ['Inventario ilimitado', 'Soporte prioritario'],
     },
@@ -1967,7 +1967,7 @@ const PLANS = {
 
 // Aplicar overrides al arrancar (se hace dentro de startServer después de conectar a MongoDB)
 
-// â”€â”€ Helpers de planes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Helpers de planes ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 function getActivePlans() {
     return Object.values(PLANS).filter(p => p.active).sort((a, b) => a.order - b.order);
 }
@@ -1989,7 +1989,7 @@ function planAllowsMultiUser(user) {
     return plan ? (plan.multiUser === true) : false;
 }
 
-// MÃ³dulos permitidos durante el trial (igual que plan bÃ¡sico)
+// Módulos permitidos durante el trial (igual que plan básico)
 const TRIAL_MODULES = {
     pos: true, sales: true, invoices: true, products: true,
     inventory: true, customers: true, suppliers: true,
@@ -1998,7 +1998,7 @@ const TRIAL_MODULES = {
     payables: false, receivables: false, ai: false,
     team: false,
 };
-// MÃ³dulos permitidos cuando no hay acceso (solo lectura bÃ¡sica)
+// Módulos permitidos cuando no hay acceso (solo lectura básica)
 const NO_ACCESS_MODULES = {
     pos: false, sales: false, invoices: false, products: false,
     inventory: false, customers: false, suppliers: false,
@@ -2051,7 +2051,7 @@ function getAccessStatus(user) {
     return { status: 'no_access', access: false, daysLeft: 0, multiUser: false, maxUsers: 1, maxProducts: 0, modules: NO_ACCESS_MODULES };
 }
 
-// â”€â”€ Middleware: bloquear endpoint si el mÃ³dulo no estÃ¡ en el plan â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Middleware: bloquear endpoint si el módulo no está en el plan ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 // Middleware: bloquear endpoint si el módulo no está en el plan
 function requireModule(moduleName) {
     return async function(req, res, next) {
@@ -2067,10 +2067,10 @@ function requireModule(moduleName) {
     };
 }
 
-// â”€â”€ Helpers de pagos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Helpers de pagos ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 const PAYMENTS_PATH = path.join(__dirname, 'payments.json');
 
-// â”€â”€ Helpers de pagos (async â€” MongoDB) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Helpers de pagos (async "” MongoDB) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 async function readPayments()    { return DB.readPayments(); }
 async function writePayments(d)  { return DB.writePayments(d); }
 
@@ -2097,14 +2097,14 @@ async function recordPayment({ userId, userEmail, planId, planName, amount, curr
     return entry;
 }
 
-// â”€â”€ ENDPOINTS DE PLANES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ ENDPOINTS DE PLANES ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 
-// PÃºblico: listar planes activos
+// Público: listar planes activos
 app.get('/api/subscription/plans', async (req, res) => {
     ok(res, getActivePlans());
 });
 
-// PÃºblico: obtener un plan especÃ­fico
+// Público: obtener un plan específico
 app.get('/api/subscription/plans/:id', async (req, res) => {
     const plan = getPlan(req.params.id);
     if (!plan || !plan.active) return err(res, 'Plan no encontrado', 404);
@@ -2116,7 +2116,7 @@ app.get('/api/admin/plans', requireAdmin, async (req, res) => {
     ok(res, Object.values(PLANS).sort((a, b) => a.order - b.order));
 });
 
-// Admin: actualizar un plan (precio, nombre, caracterÃ­sticas, etc.)
+// Admin: actualizar un plan (precio, nombre, características, etc.)
 app.put('/api/admin/plans/:id', requireAdmin, async (req, res) => {
     const plan = PLANS[req.params.id];
     if (!plan) return err(res, 'Plan no encontrado', 404);
@@ -2134,7 +2134,7 @@ app.put('/api/admin/plans/:id', requireAdmin, async (req, res) => {
     cfg.plansOverride[plan.id] = Object.assign(cfg.plansOverride[plan.id] || {}, changes);
     cfg.updatedAt = new Date().toISOString();
     await writeConfig(cfg);
-    await logAdminAction(req.admin.id, req.admin.email, 'plan_update', null, null, `plan:${plan.id} â†’ ${JSON.stringify(changes)}`);
+    await logAdminAction(req.admin.id, req.admin.email, 'plan_update', null, null, `plan:${plan.id} ❌†’ ${JSON.stringify(changes)}`);
     // Notificar a TODOS los clientes conectados (app y admin) del cambio de plan
     setImmediate(() => {
         if (typeof broadcastSSE === 'function') {
@@ -2144,7 +2144,7 @@ app.put('/api/admin/plans/:id', requireAdmin, async (req, res) => {
     ok(res, plan);
 });
 
-// Admin: estadÃ­sticas de planes y suscripciones
+// Admin: estadísticas de planes y suscripciones
 app.get('/api/admin/plans/stats', requireAdmin, async (req, res) => {
     const users    = await readUsers();
     const payments = await readPayments();
@@ -2172,7 +2172,7 @@ app.get('/api/admin/plans/stats', requireAdmin, async (req, res) => {
         }
     });
 
-    // ConversiÃ³n trial â†’ pago
+    // Conversión trial ❌†’ pago
     const totalTrialEver  = users.filter(u => u.trialStart).length;
     const totalConverted  = users.filter(u => u.subscriptionStatus === 'active' || u.subscriptionStatus === 'cancelled').length;
     const conversionRate  = totalTrialEver > 0 ? Math.round(totalConverted / totalTrialEver * 100) : 0;
@@ -2187,7 +2187,7 @@ app.get('/api/admin/plans/stats', requireAdmin, async (req, res) => {
     });
 });
 
-// â”€â”€ ENDPOINTS DE SUSCRIPCIÃ“N â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ ENDPOINTS DE SUSCRIPCIÁ“N ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 
 app.get('/api/subscription/status', requireAuth, async (req, res) => {
     const users = await readUsers();
@@ -2201,7 +2201,7 @@ app.get('/api/subscription/status', requireAuth, async (req, res) => {
         changed = true;
     }
 
-    // Para empleados: verificar suscripciÃ³n del owner de su empresa
+    // Para empleados: verificar suscripción del owner de su empresa
     const owner = (user.teamRole === 'employee')
         ? (users.find(u => u.companyId === user.companyId && u.teamRole === 'owner') || user)
         : user;
@@ -2217,7 +2217,7 @@ app.get('/api/subscription/status', requireAuth, async (req, res) => {
 
 app.post('/api/subscription/activate', requireAuth, async (req, res) => {
     const { planId, purchaseToken, orderId, source, paymentData, manual } = req.body;
-    if (!planId || !getPlan(planId)) return err(res, 'Plan invÃ¡lido');
+    if (!planId || !getPlan(planId)) return err(res, 'Plan inválido');
 
     const users = await readUsers();
     const idx   = users.findIndex(u => u.id === req.user.id);
@@ -2225,16 +2225,16 @@ app.post('/api/subscription/activate', requireAuth, async (req, res) => {
 
     // Solo el propietario/owner puede suscribirse
     if (users[idx].teamRole === 'employee') {
-        return err(res, 'Solo el propietario de la cuenta puede gestionar la suscripciÃ³n.', 403);
+        return err(res, 'Solo el propietario de la cuenta puede gestionar la suscripción.', 403);
     }
 
     const plan   = getPlan(planId);
     const now    = new Date();
     const subEnd = new Date(now.getTime() + plan.duration * 86400000);
 
-    // Determinar estado segÃºn mÃ©todo de pago
-    // Consultar config para saber si el mÃ©todo es manual (verificaciÃ³n requerida)
-    // Soporta IDs en mayÃºsculas (ZELLE, USDT, PAGO_MOVIL) y minÃºsculas por compatibilidad
+    // Determinar estado según método de pago
+    // Consultar config para saber si el método es manual (verificación requerida)
+    // Soporta IDs en mayúsculas (ZELLE, USDT, PAGO_MOVIL) y minúsculas por compatibilidad
     const _configMethod = (await getConfig()).paymentMethods.find(
         m => m.id === source || m.id === (source||'').toUpperCase() || m.id === (source||'').toLowerCase()
     );
@@ -2268,22 +2268,22 @@ app.post('/api/subscription/activate', requireAuth, async (req, res) => {
         status:    isManualPayment ? 'pending' : 'completed',
         source:    source || 'web',
         orderId:   orderId || null,
-        note:      isManualPayment ? 'VerificaciÃ³n pendiente' : '',
+        note:      isManualPayment ? 'Verificación pendiente' : '',
     });
 
-    console.log(`âœ… SuscripciÃ³n ${isManualPayment ? 'pendiente' : 'activada'}: ${users[idx].email} â†’ ${planId}`);
+    console.log(`✅ Suscripción ${isManualPayment ? 'pendiente' : 'activada'}: ${users[idx].email} ❌†’ ${planId}`);
 
-    // Alerta WhatsApp automÃ¡tica
+    // Alerta WhatsApp automática
     if (isManualPayment) {
         await alertWA('payment_pending', {
             id: generateId(), userEmail: users[idx].email,
-            userName: users[idx].name, company: users[idx].company||'â€”',
+            userName: users[idx].name, company: users[idx].company||'"”',
             planName: plan.name, amount: plan.price,
         });
     } else {
         await alertWA('subscription_new', {
             id: generateId(), userEmail: users[idx].email,
-            userName: users[idx].name, company: users[idx].company||'â€”',
+            userName: users[idx].name, company: users[idx].company||'"”',
             planName: plan.name, amount: plan.price,
         });
     }
@@ -2291,7 +2291,7 @@ app.post('/api/subscription/activate', requireAuth, async (req, res) => {
     ok(res, {
         message: isManualPayment
             ? 'Solicitud recibida. Verificaremos tu pago y activaremos el plan en menos de 2 horas.'
-            : 'Â¡SuscripciÃ³n activada!',
+            : '¡Suscripción activada!',
         pending: isManualPayment,
         ...getAccessStatus(users[idx]),
     });
@@ -2301,22 +2301,22 @@ app.post('/api/subscription/cancel', requireAuth, async (req, res) => {
     const users = await readUsers();
     const idx   = users.findIndex(u => u.id === req.user.id);
     if (idx === -1) return err(res, 'Usuario no encontrado', 404);
-    if (users[idx].teamRole === 'employee') return err(res, 'Solo el propietario puede cancelar la suscripciÃ³n.', 403);
-    if (users[idx].subscriptionStatus !== 'active') return err(res, 'No hay suscripciÃ³n activa que cancelar.');
+    if (users[idx].teamRole === 'employee') return err(res, 'Solo el propietario puede cancelar la suscripción.', 403);
+    if (users[idx].subscriptionStatus !== 'active') return err(res, 'No hay suscripción activa que cancelar.');
     users[idx].subscriptionStatus      = 'cancelled';
     users[idx].subscriptionCancelledAt = new Date().toISOString();
     await writeUsers(users);
     await logAdminAction(users[idx].id, users[idx].email, 'subscription_cancel_self', users[idx].id, users[idx].email, `plan:${users[idx].subscriptionPlan}`);
 
-    // Alerta WhatsApp automÃ¡tica
+    // Alerta WhatsApp automática
     await alertWA('subscription_cancelled', {
         id: generateId(), userEmail: users[idx].email,
-        userName: users[idx].name, company: users[idx].company||'â€”',
-        planName: getPlan(users[idx].subscriptionPlan)?.name || users[idx].subscriptionPlan || 'â€”',
+        userName: users[idx].name, company: users[idx].company||'"”',
+        planName: getPlan(users[idx].subscriptionPlan)?.name || users[idx].subscriptionPlan || '"”',
     });
 
     ok(res, {
-        message: `SuscripciÃ³n cancelada. MantendrÃ¡s acceso hasta ${new Date(users[idx].subscriptionEnd).toLocaleDateString('es')}.`,
+        message: `Suscripción cancelada. Mantendrás acceso hasta ${new Date(users[idx].subscriptionEnd).toLocaleDateString('es')}.`,
         end: users[idx].subscriptionEnd,
         ...getAccessStatus(users[idx]),
     });
@@ -2330,13 +2330,13 @@ app.post('/api/subscription/restore', requireAuth, async (req, res) => {
     ok(res, { restored: status.access, ...status });
 });
 
-// â”€â”€ Historial de pagos del usuario autenticado â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Historial de pagos del usuario autenticado ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/subscription/payments', requireAuth, async (req, res) => {
     const payments = (await readPayments()).filter(p => p.userId === req.user.id);
     ok(res, payments);
 });
 
-// â”€â”€ Historial de pagos de todos los usuarios (admin) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Historial de pagos de todos los usuarios (admin) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/admin/payments', requireAdmin, async (req, res) => {
     const { userId, planId, status: st, limit: lim = 100 } = req.query;
     let payments = await readPayments();
@@ -2346,7 +2346,7 @@ app.get('/api/admin/payments', requireAdmin, async (req, res) => {
     ok(res, payments.slice(0, parseInt(lim)));
 });
 
-// â”€â”€ Confirmar pago manual pendiente (admin) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Confirmar pago manual pendiente (admin) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.post('/api/admin/payments/:id/confirm', requireAdmin, async (req, res) => {
     const payments = await readPayments();
     const pidx = payments.findIndex(p => p.id === req.params.id);
@@ -2358,7 +2358,7 @@ app.post('/api/admin/payments/:id/confirm', requireAdmin, async (req, res) => {
     payments[pidx].confirmedAt  = new Date().toISOString();
     await writePayments(payments);
 
-    // Activar la suscripciÃ³n del usuario
+    // Activar la suscripción del usuario
     const users = await readUsers();
     const uidx  = users.findIndex(u => u.id === payments[pidx].userId);
     if (uidx !== -1) {
@@ -2381,19 +2381,19 @@ app.post('/api/admin/payments/:id/confirm', requireAdmin, async (req, res) => {
 
     await logAdminAction(req.admin.id, req.admin.email, 'payment_confirm', payments[pidx].userId, payments[pidx].userEmail, `pago:${payments[pidx].id} plan:${payments[pidx].planId}`);
 
-    // Alerta WhatsApp automÃ¡tica
+    // Alerta WhatsApp automática
     const uConfirmed = (await readUsers()).find(u => u.id === payments[pidx].userId);
     await alertWA('payment_completed', {
         id: payments[pidx].id, userEmail: payments[pidx].userEmail,
         userName: uConfirmed?.name || payments[pidx].userEmail,
-        company:  uConfirmed?.company || 'â€”',
+        company:  uConfirmed?.company || '"”',
         planName: payments[pidx].planName, amount: payments[pidx].amount,
         currency: payments[pidx].currency, method: payments[pidx].method,
     });
     ok(res, { done: true, payment: payments[pidx] });
 });
 
-// â”€â”€ Marcar pago como fallido (admin) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Marcar pago como fallido (admin) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.post('/api/admin/payments/:id/reject', requireAdmin, async (req, res) => {
     const payments = await readPayments();
     const pidx = payments.findIndex(p => p.id === req.params.id);
@@ -2405,68 +2405,68 @@ app.post('/api/admin/payments/:id/reject', requireAdmin, async (req, res) => {
     await writePayments(payments);
     await logAdminAction(req.admin.id, req.admin.email, 'payment_reject', payments[pidx].userId, payments[pidx].userEmail, `pago:${payments[pidx].id}`);
 
-    // Alerta WhatsApp automÃ¡tica
+    // Alerta WhatsApp automática
     const uRej = (await readUsers()).find(u => u.id === payments[pidx].userId);
     await alertWA('payment_failed', {
         id: payments[pidx].id, userEmail: payments[pidx].userEmail,
         userName: uRej?.name || payments[pidx].userEmail,
-        company:  uRej?.company || 'â€”',
+        company:  uRej?.company || '"”',
         planName: payments[pidx].planName, amount: payments[pidx].amount,
     });
     ok(res, { done: true });
 });
 
-// â”€â”€ MÃ‰TODOS DE PAGO CONFIGURABLES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// PÃºblico (autenticado): obtener mÃ©todos activos para el POS y suscripciÃ³n
+// ❌”€❌”€ MÁ‰TODOS DE PAGO CONFIGURABLES ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
+// Público (autenticado): obtener métodos activos para el POS y suscripción
 app.get('/api/config/payment-methods', requireAuth, async (req, res) => {
     const cfg = await getConfig();
     ok(res, cfg.paymentMethods);
 });
 
-// Admin: obtener TODOS los mÃ©todos (activos e inactivos)
+// Admin: obtener TODOS los métodos (activos e inactivos)
 app.get('/api/admin/payment-methods', requireAdmin, async (req, res) => {
     const cfg = await getConfig();
     ok(res, cfg.paymentMethods);
 });
 
-// Admin: actualizar lista completa de mÃ©todos
+// Admin: actualizar lista completa de métodos
 app.put('/api/admin/payment-methods', requireAdmin, async (req, res) => {
     const methods = req.body;
-    if (!Array.isArray(methods)) return err(res, 'Se esperaba un array de mÃ©todos');
-    // Validar estructura bÃ¡sica
+    if (!Array.isArray(methods)) return err(res, 'Se esperaba un array de métodos');
+    // Validar estructura básica
     for (const m of methods) {
-        if (!m.id || !m.label) return err(res, `MÃ©todo invÃ¡lido: falta id o label`);
+        if (!m.id || !m.label) return err(res, `Método inválido: falta id o label`);
     }
     const cfg = await getConfig();
     cfg.paymentMethods = methods;
     cfg.updatedAt = new Date().toISOString();
     await writeConfig(cfg);
     await logAdminAction(req.admin.id, req.admin.email, 'payment_methods_update', null, null,
-        `${methods.length} mÃ©todos actualizados`);
+        `${methods.length} métodos actualizados`);
     ok(res, cfg.paymentMethods);
 });
 
-// Admin: actualizar un mÃ©todo especÃ­fico
+// Admin: actualizar un método específico
 app.put('/api/admin/payment-methods/:id', requireAdmin, async (req, res) => {
     const cfg = await getConfig();
     const idx = cfg.paymentMethods.findIndex(m => m.id === req.params.id);
-    if (idx === -1) return err(res, 'MÃ©todo no encontrado', 404);
+    if (idx === -1) return err(res, 'Método no encontrado', 404);
     const allowed = ['label', 'icon', 'active', 'type', 'isManual', 'info', 'paymentData'];
     allowed.forEach(k => { if (req.body[k] !== undefined) cfg.paymentMethods[idx][k] = req.body[k]; });
     cfg.updatedAt = new Date().toISOString();
     await writeConfig(cfg);
     await logAdminAction(req.admin.id, req.admin.email, 'payment_method_update', null, null,
-        `mÃ©todo:${req.params.id} â†’ ${JSON.stringify(req.body)}`);
+        `método:${req.params.id} ❌†’ ${JSON.stringify(req.body)}`);
     ok(res, cfg.paymentMethods[idx]);
 });
 
-// Admin: agregar nuevo mÃ©todo
+// Admin: agregar nuevo método
 app.post('/api/admin/payment-methods', requireAdmin, async (req, res) => {
     const { id, label, icon, type, isManual, info } = req.body;
     if (!id || !label) return err(res, 'id y label son obligatorios');
     const cfg = await getConfig();
     if (cfg.paymentMethods.find(m => m.id === id))
-        return err(res, `Ya existe un mÃ©todo con id "${id}"`);
+        return err(res, `Ya existe un método con id "${id}"`);
     const newMethod = { id: id.toUpperCase().replace(/\s+/g,'_'), label, icon: icon||'ðŸ’³',
                         active: true, type: type||'pos', isManual: !!isManual, info: info||'' };
     cfg.paymentMethods.push(newMethod);
@@ -2476,38 +2476,38 @@ app.post('/api/admin/payment-methods', requireAdmin, async (req, res) => {
     ok(res, newMethod);
 });
 
-// Admin: eliminar mÃ©todo
+// Admin: eliminar método
 app.delete('/api/admin/payment-methods/:id', requireAdmin, async (req, res) => {
     const cfg = await getConfig();
     const before = cfg.paymentMethods.length;
     cfg.paymentMethods = cfg.paymentMethods.filter(m => m.id !== req.params.id);
-    if (cfg.paymentMethods.length === before) return err(res, 'MÃ©todo no encontrado', 404);
+    if (cfg.paymentMethods.length === before) return err(res, 'Método no encontrado', 404);
     cfg.updatedAt = new Date().toISOString();
     await writeConfig(cfg);
     await logAdminAction(req.admin.id, req.admin.email, 'payment_method_delete', null, null, `eliminado:${req.params.id}`);
     ok(res, { done: true });
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// SISTEMA DE ALERTAS WHATSAPP â€” UltraMsg
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
+// SISTEMA DE ALERTAS WHATSAPP "” UltraMsg
 // Docs: https://ultramsg.com/
-// Plan gratuito: 250 mensajes/mes. No requiere activaciÃ³n desde el telÃ©fono.
+// Plan gratuito: 250 mensajes/mes. No requiere activación desde el teléfono.
 // Pasos: 1) Crear cuenta en ultramsg.com  2) Crear instancia  3) Escanear QR
-//        4) Copiar Instance ID y Token al panel admin â†’ ConfiguraciÃ³n
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//        4) Copiar Instance ID y Token al panel admin ❌†’ Configuración
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 const https_mod  = require('https');
 const WA_LOG_PATH = path.join(__dirname, 'wa-alerts.json');
 
-// â”€â”€ Helpers de WA alerts (async â€” MongoDB) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Helpers de WA alerts (async "” MongoDB) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 async function readWALog()   { return DB.readWALog(); }
 async function writeWALog(l) { return DB.writeWALog(l); }
 
-/** EnvÃ­a un mensaje WhatsApp via UltraMsg y registra el resultado */
+/** Envía un mensaje WhatsApp via UltraMsg y registra el resultado */
 async function sendWhatsApp(message, eventId) {
     const cfg      = await getConfig();
     const instance = (cfg.ultramsgInstance || '').trim();
     const token    = (cfg.ultramsgToken    || '').trim();
-    // Usar nÃºmero destino separado si estÃ¡ configurado, si no usar el nÃºmero de la instancia
+    // Usar número destino separado si está configurado, si no usar el número de la instancia
     const destPhone = (cfg.whatsappDestPhone || cfg.whatsappPhone || '').replace(/\D/g,'');
 
     if (!destPhone || !instance || !token || token === 'PENDING_SETUP') {
@@ -2576,38 +2576,38 @@ async function sendWhatsApp(message, eventId) {
     });
 }
 
-/** EnvÃ­a alerta WA sin bloquear la respuesta HTTP */
+/** Envía alerta WA sin bloquear la respuesta HTTP */
 async function alertWA(type, data) {
     const now = new Date().toLocaleString('es-VE', { timeZone:'America/Caracas',
         day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
     let msg = '';
     if (type === 'payment_completed') {
-        msg = `ðŸ”” NUEVO PAGO - FIX PRO MAX\nðŸ‘¤ Usuario: ${data.userName||data.userEmail}\nðŸ¢ Empresa: ${data.company||'â€”'}\nðŸ“¦ Plan: ${data.planName}\nðŸ’° Monto: $${Number(data.amount).toFixed(2)} ${data.currency||'USD'}\nðŸ’³ MÃ©todo: ${data.method}\nðŸ“… Fecha: ${now}\nðŸ§¾ ID: ${data.id}\nâœ… Estado: PAGO CONFIRMADO`;
+        msg = `ðŸ”” NUEVO PAGO - FIX PRO MAX\nðŸ‘¤ Usuario: ${data.userName||data.userEmail}\nðŸ¢ Empresa: ${data.company||'"”'}\nðŸ“¦ Plan: ${data.planName}\nðŸ’° Monto: $${Number(data.amount).toFixed(2)} ${data.currency||'USD'}\nðŸ’³ Método: ${data.method}\nðŸ“… Fecha: ${now}\nðŸ§¾ ID: ${data.id}\n✅ Estado: PAGO CONFIRMADO`;
     } else if (type === 'subscription_new') {
-        msg = `ðŸ”” NUEVA SUSCRIPCION - FIX PRO MAX\nðŸ‘¤ Usuario: ${data.userName||data.userEmail}\nðŸ¢ Empresa: ${data.company||'â€”'}\nðŸ“¦ Plan: ${data.planName}\nðŸ’° Precio: $${Number(data.amount).toFixed(2)}\nðŸ“… Fecha: ${now}\nâœ… Estado: ACTIVA`;
+        msg = `ðŸ”” NUEVA SUSCRIPCION - FIX PRO MAX\nðŸ‘¤ Usuario: ${data.userName||data.userEmail}\nðŸ¢ Empresa: ${data.company||'"”'}\nðŸ“¦ Plan: ${data.planName}\nðŸ’° Precio: $${Number(data.amount).toFixed(2)}\nðŸ“… Fecha: ${now}\n✅ Estado: ACTIVA`;
     } else if (type === 'payment_failed') {
-        msg = `âš ï¸ PAGO FALLIDO - FIX PRO MAX\nðŸ‘¤ Usuario: ${data.userName||data.userEmail}\nðŸ¢ Empresa: ${data.company||'â€”'}\nðŸ“¦ Plan: ${data.planName}\nðŸ’° Monto: $${Number(data.amount).toFixed(2)}\nðŸ“… Fecha: ${now}\nâŒ Estado: PAGO FALLIDO`;
+        msg = `❌š ï¸ PAGO FALLIDO - FIX PRO MAX\nðŸ‘¤ Usuario: ${data.userName||data.userEmail}\nðŸ¢ Empresa: ${data.company||'"”'}\nðŸ“¦ Plan: ${data.planName}\nðŸ’° Monto: $${Number(data.amount).toFixed(2)}\nðŸ“… Fecha: ${now}\n❌Œ Estado: PAGO FALLIDO`;
     } else if (type === 'payment_pending') {
-        msg = `ðŸŸ¡ PAGO PENDIENTE - FIX PRO MAX\nðŸ‘¤ Usuario: ${data.userName||data.userEmail}\nðŸ¢ Empresa: ${data.company||'â€”'}\nðŸ“¦ Plan: ${data.planName}\nðŸ’° Monto: $${Number(data.amount).toFixed(2)}\nðŸ“… Fecha: ${now}\nâ³ Estado: PENDIENTE DE VERIFICACION`;
+        msg = `🟡 PAGO PENDIENTE - FIX PRO MAX\nðŸ‘¤ Usuario: ${data.userName||data.userEmail}\nðŸ¢ Empresa: ${data.company||'"”'}\nðŸ“¦ Plan: ${data.planName}\nðŸ’° Monto: $${Number(data.amount).toFixed(2)}\nðŸ“… Fecha: ${now}\n❌³ Estado: PENDIENTE DE VERIFICACION`;
     } else if (type === 'subscription_cancelled') {
-        msg = `ðŸ”„ SUSCRIPCION CANCELADA - FIX PRO MAX\nðŸ‘¤ Usuario: ${data.userName||data.userEmail}\nðŸ¢ Empresa: ${data.company||'â€”'}\nðŸ“¦ Plan: ${data.planName||'â€”'}\nðŸ“… Fecha: ${now}\nEstado: CANCELADA`;
+        msg = `ðŸ”„ SUSCRIPCION CANCELADA - FIX PRO MAX\nðŸ‘¤ Usuario: ${data.userName||data.userEmail}\nðŸ¢ Empresa: ${data.company||'"”'}\nðŸ“¦ Plan: ${data.planName||'"”'}\nðŸ“… Fecha: ${now}\nEstado: CANCELADA`;
     } else if (type === 'ticket_new') {
-        msg = `ðŸš¨ NUEVO TICKET DE SOPORTE - FIX PRO MAX\nðŸ‘¤ Usuario: ${data.userName}\nðŸ¢ Empresa: ${data.company||'â€”'}\nðŸ“‚ Categoria: ${data.category}\nðŸ“ Titulo: ${data.title}\nðŸ”´ Prioridad: ${(data.priority||'media').toUpperCase()}\nðŸ“… Fecha: ${now}\nðŸ†” ID: ${data.id}`;
+        msg = `ðŸš¨ NUEVO TICKET DE SOPORTE - FIX PRO MAX\nðŸ‘¤ Usuario: ${data.userName}\nðŸ¢ Empresa: ${data.company||'"”'}\nðŸ“‚ Categoria: ${data.category}\nðŸ“ Titulo: ${data.title}\nðŸ”´ Prioridad: ${(data.priority||'media').toUpperCase()}\nðŸ“… Fecha: ${now}\nðŸ†” ID: ${data.id}`;
     } else if (type === 'refund') {
-        msg = `ðŸ’¸ REEMBOLSO - FIX PRO MAX\nðŸ‘¤ Usuario: ${data.userName||data.userEmail}\nðŸ“¦ Plan: ${data.planName||'â€”'}\nðŸ’° Monto: $${Number(data.amount||0).toFixed(2)}\nðŸ“… Fecha: ${now}\nEstado: REEMBOLSADO`;
+        msg = `ðŸ’¸ REEMBOLSO - FIX PRO MAX\nðŸ‘¤ Usuario: ${data.userName||data.userEmail}\nðŸ“¦ Plan: ${data.planName||'"”'}\nðŸ’° Monto: $${Number(data.amount||0).toFixed(2)}\nðŸ“… Fecha: ${now}\nEstado: REEMBOLSADO`;
     } else if (type === 'test') {
-        msg = `âœ… TEST FIX PRO MAX\nNotificaciones WhatsApp activas y funcionando correctamente.\nðŸ“… ${now}`;
+        msg = `✅ TEST FIX PRO MAX\nNotificaciones WhatsApp activas y funcionando correctamente.\nðŸ“… ${now}`;
     }
     if (msg) setImmediate(() => sendWhatsApp(msg, data.id || generateId()));
 }
 
-// â”€â”€ ADMIN: Ver log de alertas WhatsApp â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ ADMIN: Ver log de alertas WhatsApp ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/admin/wa-alerts', requireAdmin, async (req, res) => {
     const log = await readWALog();
     ok(res, log.slice(0, 200));
 });
 
-// â”€â”€ ADMIN: Obtener grupos de la instancia UltraMsg â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ ADMIN: Obtener grupos de la instancia UltraMsg ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/admin/wa-groups', requireAdmin, async (req, res) => {
     const cfg = await getConfig();
     const instance = (cfg.ultramsgInstance || '').trim();
@@ -2636,17 +2636,17 @@ app.get('/api/admin/wa-groups', requireAdmin, async (req, res) => {
     ok(res, Array.isArray(result) ? result : []);
 });
 
-// â”€â”€ ADMIN: Test de WhatsApp â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ ADMIN: Test de WhatsApp ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.post('/api/admin/wa-test', requireAdmin, async (req, res) => {
     const cfg = await getConfig();
     if (!cfg.ultramsgToken || cfg.ultramsgToken === 'PENDING_SETUP') {
-        return err(res, 'Configura primero el Instance ID y Token de UltraMsg en ConfiguraciÃ³n');
+        return err(res, 'Configura primero el Instance ID y Token de UltraMsg en Configuración');
     }
     await alertWA('test', { id: generateId() });
     ok(res, { sent: true, message: 'Mensaje de prueba enviado. Revisa tu WhatsApp en unos segundos.' });
 });
 
-// â”€â”€ ADMIN: Reintentar alertas pendientes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ ADMIN: Reintentar alertas pendientes ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.post('/api/admin/wa-retry', requireAdmin, async (req, res) => {
     const log = await readWALog();
     const pending = log.filter(e => e.status === 'pending' || e.status === 'error');
@@ -2665,13 +2665,13 @@ app.post('/api/admin/wa-retry', requireAdmin, async (req, res) => {
     ok(res, { retried, message: `${retried} alerta(s) en reintento` });
 });
 
-// â”€â”€ ADMIN: Guardar configuraciÃ³n de WhatsApp (UltraMsg) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ ADMIN: Guardar configuración de WhatsApp (UltraMsg) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.put('/api/admin/settings/whatsapp', requireAdmin, async (req, res) => {
     const { phone, instance, token, destPhone } = req.body;
-    if (!phone) return err(res, 'NÃºmero de telÃ©fono requerido');
+    if (!phone) return err(res, 'Número de teléfono requerido');
     const cfg = await getConfig();
     cfg.whatsappPhone    = phone.replace(/\D/g,'');
-    // destPhone: nÃºmero DESTINO donde llegan los mensajes (puede ser diferente al de la instancia)
+    // destPhone: número DESTINO donde llegan los mensajes (puede ser diferente al de la instancia)
     cfg.whatsappDestPhone = (destPhone || phone).replace(/\D/g,'');
     cfg.ultramsgInstance = instance || cfg.ultramsgInstance || '';
     cfg.ultramsgToken    = token    || cfg.ultramsgToken    || 'PENDING_SETUP';
@@ -2683,7 +2683,7 @@ app.put('/api/admin/settings/whatsapp', requireAdmin, async (req, res) => {
     ok(res, { done: true });
 });
 
-// â”€â”€ ADMIN: Obtener configuraciÃ³n de WhatsApp â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ ADMIN: Obtener configuración de WhatsApp ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/admin/settings/whatsapp', requireAdmin, async (req, res) => {
     const cfg = await getConfig();
     ok(res, {
@@ -2697,7 +2697,7 @@ app.get('/api/admin/settings/whatsapp', requireAdmin, async (req, res) => {
     });
 });
 
-// â”€â”€ ADMIN: Crear plan nuevo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ ADMIN: Crear plan nuevo ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.post('/api/admin/plans', requireAdmin, async (req, res) => {
     const { id, name, price, duration, period, maxUsers, maxProducts,
             multiUser, recommended, badge, description, features, notIncluded, active } = req.body;
@@ -2737,7 +2737,7 @@ app.post('/api/admin/plans', requireAdmin, async (req, res) => {
     ok(res, newPlan);
 });
 
-// â”€â”€ ADMIN: Suscripciones activas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ ADMIN: Suscripciones activas ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/admin/subscriptions', requireAdmin, async (req, res) => {
     const users    = await readUsers();
     const payments = await readPayments();
@@ -2748,13 +2748,13 @@ app.get('/api/admin/subscriptions', requireAdmin, async (req, res) => {
         .filter(u => u.role !== 'admin')
         .map(u => {
             const status = getAccessStatus(u);
-            // Ãšltimo pago del usuario
+            // Ášltimo pago del usuario
             const lastPay = payments.filter(p => p.userId === u.id && p.status === 'completed')
                                     .sort((a,b) => new Date(b.ts)-new Date(a.ts))[0];
             return {
                 userId:    u.id, name: u.name, email: u.email, company: u.company||'',
                 plan:      u.subscriptionPlan || null,
-                planName:  getPlan(u.subscriptionPlan)?.name || u.subscriptionPlan || 'â€”',
+                planName:  getPlan(u.subscriptionPlan)?.name || u.subscriptionPlan || '"”',
                 status:    status.status,
                 access:    status.access,
                 daysLeft:  status.daysLeft,
@@ -2776,7 +2776,7 @@ app.get('/api/admin/subscriptions', requireAdmin, async (req, res) => {
     ok(res, list.sort((a,b) => (b.daysLeft||0)-(a.daysLeft||0)));
 });
 
-// â”€â”€ ADMIN: Ingresos por perÃ­odo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ ADMIN: Ingresos por período ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/admin/revenue', requireAdmin, async (req, res) => {
     const payments = await readPayments();
     const { period = '30d', groupBy = 'day' } = req.query;
@@ -2788,7 +2788,7 @@ app.get('/api/admin/revenue', requireAdmin, async (req, res) => {
 
     const filtered = payments.filter(p => p.status === 'completed' && new Date(p.ts).getTime() >= since);
 
-    // Agrupar por dÃ­a
+    // Agrupar por día
     const byDay = {};
     filtered.forEach(p => {
         const d = p.ts.slice(0,10);
@@ -2802,7 +2802,7 @@ app.get('/api/admin/revenue', requireAdmin, async (req, res) => {
         byPlan[k] = (byPlan[k]||0) + (Number(p.amount)||0);
     });
 
-    // Por mÃ©todo
+    // Por método
     const byMethod = {};
     filtered.forEach(p => {
         const k = p.method || 'unknown';
@@ -2830,10 +2830,10 @@ app.get('/api/admin/revenue', requireAdmin, async (req, res) => {
 
 
 app.post('/api/subscription/verify-google-play', requireAuth, async (req, res) => {
-    // PRODUCCIÃ“N: verificar purchaseToken con Google Play Developer API
+    // PRODUCCIÁ“N: verificar purchaseToken con Google Play Developer API
     // Ver: https://developers.google.com/android-publisher/api-ref/rest/v3/purchases.subscriptions/get
     const { purchaseToken, planId } = req.body;
-    if (!purchaseToken || !planId || !getPlan(planId)) return err(res, 'Datos invÃ¡lidos');
+    if (!purchaseToken || !planId || !getPlan(planId)) return err(res, 'Datos inválidos');
     const users = await readUsers();
     const idx   = users.findIndex(u => u.id === req.user.id);
     if (idx === -1) return err(res, 'Usuario no encontrado', 404);
@@ -2855,17 +2855,17 @@ app.post('/api/subscription/verify-google-play', requireAuth, async (req, res) =
     ok(res, { verified: true, ...getAccessStatus(users[idx]) });
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 // SISTEMA MULTIUSUARIO EMPRESARIAL
 // Cada empresa tiene su propio companyId y BD separada (db_{companyId}.json)
 // Empleados heredan el companyId del propietario que los invita.
-// MÃ¡ximo 5 usuarios por empresa (1 propietario + 4 empleados).
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// Máximo 5 usuarios por empresa (1 propietario + 4 empleados).
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 
 const MAX_TEAM   = 5;
 const COMPANIES_PATH = path.join(__dirname, 'companies.json');
 
-// â”€â”€ Helpers de empresa (async â€” MongoDB) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Helpers de empresa (async "” MongoDB) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 async function readCompanies()    { return DB.readCompanies(); }
 async function writeCompanies(c)  { return DB.writeCompanies(c); }
 
@@ -2895,7 +2895,7 @@ const DEFAULT_EMPLOYEE_PERMISSIONS = {
     users:       { view: false, create: false, edit: false },
 };
 
-// Middleware de permisos: verifica que el empleado tenga acceso a un mÃ³dulo/acciÃ³n
+// Middleware de permisos: verifica que el empleado tenga acceso a un módulo/acción
 function requirePermission(module, action) {
     return async (req, res, next) => {
         const u = req.user;
@@ -2911,22 +2911,22 @@ function requirePermission(module, action) {
     };
 }
 
-// â”€â”€ OVERRIDE de readDB/writeDB para usar BD por empresa â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ OVERRIDE de readDB/writeDB para usar BD por empresa ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 // Los endpoints del ERP ya existentes leen/escriben await readDB()/await writeDB()
-// Interceptamos dinÃ¡micamente segÃºn el contexto de la peticiÃ³n
+// Interceptamos dinámicamente según el contexto de la petición
 // Usamos un contexto de request almacenado en AsyncLocalStorage si es posible,
-// o simplemente modificamos la funciÃ³n segÃºn req.companyId (ver middleware abajo)
+// o simplemente modificamos la función según req.companyId (ver middleware abajo)
 
 const { AsyncLocalStorage } = require('async_hooks');
 const reqContext = new AsyncLocalStorage();
 
 // readDB / writeDB: async, usan el companyId del contexto async (AsyncLocalStorage).
-// Exactamente la misma semÃ¡ntica que antes, solo que ahora van a MongoDB.
+// Exactamente la misma semántica que antes, solo que ahora van a MongoDB.
 async function readDB() {
     const ctx = reqContext.getStore();
     if (ctx?.isDemo || ctx?.companyId === DEMO_COMPANY_ID) return DB.readCompanyDB(DEMO_COMPANY_ID);
     if (ctx?.companyId) return DB.readCompanyDB(ctx.companyId);
-    console.warn('[readDB] Sin contexto de empresa â€” devolviendo defaultData()');
+    console.warn('[readDB] Sin contexto de empresa "” devolviendo defaultData()');
     return DB.defaultData();
 }
 
@@ -2934,20 +2934,20 @@ async function writeDB(data) {
     const ctx = reqContext.getStore();
     if (ctx?.isDemo || ctx?.companyId === DEMO_COMPANY_ID) return DB.writeCompanyDB(DEMO_COMPANY_ID, data);
     if (ctx?.companyId) return DB.writeCompanyDB(ctx.companyId, data);
-    console.error('[writeDB] âš ï¸  Intento de escritura sin contexto de empresa â€” operaciÃ³n rechazada');
-    throw new Error('writeDB requiere un contexto de empresa. AsegÃºrate de que requireAuth estÃ¡ activo.');
+    console.error('[writeDB] ❌š ï¸  Intento de escritura sin contexto de empresa "” operación rechazada');
+    throw new Error('writeDB requiere un contexto de empresa. Asegúrate de que requireAuth está activo.');
 }
 
-// â”€â”€ requireAuth ya fue actualizado directamente (lÃ­nea ~1306) con companyId, teamRole y contexto async â”€â”€
+// ❌”€❌”€ requireAuth ya fue actualizado directamente (línea ~1306) con companyId, teamRole y contexto async ❌”€❌”€
 
-// â”€â”€ TEAM: Listar empleados de la empresa â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ TEAM: Listar empleados de la empresa ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/team/members', requireAuth, async (req, res) => {
     const allUsers  = await readUsers();
     const ownerFull = allUsers.find(u => u.companyId === req.user.companyId && u.teamRole === 'owner');
     const maxAllowed = ownerFull ? getMaxTeamByPlan(ownerFull) : 1;
     const multiUser  = ownerFull ? planAllowsMultiUser(ownerFull) : false;
 
-    // Determinar quÃ© usuarios tienen sesiÃ³n activa en sessions.json
+    // Determinar qué usuarios tienen sesión activa en sessions.json
     const sessions  = await readSessions();
     const onlineIds = new Set(
         Object.values(sessions).map(e => (typeof e === 'object' ? e.userId : e))
@@ -2963,31 +2963,31 @@ app.get('/api/team/members', requireAuth, async (req, res) => {
     ok(res, { members: team, count: team.length, max: maxAllowed, multiUser, planRequired: 'pro' });
 });
 
-// â”€â”€ TEAM: Invitar / crear empleado â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ TEAM: Invitar / crear empleado ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.post('/api/team/invite', requireAuth, async (req, res) => {
     // Solo el propietario puede invitar
     if (req.user.teamRole !== 'owner' && req.user.role !== 'admin') {
         return err(res, 'Solo el propietario puede invitar empleados', 403);
     }
     const { name, email, password, permissions } = req.body;
-    if (!name || !email || !password) return err(res, 'Nombre, email y contraseÃ±a son obligatorios');
-    if (password.length < 6)         return err(res, 'La contraseÃ±a debe tener al menos 6 caracteres');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return err(res, 'Email invÃ¡lido');
+    if (!name || !email || !password) return err(res, 'Nombre, email y contraseÁ±a son obligatorios');
+    if (password.length < 6)         return err(res, 'La contraseÁ±a debe tener al menos 6 caracteres');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return err(res, 'Email inválido');
 
     // Verificar que el plan activo del propietario permita multiusuario
     const allUsers  = await readUsers();
     const ownerFull = allUsers.find(u => u.id === req.user.id);
     if (ownerFull && !planAllowsMultiUser(ownerFull)) {
-        return err(res, 'Tu plan actual (BÃ¡sico o prueba) no incluye multiusuario. Actualiza a Plan Pro o Semestral para agregar empleados.', 403);
+        return err(res, 'Tu plan actual (Básico o prueba) no incluye multiusuario. Actualiza a Plan Pro o Semestral para agregar empleados.', 403);
     }
 
-    // Verificar lÃ­mite de usuarios segÃºn el plan del propietario
+    // Verificar límite de usuarios según el plan del propietario
     const maxAllowed  = ownerFull ? getMaxTeamByPlan(ownerFull) : 1;
     const currentTeam = allUsers.filter(u => u.companyId === req.user.companyId);
     if (currentTeam.length >= maxAllowed) {
-        return err(res, `Has alcanzado el lÃ­mite de ${maxAllowed} usuarios para tu plan.`, 403);
+        return err(res, `Has alcanzado el límite de ${maxAllowed} usuarios para tu plan.`, 403);
     }
-    // Verificar email Ãºnico
+    // Verificar email único
     if (allUsers.find(u => u.email.toLowerCase() === email.toLowerCase())) {
         return err(res, 'Ya existe una cuenta con ese email');
     }
@@ -3012,11 +3012,11 @@ app.post('/api/team/invite', requireAuth, async (req, res) => {
     allUsers.push(newEmployee);
     await writeUsers(allUsers);
     await logAdminAction(req.user.id, req.user.email, 'invite_employee', newEmployee.id, newEmployee.email, '');
-    console.log(`âœ… Empleado invitado: ${newEmployee.email} â†’ empresa ${req.user.companyId}`);
+    console.log(`✅ Empleado invitado: ${newEmployee.email} ❌†’ empresa ${req.user.companyId}`);
     ok(res, { id: newEmployee.id, name: newEmployee.name, email: newEmployee.email, teamRole: 'employee' });
 });
 
-// â”€â”€ TEAM: Actualizar permisos de un empleado â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ TEAM: Actualizar permisos de un empleado ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.put('/api/team/members/:id/permissions', requireAuth, async (req, res) => {
     if (req.user.teamRole !== 'owner' && req.user.role !== 'admin') return err(res, 'Sin permisos', 403);
     const users = await readUsers();
@@ -3029,17 +3029,17 @@ app.put('/api/team/members/:id/permissions', requireAuth, async (req, res) => {
     ok(res, { done: true, permissions: users[idx].permissions });
 });
 
-// â”€â”€ TEAM: Activar/desactivar empleado â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ TEAM: Activar/desactivar empleado ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.post('/api/team/members/:id/action', requireAuth, async (req, res) => {
     if (req.user.teamRole !== 'owner' && req.user.role !== 'admin') return err(res, 'Sin permisos', 403);
     const { action, reason } = req.body;
     const ALLOWED_ACTIONS = ['suspend', 'reactivate', 'force_logout', 'remove'];
-    if (!ALLOWED_ACTIONS.includes(action)) return err(res, 'AcciÃ³n no permitida');
+    if (!ALLOWED_ACTIONS.includes(action)) return err(res, 'Acción no permitida');
 
     const users = await readUsers();
     const idx   = users.findIndex(u => u.id === req.params.id && u.companyId === req.user.companyId);
     if (idx === -1) return err(res, 'Empleado no encontrado', 404);
-    if (users[idx].teamRole === 'owner') return err(res, 'No puedes realizar esta acciÃ³n sobre el propietario', 400);
+    if (users[idx].teamRole === 'owner') return err(res, 'No puedes realizar esta acción sobre el propietario', 400);
 
     if (action === 'suspend') {
         users[idx].active = false;
@@ -3075,7 +3075,7 @@ app.post('/api/team/members/:id/action', requireAuth, async (req, res) => {
     ok(res, { done: true, action, active: users[idx].active });
 });
 
-// â”€â”€ TEAM: Dispositivos/sesiones activas del equipo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ TEAM: Dispositivos/sesiones activas del equipo ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/team/devices', requireAuth, async (req, res) => {
     if (req.user.teamRole !== 'owner' && req.user.role !== 'admin') return err(res, 'Sin permisos', 403);
     const team     = getTeam(req.user.companyId).map(u => u.id);
@@ -3083,16 +3083,16 @@ app.get('/api/team/devices', requireAuth, async (req, res) => {
     const users    = await readUsers();
     const myToken  = (req.headers['authorization'] || '').replace('Bearer ', '').trim();
 
-    // Agrupar sesiones por usuario â€” un registro por usuario con la sesiÃ³n mÃ¡s reciente
-    // No contar mÃºltiples tokens del mismo dispositivo/usuario
+    // Agrupar sesiones por usuario "” un registro por usuario con la sesión más reciente
+    // No contar múltiples tokens del mismo dispositivo/usuario
     const byUser = {};
     Object.entries(sessions).forEach(([token, entry]) => {
         const uid     = typeof entry === 'object' ? entry.userId : entry;
         const created = typeof entry === 'object' ? entry.created : 0;
         if (!team.includes(uid)) return;
-        // Excluir la sesiÃ³n activa del propio owner que consulta
+        // Excluir la sesión activa del propio owner que consulta
         if (token === myToken) return;
-        // Quedarse con el token mÃ¡s reciente por usuario
+        // Quedarse con el token más reciente por usuario
         if (!byUser[uid] || created > byUser[uid].created) {
             byUser[uid] = { token, created };
         }
@@ -3116,7 +3116,7 @@ app.get('/api/team/devices', requireAuth, async (req, res) => {
     ok(res, devices);
 });
 
-// â”€â”€ TEAM: Cerrar sesiÃ³n de un dispositivo especÃ­fico â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ TEAM: Cerrar sesión de un dispositivo específico ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.delete('/api/team/devices/:tokenPrefix', requireAuth, async (req, res) => {
     if (req.user.teamRole !== 'owner' && req.user.role !== 'admin') return err(res, 'Sin permisos', 403);
     // tokenFull puede venir en body (DELETE con JSON) o como query param como fallback
@@ -3128,37 +3128,37 @@ app.delete('/api/team/devices/:tokenPrefix', requireAuth, async (req, res) => {
         // Verificar que el dispositivo pertenece a la empresa
         const team = getTeam(req.user.companyId).map(u => u.id);
         if (!team.includes(uid)) return err(res, 'Dispositivo no pertenece a tu empresa', 403);
-        // No permitir cerrar la propia sesiÃ³n activa desde aquÃ­
+        // No permitir cerrar la propia sesión activa desde aquí
         const myToken = (req.headers['authorization'] || '').replace('Bearer ', '').trim();
-        if (tokenFull === myToken) return err(res, 'No puedes cerrar tu propia sesiÃ³n activa desde aquÃ­', 400);
+        if (tokenFull === myToken) return err(res, 'No puedes cerrar tu propia sesión activa desde aquí', 400);
         delete sessions[tokenFull];
         await writeSessions(sessions);
         await logAdminAction(req.user.id, req.user.email, 'force_logout_device', uid, '', '');
         ok(res, { done: true });
     } else {
-        err(res, 'SesiÃ³n no encontrada', 404);
+        err(res, 'Sesión no encontrada', 404);
     }
 });
 
-// â”€â”€ TEAM: Cerrar sesiÃ³n vÃ­a POST (mÃ¡s compatible con todos los clientes) â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ TEAM: Cerrar sesión vía POST (más compatible con todos los clientes) ❌”€❌”€❌”€❌”€❌”€❌”€
 app.post('/api/team/devices/close', requireAuth, async (req, res) => {
     if (req.user.teamRole !== 'owner' && req.user.role !== 'admin') return err(res, 'Sin permisos', 403);
     const { tokenFull } = req.body;
     if (!tokenFull) return err(res, 'Token requerido');
     const sessions = await readSessions();
-    if (!sessions[tokenFull]) return err(res, 'SesiÃ³n no encontrada', 404);
+    if (!sessions[tokenFull]) return err(res, 'Sesión no encontrada', 404);
     const uid  = typeof sessions[tokenFull] === 'object' ? sessions[tokenFull].userId : sessions[tokenFull];
     const team = getTeam(req.user.companyId).map(u => u.id);
     if (!team.includes(uid)) return err(res, 'Dispositivo no pertenece a tu empresa', 403);
     const myToken = (req.headers['authorization'] || '').replace('Bearer ', '').trim();
-    if (tokenFull === myToken) return err(res, 'No puedes cerrar tu propia sesiÃ³n activa desde aquÃ­', 400);
+    if (tokenFull === myToken) return err(res, 'No puedes cerrar tu propia sesión activa desde aquí', 400);
     delete sessions[tokenFull];
     await writeSessions(sessions);
     await logAdminAction(req.user.id, req.user.email, 'force_logout_device', uid, '', '');
     ok(res, { done: true });
 });
 
-// â”€â”€ TEAM: Info de la empresa â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ TEAM: Info de la empresa ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/team/company', requireAuth, async (req, res) => {
     const users = await readUsers();
     const owner = users.find(u => u.companyId === req.user.companyId && u.teamRole === 'owner');
@@ -3175,7 +3175,7 @@ app.get('/api/team/company', requireAuth, async (req, res) => {
     });
 });
 
-// â”€â”€ TEAM: Actividad del equipo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ TEAM: Actividad del equipo ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/team/activity', requireAuth, async (req, res) => {
     if (req.user.teamRole !== 'owner' && req.user.role !== 'admin') return err(res, 'Sin permisos', 403);
     const log  = await readAdminLog();
@@ -3184,23 +3184,23 @@ app.get('/api/team/activity', requireAuth, async (req, res) => {
     ok(res, filtered);
 });
 
-// â”€â”€ SOBREESCRIBIR GET / para inyectar BD de la empresa â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Si el usuario tiene sesiÃ³n vÃ¡lida, servir su BD corporativa
+// ❌”€❌”€ SOBREESCRIBIR GET / para inyectar BD de la empresa ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
+// Si el usuario tiene sesión válida, servir su BD corporativa
 // Si no, servir la BD por defecto (hasta que haga login)
 
-// PANEL DE ADMINISTRADOR â€” APIs protegidas por requireAdmin
-// Todos los endpoints /api/admin/* y /api/support/* estÃ¡n aquÃ­.
-// NO modifica ninguna lÃ³gica del ERP existente.
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// PANEL DE ADMINISTRADOR "” APIs protegidas por requireAdmin
+// Todos los endpoints /api/admin/* y /api/support/* están aquí.
+// NO modifica ninguna lógica del ERP existente.
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 
 const TICKETS_PATH  = path.join(__dirname, 'tickets.json');
 const ADMIN_LOG_PATH = path.join(__dirname, 'admin-log.json');
 
-// â”€â”€ Helpers de tickets (async â€” MongoDB) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Helpers de tickets (async "” MongoDB) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 async function readTickets()   { return DB.readTickets(); }
 async function writeTickets(t) { return DB.writeTickets(t); }
 
-// â”€â”€ Helpers de admin log (async â€” MongoDB) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Helpers de admin log (async "” MongoDB) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 async function readAdminLog()   { return DB.readAdminLog(); }
 async function writeAdminLog(l) { return DB.writeAdminLog(l); }
 
@@ -3211,42 +3211,42 @@ async function logAdminAction(adminId, adminEmail, action, targetId, targetEmail
     await writeAdminLog(log);
 }
 
-// â”€â”€ Middleware requireAdmin â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Middleware requireAdmin ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 async function requireAdmin(req, res, next) {
     const header = req.headers['authorization'] || '';
     const token  = header.replace('Bearer ', '').trim();
     if (!token) return res.status(401).json({ ok: false, error: 'No autenticado' });
     const sessions = await readSessions();
     const entry    = sessions[token];
-    if (!entry) return res.status(401).json({ ok: false, error: 'SesiÃ³n invÃ¡lida' });
+    if (!entry) return res.status(401).json({ ok: false, error: 'Sesión inválida' });
     const userId  = typeof entry === 'object' ? entry.userId : entry;
     const users   = await readUsers();
     const user    = users.find(u => u.id === userId);
     if (!user) return res.status(401).json({ ok: false, error: 'Usuario no encontrado' });
-    if (user.role !== 'admin') return res.status(403).json({ ok: false, error: 'Acceso denegado â€” se requiere rol de administrador' });
+    if (user.role !== 'admin') return res.status(403).json({ ok: false, error: 'Acceso denegado "” se requiere rol de administrador' });
     req.admin = { id: user.id, name: user.name, email: user.email, role: user.role };
     next();
 }
 
-// â”€â”€ Ruta del panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Ruta del panel ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/admin', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     res.setHeader('Surrogate-Control', 'no-store');
     res.setHeader('ETag', Date.now().toString());
-    // Leer y servir el archivo dinÃ¡micamente (nunca desde cachÃ© del sistema)
+    // Leer y servir el archivo dinámicamente (nunca desde caché del sistema)
     try {
         const html = fs.readFileSync(path.join(__dirname, 'admin.html'), 'utf8');
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         res.send(html);
     } catch(e) {
-        res.status(500).send('Error cargando panel de administraciÃ³n');
+        res.status(500).send('Error cargando panel de administración');
     }
 });
 app.get('/admin/login', async (req, res) => res.redirect('/admin'));
 
-// â”€â”€ DASHBOARD STATS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ DASHBOARD STATS ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/admin/stats', requireAdmin, async (req, res) => {
     const users   = await readUsers();
     const tickets = await readTickets();
@@ -3308,7 +3308,7 @@ app.get('/api/admin/stats', requireAdmin, async (req, res) => {
             resolved:   tickets.filter(t => t.status === 'resolved').length,
             closed:     tickets.filter(t => t.status === 'closed').length,
         },
-        // â”€â”€ Ingresos desglosados por perÃ­odo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ❌”€❌”€ Ingresos desglosados por período ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
         revenue: (async function() {
             const payments = await readPayments();
             const todayStart = new Date(); todayStart.setHours(0,0,0,0);
@@ -3341,7 +3341,7 @@ app.get('/api/admin/stats', requireAdmin, async (req, res) => {
     });
 });
 
-// â”€â”€ LISTAR USUARIOS (admin) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ LISTAR USUARIOS (admin) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/admin/users', requireAdmin, async (req, res) => {
     const users   = await readUsers();
     const now     = Date.now();
@@ -3372,7 +3372,7 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
         };
     });
 
-    // BÃºsqueda
+    // Búsqueda
     if (search) {
         const q = search.toLowerCase();
         list = list.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || (u.company||'').toLowerCase().includes(q));
@@ -3398,7 +3398,7 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
     ok(res, list);
 });
 
-// â”€â”€ DETALLE DE UN USUARIO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ DETALLE DE UN USUARIO ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/admin/users/:id', requireAdmin, async (req, res) => {
     const users  = await readUsers();
     const user   = users.find(u => u.id === req.params.id);
@@ -3416,11 +3416,11 @@ app.get('/api/admin/users/:id', requireAdmin, async (req, res) => {
     });
 });
 
-// â”€â”€ ACCIONES SOBRE USUARIOS (admin) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ ACCIONES SOBRE USUARIOS (admin) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.post('/api/admin/users/:id/action', requireAdmin, async (req, res) => {
     const { action, reason } = req.body;
     const ALLOWED = ['suspend', 'reactivate', 'grant_access', 'revoke_access', 'force_logout'];
-    if (!ALLOWED.includes(action)) return err(res, 'AcciÃ³n no permitida');
+    if (!ALLOWED.includes(action)) return err(res, 'Acción no permitida');
 
     const users = await readUsers();
     const idx   = users.findIndex(u => u.id === req.params.id);
@@ -3436,7 +3436,7 @@ app.post('/api/admin/users/:id/action', requireAdmin, async (req, res) => {
         delete target.suspendedAt;
         delete target.suspendReason;
     } else if (action === 'grant_access') {
-        // Extender trial 7 dÃ­as
+        // Extender trial 7 días
         target.trialStart = new Date(Date.now() - (TRIAL_DAYS - 7) * 86400000).toISOString();
     } else if (action === 'revoke_access') {
         target.trialStart = new Date(Date.now() - 10 * 86400000).toISOString();
@@ -3452,7 +3452,7 @@ app.post('/api/admin/users/:id/action', requireAdmin, async (req, res) => {
 
     await writeUsers(users);
     await logAdminAction(req.admin.id, req.admin.email, action, target.id, target.email, reason||'');
-    // Notificar vÃ­a SSE
+    // Notificar vía SSE
     setImmediate(() => {
         if (typeof sseUser === 'function') {
             sseUser(target.id, 'account_status_changed', {
@@ -3469,7 +3469,7 @@ app.post('/api/admin/users/:id/action', requireAdmin, async (req, res) => {
     ok(res, { done: true, action, user: { id: target.id, email: target.email, active: target.active } });
 });
 
-// â”€â”€ ELIMINAR USUARIO (admin) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ ELIMINAR USUARIO (admin) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
     const users = await readUsers();
     const idx   = users.findIndex(u => u.id === req.params.id);
@@ -3483,7 +3483,7 @@ app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
     if (target.role === 'admin') {
         const adminCount = users.filter(u => u.role === 'admin').length;
         if (adminCount <= 1)
-            return err(res, 'No puedes eliminar el Ãºnico administrador del sistema', 403);
+            return err(res, 'No puedes eliminar el único administrador del sistema', 403);
     }
 
     // Eliminar todas las sesiones activas del usuario
@@ -3506,7 +3506,7 @@ app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
     ok(res, { done: true, deleted: { id: target.id, email: target.email } });
 });
 
-// â”€â”€ ACTIVAR SUSCRIPCIÃ“N MANUAL (admin) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ ACTIVAR SUSCRIPCIÁ“N MANUAL (admin) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.post('/api/admin/users/:id/subscription', requireAdmin, async (req, res) => {
     const { planId, durationDays, action: subAction } = req.body;
     const users = await readUsers();
@@ -3519,7 +3519,7 @@ app.post('/api/admin/users/:id/subscription', requireAdmin, async (req, res) => 
         target.subscriptionStatus      = 'cancelled';
         target.subscriptionCancelledAt = now.toISOString();
     } else {
-        // Activar / extender â€” respetar duraciÃ³n del plan si se especifica
+        // Activar / extender "” respetar duración del plan si se especifica
         const plan   = getPlan(planId);
         const days   = durationDays || plan?.duration || 30;
         const subEnd = new Date(now.getTime() + days * 86400000);
@@ -3531,7 +3531,7 @@ app.post('/api/admin/users/:id/subscription', requireAdmin, async (req, res) => 
         target.subscriptionRenewedAt = now.toISOString();
         target.pendingPlanId         = null;
         target.pendingPlanSince      = null;
-        // Registrar como pago administrativo (sin cargo, solo auditorÃ­a)
+        // Registrar como pago administrativo (sin cargo, solo auditoría)
         await recordPayment({
             userId:    target.id,
             userEmail: target.email,
@@ -3542,13 +3542,13 @@ app.post('/api/admin/users/:id/subscription', requireAdmin, async (req, res) => 
             method:    'admin',
             status:    'completed',
             source:    'admin',
-            note:      `Activado manualmente por admin ${req.admin.email} Â· ${days} dÃ­as`,
+            note:      `Activado manualmente por admin ${req.admin.email} · ${days} días`,
         });
     }
     await writeUsers(users);
     await logAdminAction(req.admin.id, req.admin.email, 'subscription_' + (subAction || 'activate'), target.id, target.email, planId || '');
 
-    // Notificar al usuario afectado vÃ­a SSE
+    // Notificar al usuario afectado vía SSE
     setImmediate(() => {
         if (typeof sseUser === 'function') {
             sseUser(target.id, 'subscription_changed', {
@@ -3567,38 +3567,38 @@ app.post('/api/admin/users/:id/subscription', requireAdmin, async (req, res) => 
     if (subAction !== 'cancel') {
         await alertWA('subscription_new', {
             id: generateId(), userEmail: target.email,
-            userName: target.name, company: target.company||'â€”',
+            userName: target.name, company: target.company||'"”',
             planName: getPlan(planId)?.name || planId || 'Manual',
             amount: getPlan(planId)?.price || 0,
         });
     } else {
         await alertWA('subscription_cancelled', {
             id: generateId(), userEmail: target.email,
-            userName: target.name, company: target.company||'â€”',
-            planName: getPlan(target.subscriptionPlan)?.name || 'â€”',
+            userName: target.name, company: target.company||'"”',
+            planName: getPlan(target.subscriptionPlan)?.name || '"”',
         });
     }
 
     ok(res, { done: true, subscriptionStatus: target.subscriptionStatus, subscriptionEnd: target.subscriptionEnd });
 });
 
-// â”€â”€ REGISTRO DE ACCIONES ADMIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ REGISTRO DE ACCIONES ADMIN ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/admin/log', requireAdmin, async (req, res) => {
     const log = await readAdminLog();
     const { limit: lim = 200 } = req.query;
     ok(res, log.slice(0, parseInt(lim)));
 });
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 // TICKETS DE SOPORTE
-// /api/support/* â†’ usuarios normales (requireAuth)
-// /api/admin/tickets/* â†’ solo admins (requireAdmin)
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// /api/support/* ❌†’ usuarios normales (requireAuth)
+// /api/admin/tickets/* ❌†’ solo admins (requireAdmin)
+// ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 
 // Usuario crea ticket
 app.post('/api/support/tickets', requireAuth, async (req, res) => {
     const { category, title, description, priority } = req.body;
-    if (!title || !description) return err(res, 'TÃ­tulo y descripciÃ³n requeridos');
+    if (!title || !description) return err(res, 'Título y descripción requeridos');
     const tickets = await readTickets();
     const ticket  = {
         id:          'TKT-' + Date.now().toString(36).toUpperCase(),
@@ -3624,12 +3624,12 @@ app.post('/api/support/tickets', requireAuth, async (req, res) => {
     };
     tickets.unshift(ticket);
     await writeTickets(tickets);
-    console.log(`ðŸŽ« Nuevo ticket: ${ticket.id} â€” ${req.user.email} â€” ${title}`);
+    console.log(`ðŸŽ« Nuevo ticket: ${ticket.id} "” ${req.user.email} "” ${title}`);
 
-    // Alerta WhatsApp automÃ¡tica
+    // Alerta WhatsApp automática
     await alertWA('ticket_new', {
         id: ticket.id, userName: req.user.name,
-        company: req.user.company||'â€”',
+        company: req.user.company||'"”',
         category: ticket.category, title: ticket.title,
         priority: ticket.priority,
     });
@@ -3662,7 +3662,7 @@ app.post('/api/support/tickets/:id/reply', requireAuth, async (req, res) => {
     const tickets = await readTickets();
     const idx = tickets.findIndex(t => t.id === req.params.id && t.userId === req.user.id);
     if (idx === -1) return err(res, 'Ticket no encontrado', 404);
-    if (tickets[idx].status === 'closed') return err(res, 'El ticket estÃ¡ cerrado');
+    if (tickets[idx].status === 'closed') return err(res, 'El ticket está cerrado');
     const msg = { id: generateId(), from: 'user', userId: req.user.id, userName: req.user.name, text: text.trim(), ts: new Date().toISOString(), internal: false };
     tickets[idx].messages.push(msg);
     tickets[idx].updatedAt = msg.ts;
@@ -3671,7 +3671,7 @@ app.post('/api/support/tickets/:id/reply', requireAuth, async (req, res) => {
     ok(res, msg);
 });
 
-// â”€â”€ ADMIN: ver todos los tickets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ ADMIN: ver todos los tickets ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/admin/tickets', requireAdmin, async (req, res) => {
     const tickets = await readTickets();
     const { status, priority, search } = req.query;
@@ -3705,7 +3705,7 @@ app.put('/api/admin/tickets/:id', requireAdmin, async (req, res) => {
     tickets[idx].updatedAt = new Date().toISOString();
     await writeTickets(tickets);
     await logAdminAction(req.admin.id, req.admin.email, 'ticket_update', tickets[idx].userId, tickets[idx].userEmail,
-        `TKT ${tickets[idx].id}: status ${old.status}â†’${tickets[idx].status}`);
+        `TKT ${tickets[idx].id}: status ${old.status}❌†’${tickets[idx].status}`);
     ok(res, { done: true });
 });
 
@@ -3733,7 +3733,7 @@ app.post('/api/admin/tickets/:id/reply', requireAdmin, async (req, res) => {
     ok(res, msg);
 });
 
-// â”€â”€ Servir admin.html â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Servir admin.html ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/admin.html', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
@@ -3749,9 +3749,9 @@ app.get('/admin.html', async (req, res) => {
 });
 
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// USUARIO DEMO â€” BD completamente aislada, jamÃ¡s toca datos de otros usuarios
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
+// USUARIO DEMO "” BD completamente aislada, jamás toca datos de otros usuarios
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 
 const DEMO_COMPANY_ID  = 'demo-company-fixed';
 const DEMO_DB_PATH     = path.join(__dirname, 'db_demo.json');
@@ -3770,23 +3770,23 @@ function demoData() {
         { id:'cat-d2', name:'Herramientas', createdAt:now },
         { id:'cat-d3', name:'Consumibles',  createdAt:now },
     ];
-    d.warehouses = [{ id:'wh-d1', name:'AlmacÃ©n Principal', location:'Caracas' }];
+    d.warehouses = [{ id:'wh-d1', name:'Almacén Principal', location:'Caracas' }];
     d.suppliers  = [
         { id:'sup-d1', name:'Proveedor A', email:'a@prov.com', phone:'0412-0000001', balance:0,    status:'activo', createdAt:now },
         { id:'sup-d2', name:'Proveedor B', email:'b@prov.com', phone:'0414-0000002', balance:1500, status:'activo', createdAt:now },
     ];
     d.customers = [
-        { id:'cus-d1', firstName:'Juan',   lastName:'GarcÃ­a', email:'juan@demo.com',  phone:'0416-0000001', balance:0,    credit:5000,  status:'activo', createdAt:now },
-        { id:'cus-d2', firstName:'MarÃ­a',  lastName:'LÃ³pez',  email:'maria@demo.com', phone:'0424-0000002', balance:2000, credit:10000, status:'activo', createdAt:now },
-        { id:'cus-d3', firstName:'Carlos', lastName:'PÃ©rez',  email:'carlos@demo.com',phone:'0412-0000003', balance:0,    credit:3000,  status:'activo', createdAt:now },
+        { id:'cus-d1', firstName:'Juan',   lastName:'García', email:'juan@demo.com',  phone:'0416-0000001', balance:0,    credit:5000,  status:'activo', createdAt:now },
+        { id:'cus-d2', firstName:'María',  lastName:'López',  email:'maria@demo.com', phone:'0424-0000002', balance:2000, credit:10000, status:'activo', createdAt:now },
+        { id:'cus-d3', firstName:'Carlos', lastName:'Pérez',  email:'carlos@demo.com',phone:'0412-0000003', balance:0,    credit:3000,  status:'activo', createdAt:now },
     ];
     d.products = [
         { id:'pd1', name:'Filtro de aceite',       sku:'FILT-001', price:1200, cost:800,  stock:50,  minStock:10, categoryId:'cat-d1', supplierId:'sup-d1', warehouseId:'wh-d1', currency:'VES', status:'activo', createdAt:now, updatedAt:now },
-        { id:'pd2', name:'BujÃ­a NGK',              sku:'BUJN-001', price:450,  cost:300,  stock:120, minStock:20, categoryId:'cat-d1', supplierId:'sup-d1', warehouseId:'wh-d1', currency:'VES', status:'activo', createdAt:now, updatedAt:now },
+        { id:'pd2', name:'Bujía NGK',              sku:'BUJN-001', price:450,  cost:300,  stock:120, minStock:20, categoryId:'cat-d1', supplierId:'sup-d1', warehouseId:'wh-d1', currency:'VES', status:'activo', createdAt:now, updatedAt:now },
         { id:'pd3', name:'Aceite 20W-50',          sku:'ACE-001',  price:2100, cost:1400, stock:30,  minStock:10, categoryId:'cat-d3', supplierId:'sup-d2', warehouseId:'wh-d1', currency:'VES', status:'activo', createdAt:now, updatedAt:now },
         { id:'pd4', name:'Sensor temperatura EUR', sku:'SEN-EUR1', price:18,   cost:11,   stock:8,   minStock:3,  categoryId:'cat-d1', supplierId:'sup-d2', warehouseId:'wh-d1', currency:'EUR', status:'activo', createdAt:now, updatedAt:now },
         { id:'pd5', name:'Kit herramientas USD',   sku:'KIT-001',  price:45,   cost:28,   stock:4,   minStock:5,  categoryId:'cat-d2', supplierId:'sup-d1', warehouseId:'wh-d1', currency:'USD', status:'activo', createdAt:now, updatedAt:now },
-        { id:'pd6', name:'Correa distribuciÃ³n',    sku:'COR-001',  price:3500, cost:2200, stock:0,   minStock:5,  categoryId:'cat-d1', supplierId:'sup-d1', warehouseId:'wh-d1', currency:'VES', status:'activo', createdAt:now, updatedAt:now },
+        { id:'pd6', name:'Correa distribución',    sku:'COR-001',  price:3500, cost:2200, stock:0,   minStock:5,  categoryId:'cat-d1', supplierId:'sup-d1', warehouseId:'wh-d1', currency:'VES', status:'activo', createdAt:now, updatedAt:now },
     ];
     d.sales = [
         { id:'sale-d1', invoice:'DEMO-001', customerId:'cus-d1', items:[{productId:'pd1',qty:3,price:1200},{productId:'pd2',qty:10,price:450}], subtotal:8100,  tax:1296,  total:9396,  paid:9396,  method:'CASH',          date:today, currency:'VES', status:'Pagada', createdAt:now },
@@ -3803,9 +3803,9 @@ function demoData() {
         { id:'inv-d2', number:'FAC-DEMO-002', customerId:'cus-d1', date:today, dueDate:today, total:9396,  paid:9396,  notes:'Pagada',       currency:'VES', status:'Pagada',    createdAt:now, updatedAt:now },
     ];
     d.currencies = [
-        { code:'VES', name:'BolÃ­var venezolano',   symbol:'Bs.', flag:'ðŸ‡»ðŸ‡ª', active:true,  isBase:true  },
-        { code:'EUR', name:'Euro',                 symbol:'â‚¬',   flag:'ðŸ‡ªðŸ‡º', active:true,  isBase:false },
-        { code:'USD', name:'DÃ³lar estadounidense', symbol:'$',   flag:'ðŸ‡ºðŸ‡¸', active:true,  isBase:false },
+        { code:'VES', name:'Bolívar venezolano',   symbol:'Bs.', flag:'ðŸ‡»ðŸ‡ª', active:true,  isBase:true  },
+        { code:'EUR', name:'Euro',                 symbol:'❌‚¬',   flag:'ðŸ‡ªðŸ‡º', active:true,  isBase:false },
+        { code:'USD', name:'Dólar estadounidense', symbol:'$',   flag:'ðŸ‡ºðŸ‡¸', active:true,  isBase:false },
     ];
     d.exchangeRates = [
         { id:'r-eur-d', fromCurrency:'EUR', toCurrency:'VES', rate:40.00, date:today, createdAt:now, createdBy:'demo', notes:'Tasa demo inicial', isActive:true,  updateType:'manual' },
@@ -3815,7 +3815,7 @@ function demoData() {
     return d;
 }
 
-// readDemoDB / writeDemoDB â€” usan MongoDB (companyId = DEMO_COMPANY_ID)
+// readDemoDB / writeDemoDB "” usan MongoDB (companyId = DEMO_COMPANY_ID)
 async function readDemoDB() {
     return DB.readCompanyDB(DEMO_COMPANY_ID);
 }
@@ -3824,12 +3824,12 @@ async function writeDemoDB(data) {
     return DB.writeCompanyDB(DEMO_COMPANY_ID, data);
 }
 
-/** Â¿Es este usuario demo? */
+/** ¿Es este usuario demo? */
 function isDemo(user) {
     return user && (user.isDemo === true || user.companyId === DEMO_COMPANY_ID || user.email === DEMO_EMAIL);
 }
 
-// â”€â”€ POST /api/demo/login â€” inicia sesiÃ³n demo sin exponer contraseÃ±a â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ POST /api/demo/login "” inicia sesión demo sin exponer contraseÁ±a ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.post('/api/demo/login', async (req, res) => {
     let users    = await readUsers();
     let demoUser = users.find(u => u.email === DEMO_EMAIL);
@@ -3850,7 +3850,7 @@ app.post('/api/demo/login', async (req, res) => {
     const sessions = await readSessions();
     sessions[token] = { userId: demoUser.id, created: Date.now(), isDemo: true };
     await writeSessions(sessions);
-    console.log('  ðŸŽ­ Demo login');
+    console.log('  🎭 Demo login');
     ok(res, {
         token,
         user: { id: demoUser.id, name: demoUser.name, email: demoUser.email,
@@ -3861,7 +3861,7 @@ app.post('/api/demo/login', async (req, res) => {
     });
 });
 
-// â”€â”€ POST /api/demo/reset â€” restaurar datos de ejemplo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ POST /api/demo/reset "” restaurar datos de ejemplo ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.post('/api/demo/reset', requireAuth, async (req, res) => {
     if (!isDemo(req.user)) return err(res, 'Solo disponible para el usuario demo', 403);
     const fresh = demoData();
@@ -3869,17 +3869,17 @@ app.post('/api/demo/reset', requireAuth, async (req, res) => {
     ok(res, { message: 'Datos demo restaurados', resetAt: fresh.demoResetAt });
 });
 
-// â”€â”€ GET /api/demo/status â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ GET /api/demo/status ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/demo/status', async (req, res) => {
     ok(res, { available: true, email: DEMO_EMAIL, resetHours: DEMO_RESET_HOURS });
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// SISTEMA AUTOMÃTICO DE TASAS BCV â€” USD/VES Â· EUR/VES
-// Fuente: https://bcv.today/api/v1/rate.json (pÃºblica, sin clave)
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
+// SISTEMA AUTOMÁTICO DE TASAS BCV "” USD/VES · EUR/VES
+// Fuente: https://bcv.today/api/v1/rate.json (pública, sin clave)
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 
-// â”€â”€ GET: tasas actuales (USD/VES y EUR/VES) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ GET: tasas actuales (USD/VES y EUR/VES) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/rates/current', requireAuth, async (req, res) => {
     const db    = await readDB();
     const rates = ExchangeRateService.getCurrentRates(db);
@@ -3887,20 +3887,20 @@ app.get('/api/rates/current', requireAuth, async (req, res) => {
     ok(res, { ...rates, serviceStatus: svc });
 });
 
-// â”€â”€ GET: estado del servicio de tasas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ GET: estado del servicio de tasas ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/rates/status', requireAuth, async (req, res) => {
     ok(res, ExchangeRateService.getStatus());
 });
 
-// â”€â”€ GET: historial completo de tasas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ GET: historial completo de tasas ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/rates/history', requireAuth, async (req, res) => {
     const db    = await readDB();
     const rates = Array.isArray(db.exchangeRates) ? db.exchangeRates : [];
 
-    // Agrupar y ordenar: primero activos, luego histÃ³ricos
+    // Agrupar y ordenar: primero activos, luego históricos
     const sorted = [...rates].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-    // EstadÃ­sticas
+    // Estadísticas
     const usdRates = sorted.filter(r => r.fromCurrency === 'USD');
     const eurRates = sorted.filter(r => r.fromCurrency === 'EUR');
     const autoCount = sorted.filter(r => r.updateType === 'auto').length;
@@ -3919,9 +3919,9 @@ app.get('/api/rates/history', requireAuth, async (req, res) => {
     });
 });
 
-// â”€â”€ POST: actualizaciÃ³n MANUAL de tasas (solo admin/owner) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ POST: actualización MANUAL de tasas (solo admin/owner) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.post('/api/rates/update', requireAuth, async (req, res) => {
-    // Solo el owner o admin puede forzar actualizaciÃ³n
+    // Solo el owner o admin puede forzar actualización
     if (req.user.teamRole !== 'owner' && req.user.role !== 'admin' && req.user.teamRole !== 'admin') {
         return err(res, 'Solo el administrador puede actualizar tasas manualmente.', 403);
     }
@@ -3947,17 +3947,17 @@ app.post('/api/rates/update', requireAuth, async (req, res) => {
         if (result.success) {
             ok(res, result);
         } else {
-            // Devolver Ã©xito parcial si hay tasa cacheada vigente
+            // Devolver éxito parcial si hay tasa cacheada vigente
             const db      = await readDB();
             const current = ExchangeRateService.getCurrentRates(db);
-            ok(res, { ...result, cached: current, warning: 'Se usa Ãºltima tasa vÃ¡lida' });
+            ok(res, { ...result, cached: current, warning: 'Se usa última tasa válida' });
         }
     } catch (e) {
         err(res, `Error al actualizar tasas: ${e.message}`, 500);
     }
 });
 
-// â”€â”€ POST: guardar tasa manual directa (el admin ingresa el valor) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ POST: guardar tasa manual directa (el admin ingresa el valor) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.post('/api/rates/manual', requireAuth, async (req, res) => {
     if (req.user.teamRole !== 'owner' && req.user.role !== 'admin' && req.user.teamRole !== 'admin') {
         return err(res, 'Solo el administrador puede establecer tasas manualmente.', 403);
@@ -3965,8 +3965,8 @@ app.post('/api/rates/manual', requireAuth, async (req, res) => {
     const { fromCurrency, toCurrency, rate, notes } = req.body;
     const rateVal = parseFloat(rate);
 
-    if (!['USD', 'EUR', 'VES'].includes(fromCurrency)) return err(res, 'Moneda origen invÃ¡lida');
-    if (!['USD', 'EUR', 'VES'].includes(toCurrency))   return err(res, 'Moneda destino invÃ¡lida');
+    if (!['USD', 'EUR', 'VES'].includes(fromCurrency)) return err(res, 'Moneda origen inválida');
+    if (!['USD', 'EUR', 'VES'].includes(toCurrency))   return err(res, 'Moneda destino inválida');
     if (fromCurrency === toCurrency)                   return err(res, 'Monedas deben ser diferentes');
     if (!rateVal || rateVal <= 0)                      return err(res, 'Tasa debe ser positiva');
 
@@ -3995,7 +3995,7 @@ app.post('/api/rates/manual', requireAuth, async (req, res) => {
     db.exchangeRates.push(newEntry);
     await writeDB(db);
 
-    // Actualizar tambiÃ©n todas las BDs de empresa
+    // Actualizar también todas las BDs de empresa
     try {
         const dbDir   = path.dirname(require.main?.filename || DB_PATH);
         const dbFiles = fs.readdirSync(dbDir).filter(f => /^db_[a-z0-9]+\.json$/i.test(f));
@@ -4016,21 +4016,21 @@ app.post('/api/rates/manual', requireAuth, async (req, res) => {
     } catch {}
 
     await logAdminAction(req.user.id, req.user.email, 'exchange_rate_manual_set', null, null,
-        `${fromCurrency}â†’${toCurrency}=${rateVal}`);
+        `${fromCurrency}❌†’${toCurrency}=${rateVal}`);
     ok(res, newEntry);
 });
 
-// â”€â”€ GET: convertir un monto entre monedas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ GET: convertir un monto entre monedas ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/rates/convert', requireAuth, async (req, res) => {
     const { amount, from, to } = req.query;
     const val = parseFloat(amount);
-    if (!val || !from || !to) return err(res, 'ParÃ¡metros requeridos: amount, from, to');
+    if (!val || !from || !to) return err(res, 'Parámetros requeridos: amount, from, to');
 
     const db      = await readDB();
     const current = ExchangeRateService.getCurrentRates(db);
 
     if (!current.USD || !current.EUR) {
-        return err(res, 'Tasas no disponibles aÃºn. Espere la actualizaciÃ³n automÃ¡tica.');
+        return err(res, 'Tasas no disponibles aún. Espere la actualización automática.');
     }
 
     // Construir mapa de tasas directas a VES
@@ -4043,7 +4043,7 @@ app.get('/api/rates/convert', requireAuth, async (req, res) => {
         const inVES = val * toVES[from];
         result      = inVES / toVES[to];
     } else {
-        return err(res, `Par de conversiÃ³n ${from}â†’${to} no soportado`);
+        return err(res, `Par de conversión ${from}❌†’${to} no soportado`);
     }
 
     ok(res, {
@@ -4059,7 +4059,7 @@ app.get('/api/rates/convert', requireAuth, async (req, res) => {
     });
 });
 
-// â”€â”€ Helpers internos para manejar BDs de empresa (MongoDB) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Helpers internos para manejar BDs de empresa (MongoDB) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 async function _readCompanyDB(companyId)        { return DB.readCompanyDB(companyId); }
 async function _writeCompanyDB(companyId, data) { return DB.writeCompanyDB(companyId, data); }
 async function _listCompanies() {
@@ -4069,19 +4069,19 @@ async function _listCompanies() {
     } catch { return []; }
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// SISTEMA GLOBAL DE MONEDAS â€” VES / EUR
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
+// SISTEMA GLOBAL DE MONEDAS "” VES / EUR
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 
-// â”€â”€ GET: obtener configuraciÃ³n de monedas de la empresa â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ GET: obtener configuración de monedas de la empresa ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/currencies', requireAuth, async (req, res) => {
     const db = await readDB();
     if (!Array.isArray(db.currencies) || db.currencies.length === 0) {
         db.currencies = defaultData().currencies;
     }
-    // Asegurar que USD estÃ¡ en currencies
+    // Asegurar que USD está en currencies
     if (!db.currencies.find(c => c.code === 'USD')) {
-        db.currencies.push({ code:'USD', name:'DÃ³lar estadounidense', symbol:'$', flag:'ðŸ‡ºðŸ‡¸', active:true, isBase:false, format:'en-US', decimals:2 });
+        db.currencies.push({ code:'USD', name:'Dólar estadounidense', symbol:'$', flag:'ðŸ‡ºðŸ‡¸', active:true, isBase:false, format:'en-US', decimals:2 });
     }
     const svcStatus = ExchangeRateService.getStatus();
     ok(res, {
@@ -4094,19 +4094,19 @@ app.get('/api/currencies', requireAuth, async (req, res) => {
     });
 });
 
-// â”€â”€ PUT: cambiar moneda principal de la empresa â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ PUT: cambiar moneda principal de la empresa ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.put('/api/currencies/default', requireAuth, async (req, res) => {
     const { code } = req.body;
-    if (!['VES', 'EUR'].includes(code)) return err(res, 'Moneda no vÃ¡lida. Use VES o EUR.');
+    if (!['VES', 'EUR'].includes(code)) return err(res, 'Moneda no válida. Use VES o EUR.');
     const db = await readDB();
     db.settings = db.settings || {};
     db.settings.defaultCurrency = code;
     await writeDB(db);
-    await logAdminAction(req.user.id, req.user.email, 'currency_default_change', null, null, `â†’ ${code}`);
+    await logAdminAction(req.user.id, req.user.email, 'currency_default_change', null, null, `❌†’ ${code}`);
     ok(res, { defaultCurrency: code });
 });
 
-// â”€â”€ GET: historial completo de tasas de cambio â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ GET: historial completo de tasas de cambio ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/exchange-rates', requireAuth, async (req, res) => {
     const db = await readDB();
     const rates = Array.isArray(db.exchangeRates) ? db.exchangeRates : [];
@@ -4118,11 +4118,11 @@ app.get('/api/exchange-rates', requireAuth, async (req, res) => {
     });
 });
 
-// â”€â”€ POST: registrar nueva tasa de cambio â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ POST: registrar nueva tasa de cambio ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.post('/api/exchange-rates', requireAuth, async (req, res) => {
     const { rate, notes, fromCurrency, toCurrency } = req.body;
     const rateVal = parseFloat(rate);
-    if (!rateVal || rateVal <= 0) return err(res, 'La tasa debe ser un nÃºmero positivo.');
+    if (!rateVal || rateVal <= 0) return err(res, 'La tasa debe ser un número positivo.');
 
     const from = fromCurrency || 'EUR';
     const to   = toCurrency   || 'VES';
@@ -4156,14 +4156,14 @@ app.post('/api/exchange-rates', requireAuth, async (req, res) => {
     ok(res, newRate);
 });
 
-// â”€â”€ GET: tasa activa actual â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ GET: tasa activa actual ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/exchange-rates/current', requireAuth, async (req, res) => {
     const db   = await readDB();
     const rate = _getActiveRate(db);
     ok(res, rate);
 });
 
-// â”€â”€ EstadÃ­sticas de monedas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Estadísticas de monedas ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/currencies/stats', requireAuth, async (req, res) => {
     const db      = await readDB();
     const current = ExchangeRateService.getCurrentRates(db);
@@ -4208,10 +4208,10 @@ app.get('/api/currencies/stats', requireAuth, async (req, res) => {
     });
 });
 
-// â”€â”€ Helper interno: obtener la tasa EURâ†’VES activa â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Helper interno: obtener la tasa EUR❌†’VES activa ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 function _getActiveRate(db) {
     const rates = Array.isArray(db.exchangeRates) ? db.exchangeRates : [];
-    // Intentar primero con la tasa del servicio automÃ¡tico (mÃ¡s fresca)
+    // Intentar primero con la tasa del servicio automático (más fresca)
     const active = rates.find(r => r.fromCurrency === 'EUR' && r.toCurrency === 'VES' && r.isActive);
     if (active) return active;
     const sorted = rates
@@ -4220,7 +4220,7 @@ function _getActiveRate(db) {
     return sorted[0] || { fromCurrency: 'EUR', toCurrency: 'VES', rate: 40.00, isActive: true };
 }
 
-// â”€â”€ Helper: obtener tasa USDâ†’VES activa â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ❌”€❌”€ Helper: obtener tasa USD❌†’VES activa ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 function _getActiveUSDRate(db) {
     const rates = Array.isArray(db.exchangeRates) ? db.exchangeRates : [];
     const active = rates.find(r => r.fromCurrency === 'USD' && r.toCurrency === 'VES' && r.isActive);
@@ -4231,8 +4231,8 @@ function _getActiveUSDRate(db) {
     return sorted[0] || { fromCurrency: 'USD', toCurrency: 'VES', rate: 36.00, isActive: true };
 }
 
-// â”€â”€ Endpoint de migraciÃ³n segura de datos existentes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// AÃ±ade campo `currency` a todos los registros que no lo tengan
+// ❌”€❌”€ Endpoint de migración segura de datos existentes ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
+// AÁ±ade campo `currency` a todos los registros que no lo tengan
 // usando la moneda principal configurada. NO modifica datos que ya tengan currency.
 app.post('/api/migrate/add-currency', requireAuth, async (req, res) => {
     // Solo el propietario puede migrar
@@ -4278,11 +4278,11 @@ app.post('/api/migrate/add-currency', requireAuth, async (req, res) => {
     ok(res, { migrated, defaultCurrency: defCurr });
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// SERVER-SENT EVENTS (SSE) â€” Actualizaciones en tiempo real
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
+// SERVER-SENT EVENTS (SSE) "” Actualizaciones en tiempo real
 // El panel admin y la app se suscriben a /api/events y reciben push cuando
 // algo importante cambia (plan actualizado, usuario suspendido, pago confirmado, etc.)
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 const _sseClients = new Map(); // Map<clientId, { res, role, userId, companyId }>
 
 function _sseId() { return Math.random().toString(36).slice(2); }
@@ -4303,7 +4303,7 @@ function sseAdmin(event, data) {
     broadcastSSE(event, data, c => c.role === 'admin');
 }
 
-/** Enviar a un usuario especÃ­fico (por userId) */
+/** Enviar a un usuario específico (por userId) */
 function sseUser(userId, event, data) {
     broadcastSSE(event, data, c => c.userId === userId);
 }
@@ -4318,7 +4318,7 @@ global._sseAdmin   = sseAdmin;
 global._sseUser    = sseUser;
 global._sseCompany = sseCompany;
 
-// GET /api/events â€” conexiÃ³n SSE (autenticado, acepta token via header O query param)
+// GET /api/events "” conexión SSE (autenticado, acepta token via header O query param)
 app.get('/api/events', async (req, res) => {
     const headerTok = (req.headers['authorization'] || '').replace('Bearer ', '').trim();
     const queryTok  = (req.query.token || '').trim();
