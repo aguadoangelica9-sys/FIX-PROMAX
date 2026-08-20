@@ -4488,16 +4488,26 @@
         </div>
 
         <!-- ══ MODAL: VISTA PREVIA / IMPRESIÓN de documento ══ -->
-        <div class="modal-overlay" id="printModalOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9100;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;">
-            <div style="background:#fff;border-radius:var(--radius);width:100%;max-width:720px;margin:auto;box-shadow:0 20px 60px rgba(0,0,0,.5);">
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #e2e8f0;background:#f8fafc;">
-                    <span style="font-weight:700;color:#0f172a;">Vista previa del documento</span>
-                    <div style="display:flex;gap:8px;">
-                        <button onclick="window.print()" style="padding:7px 16px;background:#4f46e5;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;">🖨️ Imprimir / PDF</button>
-                        <button onclick="closePrintModal()" style="padding:7px 14px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:7px;cursor:pointer;font-size:13px;color:#475569;">✕ Cerrar</button>
+        <div class="modal-overlay" id="printModalOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9100;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;">
+            <div style="background:#fff;border-radius:12px;width:100%;max-width:760px;margin:auto;box-shadow:0 24px 80px rgba(0,0,0,.55);">
+                <!-- Barra superior del modal -->
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid #e2e8f0;background:#f8fafc;border-radius:12px 12px 0 0;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:18px;">🧾</span>
+                        <span style="font-weight:700;color:#0f172a;font-size:15px;">Vista previa del documento</span>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <button onclick="downloadInvoicePDF()" style="padding:7px 14px;background:#0f172a;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:5px;">
+                            ⬇️ Descargar PDF
+                        </button>
+                        <button onclick="window.print()" style="padding:7px 14px;background:#4f46e5;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:5px;">
+                            🖨️ Imprimir
+                        </button>
+                        <button onclick="closePrintModal()" style="padding:7px 13px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:7px;cursor:pointer;font-size:13px;color:#475569;">✕ Cerrar</button>
                     </div>
                 </div>
-                <div id="printContent" style="padding:32px 36px;color:#0f172a;font-family:'Inter',sans-serif;font-size:13px;line-height:1.6;">
+                <!-- Área de contenido -->
+                <div id="printContent" style="padding:36px 40px;color:#0f172a;font-family:'Inter',system-ui,sans-serif;font-size:13px;line-height:1.6;background:#fff;border-radius:0 0 12px 12px;">
                     <!-- Contenido del documento a imprimir -->
                 </div>
             </div>
@@ -8518,199 +8528,286 @@
        IMPRESIÓN / PDF — Factura Fiscal
        ══════════════════════════════════════════════════════════════ */
     function printInvoiceDoc(id) {
-        const inv = data.invoices.find(i => i.id === id);
+        const inv      = data.invoices.find(i => i.id === id);
         if (!inv) return;
 
         const cust     = data.customers.find(c => c.id === inv.customerId);
-        const custName = cust ? `${cust.firstName} ${cust.lastName}` : 'Cliente general';
+        const custName = cust ? `${cust.firstName || ''} ${cust.lastName || ''}`.trim() : 'Cliente general';
         const settings = data.settings || {};
 
-        // Buscar la venta asociada (POS) por número de factura o por fromQuoteId
+        // Nombre de la empresa: preferir settings.companyName, luego el company del usuario
+        const empresaNombre = settings.companyName
+            || (window._currentUser && window._currentUser.company)
+            || 'Mi Empresa';
+        const empresaRif    = settings.rif     || '';
+        const empresaDir    = settings.address || '';
+        const empresaTel    = settings.phone   || '';
+        const empresaEmail  = settings.email   || '';
+
+        // Inicial para el avatar de empresa
+        const inicial = empresaNombre.charAt(0).toUpperCase();
+
+        // Venta asociada (para desglose de items del POS)
         const sale = data.sales.find(s =>
-            s.invoice === inv.number ||
-            s.id      === inv.fromSaleId
+            s.invoice === inv.number || s.id === inv.fromSaleId
         );
 
-        // Construir filas de detalle
+        // Construir filas de items
         let itemsHtml = '';
         let subtotal  = 0;
         let totalTax  = 0;
         let totalDisc = 0;
 
         if (sale && Array.isArray(sale.items) && sale.items.length > 0) {
-            // Factura con desglose de items (viene de POS o de cotización)
-            itemsHtml = sale.items.map(it => {
-                const nombre = it.productName || getProductName(it.productId) || 'Producto';
-                const qty    = Number(it.qty   || it.quantity || 1);
-                const price  = Number(it.price || 0);
-                const disc   = Number(it.discount || 0);
-                const tax    = Number(it.tax  || 0);
-                const base   = qty * price;
-                const dAmt   = base * disc  / 100;
-                const tAmt   = (base - dAmt) * tax / 100;
+            itemsHtml = sale.items.map((it, idx) => {
+                const nombre  = it.productName || getProductName(it.productId) || 'Producto';
+                const qty     = Number(it.qty   || it.quantity || 1);
+                const price   = Number(it.price || 0);
+                const disc    = Number(it.discount || 0);
+                const tax     = Number(it.tax   || 0);
+                const base    = qty * price;
+                const dAmt    = base * disc  / 100;
+                const tAmt    = (base - dAmt) * tax / 100;
                 const lineTot = base - dAmt + tAmt;
                 subtotal  += base;
                 totalDisc += dAmt;
                 totalTax  += tAmt;
+                const bg = idx % 2 === 0 ? '#f8fafc' : '#fff';
                 return `
-                <tr style="border-bottom:1px solid #e2e8f0;">
-                    <td style="padding:10px 8px;">${nombre}</td>
-                    <td style="padding:10px 8px;text-align:center;">${qty}</td>
-                    <td style="padding:10px 8px;text-align:right;">${formatCurrency(price)}</td>
-                    <td style="padding:10px 8px;text-align:right;color:#64748b;">${disc > 0 ? disc+'%' : '—'}</td>
-                    <td style="padding:10px 8px;text-align:right;color:#64748b;">${tax > 0 ? tax+'%' : '—'}</td>
-                    <td style="padding:10px 8px;text-align:right;font-weight:600;">${formatCurrency(lineTot)}</td>
+                <tr style="background:${bg};border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:10px 12px;font-weight:500;">${nombre}</td>
+                    <td style="padding:10px 8px;text-align:center;color:#475569;">${qty}</td>
+                    <td style="padding:10px 8px;text-align:right;">${formatCurrency(price, inv.currency)}</td>
+                    <td style="padding:10px 8px;text-align:center;color:${disc>0?'#16a34a':'#94a3b8'};">${disc > 0 ? disc + '%' : '—'}</td>
+                    <td style="padding:10px 8px;text-align:center;color:${tax>0?'#d97706':'#94a3b8'};">${tax > 0 ? tax + '%' : '—'}</td>
+                    <td style="padding:10px 12px;text-align:right;font-weight:700;color:#0f172a;">${formatCurrency(lineTot, inv.currency)}</td>
                 </tr>`;
             }).join('');
         } else {
-            // Factura manual sin items — mostrar como una sola línea
-            subtotal = Number(inv.total || 0);
+            subtotal  = Number(inv.total || 0);
             itemsHtml = `
-            <tr style="border-bottom:1px solid #e2e8f0;">
-                <td style="padding:10px 8px;" colspan="2">${inv.notes || 'Servicios / Productos'}</td>
-                <td style="padding:10px 8px;text-align:right;" colspan="2">—</td>
-                <td style="padding:10px 8px;text-align:right;" colspan="1">—</td>
-                <td style="padding:10px 8px;text-align:right;font-weight:600;">${formatCurrency(subtotal)}</td>
+            <tr style="background:#f8fafc;">
+                <td style="padding:12px;" colspan="3">${inv.notes || 'Servicios / Productos'}</td>
+                <td style="padding:12px;text-align:center;color:#94a3b8;">—</td>
+                <td style="padding:12px;text-align:center;color:#94a3b8;">—</td>
+                <td style="padding:12px;text-align:right;font-weight:700;">${formatCurrency(subtotal, inv.currency)}</td>
             </tr>`;
         }
 
-        // Totales finales
         const totalFinal = Number(inv.total || 0);
         const paid       = Number(inv.paid  || 0);
         const saldo      = totalFinal - paid;
-
-        // Método de pago
         const metodoPago = sale?.method || inv.method || '';
 
-        // Estado badge color
+        // Estado y colores
         const estado = getInvoiceStatus(inv);
-        const estadoColor = {
-            'Pagada':'#16a34a','Parcial':'#d97706','Vencida':'#dc2626','Pendiente':'#2563eb'
-        }[estado] || '#64748b';
+        const estadoBg = { 'Pagada':'#dcfce7','Parcial':'#fef9c3','Vencida':'#fee2e2','Pendiente':'#dbeafe' }[estado] || '#f1f5f9';
+        const estadoClr = { 'Pagada':'#16a34a','Parcial':'#b45309','Vencida':'#dc2626','Pendiente':'#2563eb' }[estado] || '#475569';
+
+        // Moneda
+        const monedaLabel = inv.currency === 'USD' ? '🇺🇸 USD ($)'
+            : inv.currency === 'EUR' ? '🇪🇺 EUR (€)'
+            : '🇻🇪 VES (Bs.)';
 
         const html = `
-        <div style="font-family:'Inter',sans-serif;color:#0f172a;max-width:680px;margin:auto;">
+        <div style="font-family:'Inter',system-ui,sans-serif;color:#0f172a;max-width:680px;margin:0 auto;" id="invoiceDocContent">
 
-          <!-- Encabezado empresa + número de factura -->
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;gap:16px;">
-            <div style="flex:1;">
-              <div style="font-size:24px;font-weight:800;color:#4f46e5;line-height:1.1;">
-                ${settings.companyName || 'MI EMPRESA'}
+          <!-- ── BANDA SUPERIOR DE COLOR ── -->
+          <div style="background:linear-gradient(135deg,#4f46e5 0%,#6366f1 100%);height:6px;border-radius:6px 6px 0 0;margin-bottom:28px;"></div>
+
+          <!-- ── ENCABEZADO: EMPRESA + TÍTULO FACTURA ── -->
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;gap:20px;flex-wrap:wrap;">
+
+            <!-- Bloque empresa -->
+            <div style="display:flex;align-items:flex-start;gap:14px;">
+              <div style="width:52px;height:52px;background:linear-gradient(135deg,#4f46e5,#6366f1);
+                          border-radius:12px;display:flex;align-items:center;justify-content:center;
+                          color:#fff;font-size:24px;font-weight:800;flex-shrink:0;letter-spacing:-1px;">
+                ${inicial}
               </div>
-              ${settings.rif     ? `<div style="font-size:12px;color:#64748b;margin-top:4px;">RIF: ${settings.rif}</div>` : ''}
-              ${settings.address ? `<div style="font-size:12px;color:#64748b;">${settings.address}</div>` : ''}
-              ${settings.phone   ? `<div style="font-size:12px;color:#64748b;">Tel: ${settings.phone}</div>` : ''}
-              ${settings.email   ? `<div style="font-size:12px;color:#64748b;">${settings.email}</div>` : ''}
+              <div>
+                <div style="font-size:22px;font-weight:800;color:#1e293b;line-height:1.2;">${empresaNombre}</div>
+                ${empresaRif   ? `<div style="font-size:12px;color:#64748b;margin-top:3px;font-weight:500;">RIF: ${empresaRif}</div>` : ''}
+                ${empresaDir   ? `<div style="font-size:12px;color:#64748b;margin-top:1px;">📍 ${empresaDir}</div>` : ''}
+                ${empresaTel   ? `<div style="font-size:12px;color:#64748b;margin-top:1px;">📞 ${empresaTel}</div>` : ''}
+                ${empresaEmail ? `<div style="font-size:12px;color:#64748b;margin-top:1px;">✉ ${empresaEmail}</div>` : ''}
+              </div>
             </div>
+
+            <!-- Bloque factura -->
             <div style="text-align:right;flex-shrink:0;">
-              <div style="font-size:28px;font-weight:800;letter-spacing:2px;color:#1e293b;
-                          background:#f1f5f9;padding:6px 14px;border-radius:8px;display:inline-block;">
-                FACTURA FISCAL
+              <div style="display:inline-block;background:#f1f5f9;border:2px solid #e2e8f0;
+                          padding:5px 16px;border-radius:8px;margin-bottom:8px;">
+                <span style="font-size:15px;font-weight:900;letter-spacing:2px;color:#0f172a;">FACTURA FISCAL</span>
               </div>
-              <div style="font-size:20px;font-weight:700;color:#4f46e5;margin-top:6px;">${inv.number}</div>
-              <div style="font-size:12px;color:#64748b;margin-top:4px;">
-                <strong>Fecha:</strong> ${inv.date || 'N/A'}
+              <div style="font-size:24px;font-weight:800;color:#4f46e5;">${inv.number || '—'}</div>
+              <div style="font-size:12px;color:#64748b;margin-top:5px;">
+                <span style="font-weight:600;">Fecha:</span> ${inv.date || 'N/A'}
               </div>
-              ${inv.dueDate ? `<div style="font-size:12px;color:#dc2626;margin-top:2px;"><strong>Vence:</strong> ${inv.dueDate}</div>` : ''}
-              <div style="font-size:12px;color:#475569;margin-top:4px;font-weight:600;">
-                💱 Moneda: ${inv.currency === 'EUR' ? '🇪🇺 EUR (€)' : '🇻🇪 VES (Bs.)'}
-              </div>
-              <div style="margin-top:6px;">
-                <span style="background:${estadoColor}20;color:${estadoColor};padding:3px 10px;
-                             border-radius:20px;font-size:12px;font-weight:700;">${estado}</span>
+              ${inv.dueDate ? `<div style="font-size:12px;color:#dc2626;margin-top:2px;font-weight:600;">Vence: ${inv.dueDate}</div>` : ''}
+              <div style="font-size:12px;color:#475569;margin-top:3px;">${monedaLabel}</div>
+              <div style="margin-top:8px;">
+                <span style="background:${estadoBg};color:${estadoClr};padding:4px 12px;
+                             border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.5px;">
+                  ${estado.toUpperCase()}
+                </span>
               </div>
             </div>
           </div>
 
-          <!-- Datos del cliente -->
-          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 18px;margin-bottom:20px;">
-            <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;">
-              Facturar a:
-            </div>
-            <div style="font-size:15px;font-weight:700;">${custName}</div>
-            ${cust?.email  ? `<div style="font-size:12px;color:#64748b;margin-top:2px;">✉ ${cust.email}</div>`  : ''}
-            ${cust?.phone  ? `<div style="font-size:12px;color:#64748b;margin-top:2px;">📞 ${cust.phone}</div>` : ''}
-            ${inv.fromQuoteNumber ? `<div style="font-size:11px;color:#94a3b8;margin-top:6px;">Generada desde cotización: ${inv.fromQuoteNumber}</div>` : ''}
+          <!-- ── SEPARADOR ── -->
+          <div style="height:1px;background:linear-gradient(90deg,#e2e8f0,#c7d2fe,#e2e8f0);margin-bottom:20px;"></div>
+
+          <!-- ── DATOS DEL CLIENTE ── -->
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-left:4px solid #4f46e5;
+                      border-radius:0 8px 8px 0;padding:14px 18px;margin-bottom:24px;">
+            <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;
+                        letter-spacing:.8px;margin-bottom:6px;">Facturar a</div>
+            <div style="font-size:16px;font-weight:700;color:#0f172a;">${custName}</div>
+            ${cust?.rif   ? `<div style="font-size:12px;color:#64748b;margin-top:2px;">RIF/ID: ${cust.rif}</div>` : ''}
+            ${cust?.email ? `<div style="font-size:12px;color:#64748b;margin-top:2px;">✉ ${cust.email}</div>` : ''}
+            ${cust?.phone ? `<div style="font-size:12px;color:#64748b;margin-top:2px;">📞 ${cust.phone}</div>` : ''}
+            ${inv.fromQuoteNumber ? `<div style="font-size:11px;color:#94a3b8;margin-top:6px;font-style:italic;">Generada desde cotización: ${inv.fromQuoteNumber}</div>` : ''}
           </div>
 
-          <!-- Tabla de items -->
-          <table style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:13px;">
-            <thead>
-              <tr style="background:#4f46e5;color:#fff;">
-                <th style="padding:10px 8px;text-align:left;border-radius:6px 0 0 6px;">Descripción</th>
-                <th style="padding:10px 8px;text-align:center;width:50px;">Cant.</th>
-                <th style="padding:10px 8px;text-align:right;width:90px;">Precio</th>
-                <th style="padding:10px 8px;text-align:right;width:60px;">Desc.</th>
-                <th style="padding:10px 8px;text-align:right;width:60px;">IVA</th>
-                <th style="padding:10px 8px;text-align:right;width:90px;border-radius:0 6px 6px 0;">Subtotal</th>
-              </tr>
-            </thead>
-            <tbody>${itemsHtml}</tbody>
-          </table>
+          <!-- ── TABLA DE ITEMS ── -->
+          <div style="border-radius:10px;overflow:hidden;border:1px solid #e2e8f0;margin-bottom:24px;">
+            <table style="width:100%;border-collapse:collapse;font-size:13px;">
+              <thead>
+                <tr style="background:linear-gradient(135deg,#1e293b,#334155);">
+                  <th style="padding:11px 12px;text-align:left;color:#fff;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.6px;">Descripción</th>
+                  <th style="padding:11px 8px;text-align:center;color:#fff;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.6px;width:50px;">Cant.</th>
+                  <th style="padding:11px 8px;text-align:right;color:#fff;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.6px;width:90px;">Precio</th>
+                  <th style="padding:11px 8px;text-align:center;color:#cbd5e1;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.6px;width:55px;">Desc.</th>
+                  <th style="padding:11px 8px;text-align:center;color:#cbd5e1;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.6px;width:55px;">IVA</th>
+                  <th style="padding:11px 12px;text-align:right;color:#fff;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.6px;width:95px;">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>${itemsHtml}</tbody>
+            </table>
+          </div>
 
-          <!-- Totales -->
+          <!-- ── TOTALES ── -->
           <div style="display:flex;justify-content:flex-end;margin-bottom:24px;">
-            <div style="min-width:260px;font-size:13px;">
-              ${subtotal !== totalFinal ? `
-              <div style="display:flex;justify-content:space-between;padding:5px 0;color:#64748b;">
-                <span>Subtotal</span><span>${formatCurrency(subtotal, inv.currency)}</span>
-              </div>` : ''}
-              ${totalDisc > 0 ? `
-              <div style="display:flex;justify-content:space-between;padding:5px 0;color:#64748b;">
-                <span>Descuentos</span><span style="color:#16a34a;">-${formatCurrency(totalDisc, inv.currency)}</span>
-              </div>` : ''}
-              ${totalTax > 0 ? `
-              <div style="display:flex;justify-content:space-between;padding:5px 0;color:#64748b;">
-                <span>IVA</span><span>${formatCurrency(totalTax, inv.currency)}</span>
-              </div>` : ''}
-              <div style="display:flex;justify-content:space-between;padding:10px 0;
-                          border-top:2px solid #0f172a;margin-top:4px;">
-                <span style="font-weight:800;font-size:16px;">TOTAL</span>
-                <span style="font-weight:800;font-size:18px;color:#4f46e5;">${formatCurrency(totalFinal, inv.currency)}</span>
+            <div style="min-width:280px;background:#f8fafc;border-radius:10px;
+                        border:1px solid #e2e8f0;overflow:hidden;">
+              <div style="padding:14px 18px;">
+                ${subtotal !== totalFinal ? `
+                <div style="display:flex;justify-content:space-between;padding:5px 0;
+                            border-bottom:1px solid #f1f5f9;font-size:13px;color:#64748b;">
+                  <span>Subtotal</span><span>${formatCurrency(subtotal, inv.currency)}</span>
+                </div>` : ''}
+                ${totalDisc > 0 ? `
+                <div style="display:flex;justify-content:space-between;padding:5px 0;
+                            border-bottom:1px solid #f1f5f9;font-size:13px;color:#16a34a;">
+                  <span>Descuentos</span><span>− ${formatCurrency(totalDisc, inv.currency)}</span>
+                </div>` : ''}
+                ${totalTax > 0 ? `
+                <div style="display:flex;justify-content:space-between;padding:5px 0;
+                            border-bottom:1px solid #f1f5f9;font-size:13px;color:#d97706;">
+                  <span>IVA</span><span>${formatCurrency(totalTax, inv.currency)}</span>
+                </div>` : ''}
               </div>
-              <div style="display:flex;justify-content:space-between;padding:5px 0;color:#64748b;font-size:12px;">
-                <span>Pagado</span><span style="color:#16a34a;">${formatCurrency(paid, inv.currency)}</span>
+              <!-- Total grande -->
+              <div style="background:linear-gradient(135deg,#4f46e5,#6366f1);padding:14px 18px;
+                          display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:800;font-size:15px;color:#fff;letter-spacing:.5px;">TOTAL</span>
+                <span style="font-weight:900;font-size:22px;color:#fff;">${formatCurrency(totalFinal, inv.currency)}</span>
               </div>
-              ${saldo > 0 ? `
-              <div style="display:flex;justify-content:space-between;padding:5px 0;font-weight:700;
-                          font-size:13px;color:#dc2626;border-top:1px solid #e2e8f0;margin-top:4px;">
-                <span>Saldo pendiente</span><span>${formatCurrency(saldo)}</span>
-              </div>` : `
-              <div style="display:flex;justify-content:space-between;padding:5px 0;font-weight:700;
-                          font-size:13px;color:#16a34a;border-top:1px solid #e2e8f0;margin-top:4px;">
-                <span>✅ Pagada en su totalidad</span><span></span>
-              </div>`}
+              <div style="padding:10px 18px 14px;">
+                <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;color:#64748b;">
+                  <span>Pagado</span>
+                  <span style="color:#16a34a;font-weight:600;">${formatCurrency(paid, inv.currency)}</span>
+                </div>
+                ${saldo > 0.005 ? `
+                <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;
+                            font-weight:700;color:#dc2626;border-top:1px dashed #fee2e2;margin-top:4px;">
+                  <span>Saldo pendiente</span><span>${formatCurrency(saldo, inv.currency)}</span>
+                </div>` : `
+                <div style="display:flex;align-items:center;gap:6px;padding:6px 0;font-size:12px;
+                            font-weight:700;color:#16a34a;border-top:1px dashed #dcfce7;margin-top:4px;">
+                  <span>✅ Pagada en su totalidad</span>
+                </div>`}
+              </div>
             </div>
           </div>
 
-          <!-- Método de pago e información adicional -->
+          <!-- ── MÉTODO DE PAGO Y NOTAS ── -->
           ${metodoPago ? `
-          <div style="background:#f8fafc;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:12px;">
-            <strong>Método de pago:</strong> ${metodoPago}
+          <div style="background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;
+                      padding:12px 16px;margin-bottom:14px;font-size:12px;color:#475569;">
+            <span style="font-weight:700;color:#0f172a;">Método de pago:</span> ${metodoPago}
           </div>` : ''}
-
           ${inv.notes ? `
-          <div style="background:#f8fafc;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:12px;color:#475569;">
-            <strong>Notas:</strong> ${inv.notes}
+          <div style="background:#fffbeb;border-radius:8px;border:1px solid #fde68a;
+                      padding:12px 16px;margin-bottom:14px;font-size:12px;color:#78350f;">
+            <span style="font-weight:700;">Notas:</span> ${inv.notes}
           </div>` : ''}
 
-          <!-- Pie del documento -->
-          <div style="margin-top:32px;padding-top:16px;border-top:1px solid #e2e8f0;
-                      display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+          <!-- ── PIE DEL DOCUMENTO ── -->
+          <div style="margin-top:28px;padding-top:16px;border-top:1px solid #e2e8f0;
+                      display:flex;justify-content:space-between;align-items:center;
+                      flex-wrap:wrap;gap:8px;">
             <div style="font-size:11px;color:#94a3b8;">
-              Documento generado por FIX PRO MAX · ${new Date().toLocaleDateString('es-VE',{year:'numeric',month:'long',day:'numeric'})}
+              Generado por <strong>FIX PRO MAX</strong> · ${new Date().toLocaleDateString('es-VE',{year:'numeric',month:'long',day:'numeric'})}
             </div>
-            <div style="font-size:11px;color:#94a3b8;">
-              ${settings.companyName || ''} ${settings.rif ? '· RIF: '+settings.rif : ''}
+            <div style="font-size:11px;color:#94a3b8;text-align:right;">
+              ${empresaNombre}${empresaRif ? ' · RIF: ' + empresaRif : ''}
             </div>
           </div>
-
+          <!-- ── Banda inferior ── -->
+          <div style="background:linear-gradient(135deg,#4f46e5,#6366f1);height:4px;border-radius:0 0 4px 4px;margin-top:20px;"></div>
         </div>`;
 
         document.getElementById('printContent').innerHTML = html;
         document.getElementById('printModalOverlay').style.display = 'flex';
+
+        // Guardar el número de factura para el nombre del archivo al descargar
+        window._currentPrintDocNumber = inv.number || 'factura';
+        window._currentPrintDocType   = 'factura';
     }
 
+    /* ── Descarga como PDF via ventana de impresión ─────────────── */
+    function downloadInvoicePDF() {
+        // Abre una ventana nueva con solo el contenido y dispara print()
+        // El usuario elige "Guardar como PDF" en el diálogo del navegador.
+        // El nombre sugerido se establece via document.title de la ventana nueva.
+        const content = document.getElementById('printContent');
+        if (!content) return;
+        const docNum  = window._currentPrintDocNumber || 'documento';
+        const docType = window._currentPrintDocType   || 'factura';
+        const win = window.open('', '_blank', 'width=850,height=1100');
+        if (!win) {
+            // Fallback: si el popup fue bloqueado, usar window.print normal
+            window.print();
+            return;
+        }
+        win.document.write(`
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>${docType === 'factura' ? 'Factura' : 'Documento'} ${docNum} — ${(data.settings || {}).companyName || (window._currentUser && window._currentUser.company) || 'FIX PRO MAX'}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif;
+           background: #fff; color: #0f172a; padding: 32px; max-width: 720px; margin: 0 auto; }
+    @media print {
+      body { padding: 16px; }
+      @page { size: A4; margin: 12mm; }
+    }
+  </style>
+</head>
+<body>
+  ${content.innerHTML}
+  <script>
+    window.onload = function() {
+      setTimeout(function() { window.print(); }, 400);
+    };
+  <\/script>
+</body>
+</html>`);
+        win.document.close();
     function closePrintModal() {
         document.getElementById('printModalOverlay').style.display = 'none';
     }
@@ -10364,7 +10461,8 @@
     /** Escapa un valor para CSV: envuelve en comillas si tiene comas, comillas o saltos de línea */
     function csvEscape(val) {
         const s = String(val === null || val === undefined ? '' : val);
-        if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
+        if (s.includes(',') || s.includes('"') || s.includes('\n
+        ')) {
             return '"' + s.replace(/"/g, '""') + '"';
         }
         return s;
