@@ -10956,12 +10956,13 @@
         ['clave','sku'],['referencia','sku'],['ref','sku'],['cod','sku'],
         ['barcode','barcode'],['ean','barcode'],['upc','barcode'],['gtin','barcode'],
 
-        // ── Stock / Cantidad
+        // ── Stock / Cantidad  (incluyendo variantes Venko "Cant/Kg")
         ['cantidad en stock','stock'],['stock actual','stock'],
         ['existencias','stock'],['existencia','stock'],
         ['cantidad','stock'],['stock','stock'],['inventario','stock'],
         ['qty','stock'],['quantity','stock'],['disponible','stock'],
         ['saldo','stock'],['cant','stock'],
+        ['cant/kg','stock'],['cantidad/kg','stock'],['cant kg','stock'],
 
         // ── Precio de venta (MÁS ESPECÍFICOS PRIMERO)
         ['precio de venta al publico','price'],['precio al publico','price'],
@@ -10971,13 +10972,20 @@
         ['precio 1','price'],['pvp','price'],['price','price'],
         ['precio','price'],['valor','price'],['venta','price'],['p1','price'],
 
-        // ── Precio mayorista
+        // ── Precio mayorista / Utilidad (Venko: "Util($)")
         ['precio por mayor','wholesalePrice'],['precio mayorista','wholesalePrice'],
         ['precio distribuidor','wholesalePrice'],['precio 2','wholesalePrice'],
         ['mayorista','wholesalePrice'],['wholesale','wholesalePrice'],
         ['venta2','wholesalePrice'],['p2','wholesalePrice'],
+        ['util($)','wholesalePrice'],
+        ['util(usd)','wholesalePrice'],['utilidad($)','wholesalePrice'],
+        ['utilidad','wholesalePrice'],['util','wholesalePrice'],
+        ['ganancia','wholesalePrice'],['margen','wholesalePrice'],
 
-        // ── Costo (MÁS ESPECÍFICOS PRIMERO)
+        // ── Costo (MÁS ESPECÍFICOS PRIMERO — incluyendo variantes Venko "Costo(USD)", "Costo(Bs)")
+        ['costo(usd)','cost'],['costo (usd)','cost'],['costo usd','cost'],
+        ['costo(bs)','_costoBS'],['costo (bs)','_costoBS'],['costo bs','_costoBS'],
+        ['costo(ves)','_costoBS'],['costo(bsf)','_costoBS'],
         ['precio de costo','cost'],['precio costo','cost'],
         ['precio de compra','cost'],['precio compra','cost'],
         ['costo unitario','cost'],['p. costo','cost'],['p costo','cost'],
@@ -10985,6 +10993,8 @@
 
         // ── TOTAL → ignorar
         ['gran total','_total'],['subtotal','_total'],['total','_total'],
+        ['total($)','_total'],['total(usd)','_total'],['total usd','_total'],
+        ['total(bs)','_total'],['total bs','_total'],
         ['importe','_total'],
 
         // ── Descripción
@@ -11123,8 +11133,8 @@
                 const obj = {};
                 headers.forEach((h, i) => {
                     const f = fieldOf[i];
-                    // Ignorar campo _total y columnas vacías de encabezado
-                    if (f === '_total') return;
+                    // Ignorar _total, _costoBS (costo en Bs — no es útil para la app) y cols sin mapeo
+                    if (f === '_total' || f === '_costoBS') return;
                     if (!f && i !== nameColIdx) return; // ignorar cols sin mapeo excepto la de nombre
                     const raw = row[i];
                     if (!f && i === nameColIdx) {
@@ -11142,18 +11152,21 @@
                 if (!obj.name && nameColIdx >= 0) {
                     obj.name = String(row[nameColIdx] ?? '').trim();
                 }
-                // Si tiene costo pero no precio, usar costo como precio base
+                // Si tiene costo pero no precio, usar costo+utilidad como precio de venta
                 if ((obj.price === null || obj.price === undefined) && obj.cost != null) {
-                    obj.price = obj.cost;
+                    const margin = (obj.wholesalePrice != null && obj.wholesalePrice > 0) ? obj.wholesalePrice : 0;
+                    obj.price = obj.cost + margin;
                 }
                 return obj;
             })
             .filter(obj => {
-                const name = obj.name || '';
-                // Excluir filas que son totales o subtotales
-                if (/^total/i.test(name.trim())) return false;
-                // Excluir filas completamente vacías
-                return name.trim() !== '';
+                const name = (obj.name || '').trim();
+                if (!name) return false;
+                // Excluir filas de resumen/totales por nombre
+                if (/^total|^gran\s*total|^resumen|^m[eé]trica|^inversi[oó]n|^bolívares|^d[oó]lares/i.test(name)) return false;
+                // Excluir filas donde el "nombre" es en realidad un encabezado secundario
+                if (/^producto$/i.test(name)) return false;
+                return true;
             });
     }
 
@@ -11187,13 +11200,13 @@
                     if (!sheetData) { showToast('⚠️','El archivo no tiene datos'); return; }
 
                     // ── Detectar fila de encabezados de forma inteligente ──
-                    // Busca la primera fila que tenga ≥2 celdas no vacías Y al menos
-                    // una coincida con el mapa de campos O tenga palabras clave típicas
-                    const HEADER_KEYWORDS = /producto|nombre|item|articulo|cantidad|stock|precio|costo|sku|codigo|descripcion|marca|proveedor|unidad|categoria/i;
+                    // Soporta reportes con cabeceras de título (ej: Venko: "Reporte de Inventario",
+                    // "Sistema Venko - ...", etc.) antes de la fila real de columnas.
+                    const HEADER_KEYWORDS = /producto|nombre|item|articulo|cantidad|stock|precio|costo|sku|codigo|descripcion|marca|proveedor|unidad|categoria|cant|util|total/i;
                     let headerRow = 0;
                     let bestScore = -1;
 
-                    for (let i = 0; i < Math.min(sheetData.length, 10); i++) {
+                    for (let i = 0; i < Math.min(sheetData.length, 15); i++) {
                         const row = sheetData[i];
                         const nonEmpty = row.filter(c => String(c).trim() !== '');
                         if (nonEmpty.length < 2) continue;
@@ -11203,9 +11216,19 @@
                         row.forEach(c => {
                             const s = String(c).trim();
                             if (!s) return;
-                            if (_detectField(s)) { score += 2; return; } // campo reconocido vale más
-                            if (HEADER_KEYWORDS.test(s)) score += 1;    // palabra clave
+                            const detected = _detectField(s);
+                            if (detected && detected !== '_total' && detected !== '_costoBS') {
+                                score += 3; // campo reconocido puntúa más
+                                return;
+                            }
+                            if (detected === '_total') {
+                                score += 1; // "Total($)" igual es indicador de fila de cabecera
+                                return;
+                            }
+                            if (HEADER_KEYWORDS.test(s)) score += 1; // palabra clave genérica
                         });
+                        // Bonus: si la fila tiene ≥4 celdas no vacías es más probable que sea encabezado
+                        if (nonEmpty.length >= 4) score += 1;
 
                         if (score > bestScore) {
                             bestScore = score;
@@ -11217,25 +11240,26 @@
                     headers = sheetData[headerRow].map(h => String(h).trim());
                     rows    = sheetData.slice(headerRow + 1);
 
-                    // ── Eliminar columna vacía al inicio si la fila de datos tiene los nombres en col 1 ──
-                    // (patrón: primera columna del encabezado vacía pero segunda tiene "PRODUCTOS" o similar)
-                    if (!headers[0] && headers.length > 1) {
-                        const secondHeader = _detectField(headers[1]);
-                        if (secondHeader === 'name') {
-                            // Los datos reales empiezan en columna 1 (índice 1), col 0 vacía
-                            // Podemos conservar igual — _rowsToProducts usará col 1 como nombre
-                        }
+                    // ── Limpiar primera columna vacía (patrón: col 0 vacía, col 1 = "Producto") ──
+                    if (!headers[0] && headers.length > 1 && _detectField(headers[1]) === 'name') {
+                        headers = headers.slice(1);
+                        rows = rows.map(r => r.slice(1));
                     }
 
-                    // ── Eliminar fila de TOTAL al final (si la última fila tiene "TOTAL" en alguna celda) ──
-                    if (rows.length > 0) {
-                        const lastRow = rows[rows.length - 1];
-                        const isTotal = lastRow.some(c =>
-                            /^total$/i.test(String(c).trim()) ||
-                            /^gran\s*total$/i.test(String(c).trim())
-                        );
-                        if (isTotal) rows = rows.slice(0, -1);
-                    }
+                    // ── Eliminar filas de resumen / totales al final (patrón Venko y similares) ──
+                    // Detecta filas que contengan palabras de sección de resumen o estén vacías de producto
+                    const SUMMARY_PATTERN = /resumen|m[eé]trica|total\s*unidades|total\s*kilos|inversi[oó]n|ganancia|bolívares|d[oó]lares|sistema\s+venko|reporte\s+de/i;
+                    rows = rows.filter(row => {
+                        const cells = row.map(c => String(c ?? '').trim());
+                        const nonEmpty = cells.filter(c => c !== '');
+                        if (nonEmpty.length === 0) return false; // fila vacía
+                        // Si la primera celda no vacía coincide con patrón de resumen → excluir
+                        const firstVal = nonEmpty[0];
+                        if (SUMMARY_PATTERN.test(firstVal)) return false;
+                        // Si la fila completa tiene solo 1 celda no vacía y es un título largo → excluir
+                        if (nonEmpty.length === 1 && firstVal.length > 15) return false;
+                        return true;
+                    });
                 }
 
                 const products = _rowsToProducts(headers, rows);
@@ -11265,18 +11289,22 @@
                 const previewCols = headers.slice(0, 8); // máx 8 columnas
                 // Cabecera con indicador de mapeo
                 const fieldLabels = {
-                    name:'Nombre', sku:'SKU', price:'Precio', cost:'Costo',
+                    name:'Nombre', sku:'SKU', price:'Precio venta', cost:'Costo USD',
                     stock:'Stock', category:'Categoría', supplier:'Proveedor',
                     brand:'Marca', description:'Descripción', barcode:'Código barras',
-                    wholesalePrice:'P.Mayorista', tax:'IVA%', unit:'Unidad',
-                    minStock:'Stock mín.', maxStock:'Stock máx.', location:'Ubicación'
+                    wholesalePrice:'Utilidad/Mayorista', tax:'IVA%', unit:'Unidad',
+                    minStock:'Stock mín.', maxStock:'Stock máx.', location:'Ubicación',
+                    _costoBS:'Costo Bs (ignorado)', _total:'Total (ignorado)'
                 };
                 const mappedCols = previewCols.map(h => _detectField(h));
                 let tblHtml = `<table><thead><tr>`;
                 previewCols.forEach((h, i) => {
                     const f = mappedCols[i];
-                    const badge = f && f !== '_total'
-                        ? `<br><span style="font-size:10px;background:rgba(16,185,129,.2);color:#16a34a;border-radius:10px;padding:1px 5px;">${fieldLabels[f]||f}</span>`
+                    const isIgnored = f === '_total' || f === '_costoBS';
+                    const badge = f
+                        ? (isIgnored
+                            ? `<br><span style="font-size:10px;color:var(--text-3);background:var(--surface-2);border-radius:10px;padding:1px 5px;">${fieldLabels[f]||f}</span>`
+                            : `<br><span style="font-size:10px;background:rgba(16,185,129,.2);color:#16a34a;border-radius:10px;padding:1px 5px;">${fieldLabels[f]||f}</span>`)
                         : `<br><span style="font-size:10px;color:var(--text-3);">sin mapeo</span>`;
                     tblHtml += `<th style="min-width:80px;">${h}${badge}</th>`;
                 });
@@ -12013,17 +12041,19 @@
         document.querySelectorAll('.btn-icon[onclick*="toggleDark"]').forEach(btn => {
             btn.textContent = isDark ? '☀️' : '🌙';
         });
-        // Sincronizar el switch visual de Preferencias (puede haber múltiples si el DOM lo replica)
+        // Sincronizar el switch visual de Preferencias
         document.querySelectorAll('.switch[onclick*="toggleDark"]').forEach(sw => {
             if (isDark) sw.classList.add('on'); else sw.classList.remove('on');
         });
         localStorage.setItem('fixTheme', isDark ? 'dark' : 'light');
         // Persistir preferencia en la configuración de la empresa
-        if (data && data.settings) {
+        if (typeof data !== 'undefined' && data && data.settings) {
             data.settings.darkMode = isDark;
             if (typeof persist === 'function') persist();
         }
     }
+    // Exponer globalmente para que onclick="toggleDark()" funcione desde cualquier contexto
+    window.toggleDark = toggleDark;
 
     // Aplicar tema guardado al cargar (con null-check para evitar error si el DOM no está listo)
     (function applyStoredTheme() {
@@ -13170,7 +13200,18 @@
     // Función principal — usa datos pre-inyectados por el servidor si están disponibles
     async function loadPlansModule() {
         const token = localStorage.getItem('fixpromax_token');
-        if (!token) return;
+        if (!token) {
+            // Sin token — limpiar spinners para no quedar bloqueado
+            const statusEl = document.getElementById('plansCurrentStatus');
+            if (statusEl && statusEl.textContent.includes('Cargando')) {
+                statusEl.innerHTML = '<span style="color:var(--text-3);">Inicia sesión para ver tu suscripción.</span>';
+            }
+            const grid = document.getElementById('plansGrid');
+            if (grid && grid.textContent.includes('Cargando')) {
+                grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-3);">Inicia sesión para ver los planes.</div>';
+            }
+            return;
+        }
 
         // Usar datos pre-inyectados por el servidor (disponibles sin fetch)
         if (window.__INITIAL_PLANS__ && window.__INITIAL_PLANS__.length) {
@@ -13187,9 +13228,10 @@
         // Siempre hacer fetch para tener el estado más reciente
         try {
             const headers = { 'Authorization': 'Bearer ' + token };
+            const fetchOpts = { signal: AbortSignal.timeout ? AbortSignal.timeout(10000) : undefined };
             const [statusRes, plansRes] = await Promise.all([
-                fetch(_plansApiBase() + '/api/subscription/status', { headers }).then(r => r.json()).catch(() => null),
-                fetch(_plansApiBase() + '/api/subscription/plans').then(r => r.json()).catch(() => null),
+                fetch(_plansApiBase() + '/api/subscription/status', { headers, ...fetchOpts }).then(r => r.json()).catch(() => null),
+                fetch(_plansApiBase() + '/api/subscription/plans', fetchOpts).then(r => r.json()).catch(() => null),
             ]);
             if (statusRes?.ok) {
                 _renderCurrentStatus(statusRes.data);
@@ -13199,12 +13241,29 @@
                 }
                 // Actualizar caché de suscripción
                 localStorage.setItem('fixpromax_sub_cache', JSON.stringify({ data: statusRes.data, ts: Date.now() }));
+            } else if (statusRes === null || statusRes?.ok === false) {
+                // Fetch devolvió null (timeout/red) o respuesta de error
+                const statusEl = document.getElementById('plansCurrentStatus');
+                if (statusEl && statusEl.textContent.includes('Cargando')) {
+                    statusEl.innerHTML = '<span style="color:var(--danger);">⚠️ No se pudo conectar al servidor. <button class="btn btn-sm" onclick="loadPlansModule()" style="margin-left:8px;">🔄 Reintentar</button></span>';
+                }
             }
-            if (plansRes?.ok) _renderPlansGrid(plansRes.data, statusRes?.data);
+            if (plansRes?.ok) {
+                _renderPlansGrid(plansRes.data, statusRes?.data);
+            } else if (plansRes === null || plansRes?.ok === false) {
+                const grid = document.getElementById('plansGrid');
+                if (grid && grid.textContent.includes('Cargando')) {
+                    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--danger);">⚠️ No se pudieron cargar los planes. <button class="btn btn-sm" onclick="loadPlansModule()" style="margin-left:6px;">🔄 Reintentar</button></div>';
+                }
+            }
         } catch(e) {
             const grid = document.getElementById('plansGrid');
-            if (grid && grid.querySelector('[style*="Cargando"]')) {
-                grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--danger);">Error al cargar planes.</div>';
+            if (grid) {
+                grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--danger);">⚠️ Error al cargar planes. Comprueba tu conexión.</div>';
+            }
+            const statusEl = document.getElementById('plansCurrentStatus');
+            if (statusEl && statusEl.textContent.includes('Cargando')) {
+                statusEl.innerHTML = '<span style="color:var(--danger);">⚠️ No se pudo conectar al servidor. <button class="btn btn-sm" onclick="loadPlansModule()" style="margin-left:8px;">🔄 Reintentar</button></span>';
             }
         }
     }
@@ -13396,285 +13455,6 @@
         };
     })();
 
-    let _subData   = null;   // estado actual de suscripción
-    let _plansData = [];     // lista de planes activos
-
-    async function loadPlansModule() {
-        // Cargar estado y planes en paralelo
-        const token = localStorage.getItem('fixpromax_token');
-        if (!token) return;
-        const headers = { 'Authorization': 'Bearer ' + token };
-
-        const [statusRes, plansRes] = await Promise.all([
-            fetch(_plansApiBase() + '/api/subscription/status', { headers }).then(r => r.json()).catch(() => null),
-            fetch(_plansApiBase() + '/api/subscription/plans').then(r => r.json()).catch(() => null),
-        ]);
-
-        if (statusRes?.ok) { _subData   = statusRes.data; _renderCurrentStatus(statusRes.data); }
-        if (plansRes?.ok)  { _plansData = plansRes.data;  _renderPlansGrid(plansRes.data, statusRes?.data); }
-    }
-
-    function _plansApiBase() {
-        const h = window.location.hostname;
-        if (h === 'localhost' || h === '127.0.0.1' || h.startsWith('192.168.') || h.startsWith('10.') || h.startsWith('172.'))
-            return window.location.origin;
-        return window.location.origin;
-    }
-
-    function _plansApiFetch(method, path, body) {
-        const token = localStorage.getItem('fixpromax_token');
-        return fetch(_plansApiBase() + path, {
-            method,
-            headers: { 'Content-Type':'application/json', 'Authorization': 'Bearer ' + token },
-            body: body ? JSON.stringify(body) : undefined,
-        }).then(r => r.json()).catch(() => ({ ok:false, error:'Sin conexión' }));
-    }
-
-    function _renderCurrentStatus(s) {
-        const el     = document.getElementById('plansCurrentStatus');
-        const btns   = document.getElementById('plansActionBtns');
-        if (!el || !s) return;
-
-        const info     = _STATUS_INFO[s.status] || _STATUS_INFO.no_access;
-        const planName = s.planName || s.plan || '';
-        const isOwner  = window._currentUser?.teamRole === 'owner' || window._currentUser?.role === 'admin';
-
-        // Detalle según estado
-        let detail = '';
-        if (s.status === 'trial')
-            detail = `${s.daysLeft} día(s) restante(s) de prueba · vence ${_fmtPlanDate(s.trialEnd)}`;
-        else if (s.status === 'subscribed')
-            detail = `${planName} · acceso hasta <strong>${_fmtPlanDate(s.end)}</strong> · ${s.daysLeft} días restantes · ${s.multiUser ? '<span style="color:#10b981;">👥 Multiusuario activo</span>' : '👤 1 usuario'}`;
-        else if (s.status === 'cancelled_active')
-            detail = `${planName} · cancelada · acceso hasta <strong>${_fmtPlanDate(s.end)}</strong> · ${s.daysLeft} días`;
-        else if (s.status === 'trial_expired')
-            detail = `Tu prueba gratuita venció el ${_fmtPlanDate(s.trialEnd)}. Elige un plan para continuar.`;
-        else if (s.status === 'admin')
-            detail = 'Cuenta de administrador — acceso permanente.';
-
-        el.innerHTML = `
-        <div style="display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;">
-            <div>
-                <span style="display:inline-block;background:${info.bg};color:${info.color};
-                             font-weight:700;font-size:13px;padding:5px 14px;border-radius:20px;margin-bottom:8px;">
-                    ${info.badge}
-                </span>
-                <div style="font-size:14px;color:var(--text-2);line-height:1.6;">${detail}</div>
-                ${s.status === 'subscribed' ? `
-                <div style="font-size:12px;color:var(--text-3);margin-top:6px;">
-                    🔄 Sin renovación automática · puedes suscribirte de nuevo antes de que venza
-                </div>` : ''}
-            </div>
-        </div>`;
-
-        // Botones de acción (solo para el propietario)
-        if (btns && isOwner) {
-            btns.innerHTML = '';
-            if (s.status !== 'admin') {
-                // Botón suscribirse / cambiar plan
-                const subBtn = document.createElement('button');
-                subBtn.className = 'btn btn-primary';
-                subBtn.innerHTML = s.status === 'subscribed' || s.status === 'cancelled_active'
-                    ? '🔄 Renovar / Cambiar plan' : '⚡ Suscribirme';
-                subBtn.onclick = () => window.startSubscription();
-                btns.appendChild(subBtn);
-            }
-            // Cancelar si activo
-            if (s.status === 'subscribed') {
-                const cancelBtn = document.createElement('button');
-                cancelBtn.className = 'btn';
-                cancelBtn.innerHTML = '❌ Cancelar suscripción';
-                cancelBtn.style.cssText = 'border-color:var(--danger);color:var(--danger);';
-                cancelBtn.onclick = () => _cancelSubscription();
-                btns.appendChild(cancelBtn);
-            }
-            // Restaurar siempre
-            const restoreBtn = document.createElement('button');
-            restoreBtn.className = 'btn btn-sm';
-            restoreBtn.innerHTML = '🔄 Restaurar compras';
-            restoreBtn.onclick = () => window.restorePurchases();
-            btns.appendChild(restoreBtn);
-        }
-    }
-
-    function _renderPlansGrid(plans, currentStatus) {
-        const grid = document.getElementById('plansGrid');
-        if (!grid) return;
-        const currentPlan = currentStatus?.plan;
-        const isOwner = window._currentUser?.teamRole === 'owner' || window._currentUser?.role === 'admin';
-
-        grid.innerHTML = plans.map(p => {
-            const color      = _PLAN_COLORS[p.id] || '#4f46e5';
-            const icon       = _PLAN_ICONS[p.id]  || '📋';
-            const isCurrent  = p.id === currentPlan && (currentStatus?.status === 'subscribed' || currentStatus?.status === 'cancelled_active');
-            const fList      = (p.features || []).map(f =>
-                `<li style="font-size:12px;color:var(--text-2);padding:2px 0;">✔ ${f}</li>`
-            ).join('');
-            const nList      = (p.notIncluded || []).map(f =>
-                `<li style="font-size:12px;color:var(--text-2);opacity:.5;padding:2px 0;">✖ ${f}</li>`
-            ).join('');
-
-            // Botón inferior según estado
-            let actionBtn = '';
-            if (isCurrent) {
-                actionBtn = `
-                    <div style="background:${color};color:${p.id==='semestral'?'#000':'#fff'};
-                                text-align:center;padding:9px;border-radius:8px;
-                                font-size:13px;font-weight:700;">
-                        ✔ Plan actual
-                    </div>`;
-            } else if (isOwner) {
-                const btnLabel = currentStatus?.status === 'subscribed' ? '💳 Cambiar a este plan' : '💳 Comprar / Pagar';
-                const btnBg    = p.badge
-                    ? `linear-gradient(135deg,${color},${color}cc)`
-                    : `linear-gradient(135deg,${color}99,${color}cc)`;
-                const btnColor = p.id === 'semestral' ? '#000' : '#fff';
-                actionBtn = `
-                    <button onclick="window.startSubscription('${p.id}')"
-                        style="width:100%;background:${btnBg};color:${btnColor};border:none;
-                               padding:9px;border-radius:8px;font-size:13px;font-weight:700;
-                               cursor:pointer;font-family:inherit;transition:opacity .15s;"
-                        onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
-                        ${btnLabel}
-                    </button>`;
-            } else {
-                actionBtn = `
-                    <div style="background:var(--surface-2);color:var(--text-3);text-align:center;
-                                padding:8px;border-radius:8px;font-size:12px;">
-                        Solo el propietario puede suscribirse
-                    </div>`;
-            }
-
-            return `
-            <div style="background:var(--surface);
-                        border:2px solid ${isCurrent ? color : color + '44'};
-                        border-radius:14px;overflow:hidden;
-                        opacity:${p.active !== false ? 1 : .55};
-                        transition:border-color .2s,box-shadow .2s;"
-                 onmouseover="this.style.borderColor='${color}';this.style.boxShadow='0 4px 20px ${color}22'"
-                 onmouseout="this.style.borderColor='${isCurrent ? color : color + '44'}';this.style.boxShadow='none'">
-
-              <!-- Cabecera coloreada -->
-              <div style="background:${color}22;padding:16px;border-bottom:1px solid ${color}33;">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                  <span style="font-size:28px;">${icon}</span>
-                  <div style="display:flex;gap:6px;">
-                    ${p.recommended ? `<span style="background:#4f46e5;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;">⭐ REC</span>` : ''}
-                    ${p.badge && !p.recommended ? `<span style="background:${color};color:${p.id==='semestral'?'#000':'#fff'};font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;">${p.badge}</span>` : ''}
-                    ${isCurrent ? `<span style="background:${color}33;color:${color};font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;">✔ Activo</span>` : ''}
-                  </div>
-                </div>
-                <div style="font-size:16px;font-weight:800;color:var(--text);">${p.name}</div>
-                <div style="font-size:12px;color:var(--text-2);margin-top:2px;">${p.description || ''}</div>
-              </div>
-
-              <!-- Cuerpo -->
-              <div style="padding:14px 16px;">
-                <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:4px;">
-                  <span style="font-size:26px;font-weight:900;color:${color};">$${Number(p.price).toFixed(2)}</span>
-                  <span style="font-size:12px;color:var(--text-2);">/ ${p.period || p.duration + ' días'}</span>
-                </div>
-                <div style="font-size:11px;color:var(--text-2);margin-bottom:10px;">
-                  ${p.maxUsers === 1 ? '👤 1 usuario' : `👥 Hasta ${p.maxUsers} usuarios`}
-                  &nbsp;·&nbsp;
-                  📦 ${p.maxProducts === -1 ? 'Inventario ilimitado' : `Hasta ${p.maxProducts} productos`}
-                  &nbsp;·&nbsp;
-                  ${p.multiUser ? '✅ Multiusuario' : '❌ Sin multiusuario'}
-                </div>
-                <ul style="list-style:none;padding:0;margin:0 0 12px;">${fList}${nList}</ul>
-                ${actionBtn}
-              </div>
-            </div>`;
-        }).join('');
-
-        // Tabla comparativa
-        _renderCompareTable(plans, currentStatus);
-    }
-
-    function _renderCompareTable(plans, currentStatus) {
-        const thead = document.getElementById('plansCompareThead');
-        const tbody = document.getElementById('plansCompareTbody');
-        if (!thead || !tbody) return;
-
-        const currentPlan = currentStatus?.plan;
-        thead.innerHTML = '<th>Característica</th>' + plans.map(p => {
-            const col   = _PLAN_COLORS[p.id] || '#4f46e5';
-            const isCur = p.id === currentPlan;
-            return `<th style="text-align:center;color:${isCur ? col : 'var(--text)'};">
-                ${_PLAN_ICONS[p.id] || ''} ${p.name}
-                ${isCur ? '<br><small style="font-weight:400;font-size:10px;">▲ Tu plan</small>' : ''}
-            </th>`;
-        }).join('');
-
-        const ROWS = [
-            { label:'Precio',             fn: p => `$${Number(p.price).toFixed(2)} / ${p.period}` },
-            { label:'Duración',           fn: p => p.period || p.duration + ' días' },
-            { label:'Usuarios',           fn: p => p.maxUsers === 1 ? '1 usuario' : `Hasta ${p.maxUsers}` },
-            { label:'Multiusuario',       fn: p => p.multiUser ? '✅' : '❌' },
-            { label:'Productos',          fn: p => p.maxProducts === -1 ? 'Ilimitado' : `Hasta ${p.maxProducts}` },
-            { label:'Ventas',             fn: () => 'Ilimitadas' },
-            { label:'Facturas',           fn: () => 'Ilimitadas' },
-            { label:'Contabilidad',       fn: p => p.multiUser ? '✅' : '✅' },
-            { label:'Reportes',           fn: () => '✅' },
-            { label:'Soporte prioritario',fn: p => p.id === 'semestral' ? '✅' : '❌' },
-            { label:'Google Play ID',     fn: p => `<code style="font-size:10px;">${p.googlePlayId || '—'}</code>` },
-        ];
-
-        tbody.innerHTML = ROWS.map(row =>
-            `<tr><td style="font-weight:600;font-size:13px;">${row.label}</td>` +
-            plans.map(p => `<td style="text-align:center;font-size:13px;">${row.fn(p)}</td>`).join('') +
-            '</tr>'
-        ).join('');
-    }
-
-    function switchPlansTab(tab) {
-        document.getElementById('plansTabCompare').style.display  = tab === 'compare'  ? 'block' : 'none';
-        document.getElementById('plansTabHistory').style.display  = tab === 'history'  ? 'block' : 'none';
-        document.querySelectorAll('#plansTabs .tab').forEach((b, i) => {
-            b.classList.toggle('active', (i === 0 && tab === 'compare') || (i === 1 && tab === 'history'));
-        });
-        if (tab === 'history') loadPaymentHistory();
-    }
-
-    async function loadPaymentHistory() {
-        const tbody = document.getElementById('payHistoryTbody');
-        if (!tbody) return;
-        const j = await _plansApiFetch('GET', '/api/subscription/payments');
-        if (!j.ok) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-3);padding:16px;">No se pudo cargar el historial.</td></tr>';
-            return;
-        }
-        if (!j.data.length) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-3);padding:20px;">No tienes pagos registrados todavía.</td></tr>';
-            return;
-        }
-        tbody.innerHTML = j.data.map(p => `
-        <tr>
-            <td style="font-size:12px;">${new Date(p.ts).toLocaleDateString('es', {day:'2-digit',month:'short',year:'numeric'})}</td>
-            <td style="font-weight:600;">${p.planName || p.planId || '—'}</td>
-            <td style="font-weight:700;color:${p.amount > 0 ? 'var(--success)' : 'var(--text-3)'};">
-                ${p.amount > 0 ? '$' + Number(p.amount).toFixed(2) + ' ' + (p.currency || 'USD') : '—'}
-            </td>
-            <td>${(_METHOD_ICONS[p.method] || '❓') + ' ' + (p.method || '—')}</td>
-            <td>${_PAY_STATUS[p.status] || p.status}</td>
-        </tr>`).join('');
-    }
-
-    async function _cancelSubscription() {
-        if (!confirm('¿Cancelar tu suscripción?\n\nMantendrás el acceso hasta la fecha de vencimiento. No se realizará ningún reembolso automático.')) return;
-        const j = await _plansApiFetch('POST', '/api/subscription/cancel');
-        if (!j.ok) { showToast('⚠️', j.error || 'No se pudo cancelar'); return; }
-        showToast('✅', j.data?.message || 'Suscripción cancelada. Acceso activo hasta el vencimiento.');
-        // Invalidar caché y recargar
-        localStorage.removeItem('fixpromax_sub_cache');
-        loadPlansModule();
-        if (typeof checkSubscriptionAccess === 'function') checkSubscriptionAccess();
-    }
-
-    function _fmtPlanDate(iso) {
-        if (!iso) return '—';
-        return new Date(iso).toLocaleDateString('es', { day:'2-digit', month:'short', year:'numeric' });
-    }
 
         /* ══════════════════════════════════════════════════════════════
        SISTEMA DE MODOS — Básico y Pro
