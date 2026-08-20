@@ -5,10 +5,12 @@ services:
     plan: free
     buildCommand: npm install
     startCommand: npm start
+    healthCheckPath: /api/ping
+    autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 10000
       - key: MONGODB_URI
-        sync: false   # Se configura manualmente en el dashboard de Render
-    healthCheckPath: /api/ping
-    autoDeploy: true
+        value: mongodb+srv://1ng3l2c1_db_user:fixpromax2026@fixpromax.xlbpzsu.mongodb.net/fixpromax?appName=FIXPROMAX
