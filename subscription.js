@@ -1,26 +1,26 @@
 ﻿/**
- * FIX PRO MAX â€” Sistema de Suscripción
- * subscription.js â€” Capa de control de acceso independiente.
+ * FIX PRO MAX — Sistema de Suscripción
+ * subscription.js — Capa de control de acceso independiente.
  *
  * NO modifica las funciones del ERP.
- * Se ejecuta DESPUÃ‰S de auth.js.
+ * Se ejecuta DESPUÉS de auth.js.
  * Solo añade la lógica: ¿puede este usuario usar la app?
  */
 (function SubscriptionModule() {
     'use strict';
 
-    /* â”€â”€ Constantes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* ── Constantes ─────────────────────────────────────────────── */
     const SUB_CACHE_KEY   = 'fixpromax_sub_cache';
     const SUB_CACHE_TTL   = 15 * 60 * 1000;     // 15 minutos de caché
     const OFFLINE_GRACE   = 48 * 60 * 60 * 1000; // 48 h sin conexión antes de bloquear
     const TRIAL_DAYS      = 3;
 
-    /* â”€â”€ Estado â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* ── Estado ──────────────────────────────────────────────────── */
     let _subStatus   = null;   // último estado del servidor
     let _checkTimer  = null;   // timer de re-verificación periódica
     let _bannerShown = false;
 
-    /* â”€â”€ API helper (reutiliza el API_BASE de auth.js) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* ── API helper (reutiliza el API_BASE de auth.js) ────────────── */
     function _apiBase() {
         const h = window.location.hostname;
         if (h === 'localhost' || h === '127.0.0.1' ||
@@ -41,7 +41,7 @@
                 signal: ctrl.signal,
             });
             if (!r.ok) {
-                // 401 = sesión inválida â†’ bloquear
+                // 401 = sesión inválida → bloquear
                 if (r.status === 401 || r.status === 403) {
                     return { access: false, status: 'no_access' };
                 }
@@ -53,7 +53,7 @@
             if (j.data && j.data.access) {
                 localStorage.setItem(SUB_CACHE_KEY, JSON.stringify({ data: j.data, ts: Date.now() }));
             } else {
-                // Sin acceso â†’ limpiar cualquier caché anterior
+                // Sin acceso → limpiar cualquier caché anterior
                 localStorage.removeItem(SUB_CACHE_KEY);
             }
             // Actualizar _PLANS con los datos del servidor (precios actualizados por admin)
@@ -62,7 +62,7 @@
             }
             return j.data;
         } catch {
-            // Sin red â†’ usar caché (solo si tenía acceso, ya filtrado en _getCached)
+            // Sin red → usar caché (solo si tenía acceso, ya filtrado en _getCached)
             return _getCached();
         }
     }
@@ -73,26 +73,26 @@
             if (!raw) return null;
             const { data, ts } = JSON.parse(raw);
             const age = Date.now() - ts;
-            // Si el acceso está denegado â†’ NUNCA usar caché, siempre ir al servidor
+            // Si el acceso está denegado → NUNCA usar caché, siempre ir al servidor
             if (data && !data.access) return null;
-            // Si el caché es reciente (< TTL) â†’ usarlo
+            // Si el caché es reciente (< TTL) → usarlo
             if (age < SUB_CACHE_TTL) return data;
-            // Caché viejo pero acceso activo â†’ conceder gracia de 48h sin red
+            // Caché viejo pero acceso activo → conceder gracia de 48h sin red
             if (data && data.access && age < OFFLINE_GRACE) return data;
             return null;
         } catch { return null; }
     }
 
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       VERIFICAR ACCESO â€” punto de entrada principal
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+    /* ══════════════════════════════════════════════════════════════
+       VERIFICAR ACCESO — punto de entrada principal
+       ══════════════════════════════════════════════════════════════ */
     async function checkAccess() {
         const status = await _fetchStatus();
         _subStatus = status;
 
         if (!status) {
             // Sin respuesta del servidor y sin caché válido.
-            // Si la app ya es visible, bloquearla â€” no se puede verificar sin conexión.
+            // Si la app ya es visible, bloquearla — no se puede verificar sin conexión.
             const app = document.getElementById('appMain');
             if (app && app.classList.contains('visible')) {
                 _showPaywall({ status: 'no_access', access: false });
@@ -106,7 +106,7 @@
         }
 
         if (status.access) {
-            // â”€â”€ ACCESO CONCEDIDO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── ACCESO CONCEDIDO ──────────────────────────────────────────────
             // Llamar _showAppAfterAuth si auth.js la expuso (primera vez post-login)
             if (typeof window._showAppAfterAuth === 'function' && !window._appShown) {
                 window._showAppAfterAuth(status);
@@ -127,7 +127,7 @@
             clearTimeout(_checkTimer);
             _checkTimer = setTimeout(checkAccess, 30 * 60 * 1000);
         } else {
-            // â”€â”€ ACCESO DENEGADO â€” mostrar paywall â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── ACCESO DENEGADO — mostrar paywall ─────────────────────────────
             // Asegurarse de que la app NO sea visible
             const app = document.getElementById('appMain');
             if (app) app.classList.remove('visible');
@@ -139,7 +139,7 @@
     }
     window.checkSubscriptionAccess = checkAccess;
 
-    // â”€â”€ SSE â€” escuchar eventos del servidor en tiempo real â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── SSE — escuchar eventos del servidor en tiempo real ──────────────────────
     (function _connectAppSSE() {
         const token = localStorage.getItem('fixpromax_token');
         if (!token) return;
@@ -147,7 +147,7 @@
 
         const source = new EventSource(_apiBase() + '/api/events?token=' + encodeURIComponent(token));
 
-        // Plan actualizado por admin â†’ refrescar precios sin recargar la página
+        // Plan actualizado por admin → refrescar precios sin recargar la página
         source.addEventListener('plan_updated', function(e) {
             try {
                 localStorage.removeItem('fixpromax_sub_cache');
@@ -167,13 +167,13 @@
             } catch {}
         });
 
-        // Estado de cuenta cambiado por admin â†’ verificar acceso inmediatamente
+        // Estado de cuenta cambiado por admin → verificar acceso inmediatamente
         source.addEventListener('account_status_changed', function(e) {
             try {
                 const d = JSON.parse(e.data);
                 localStorage.removeItem('fixpromax_sub_cache');
                 if (!d.active) {
-                    // Suspendido â†’ bloquear inmediatamente
+                    // Suspendido → bloquear inmediatamente
                     const app = document.getElementById('appMain');
                     if (app) app.classList.remove('visible');
                     // Mostrar mensaje de suspensión en lugar del paywall normal
@@ -182,19 +182,19 @@
                     pw.style.display = 'flex';
                     pw.innerHTML = `<div style="text-align:center;padding:40px;max-width:480px;"><div style="font-size:52px;margin-bottom:16px;">🚫</div><h2 style="color:#f8fafc;font-size:22px;font-weight:800;margin-bottom:12px;">Cuenta suspendida</h2><p style="color:#94a3b8;font-size:14px;line-height:1.7;margin-bottom:20px;">Tu cuenta ha sido suspendida por el administrador.${d.reason?'<br><em style="color:#64748b;">'+d.reason+'</em>':''}</p><p style="color:#475569;font-size:13px;">Contacta con el soporte para más información.</p><button onclick="window.logoutUser&&window.logoutUser()" style="margin-top:20px;background:#334155;border:none;color:#94a3b8;padding:10px 24px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px;">Cerrar sesión</button></div>`;
                 } else {
-                    // Reactivado â†’ verificar acceso de nuevo
+                    // Reactivado → verificar acceso de nuevo
                     checkAccess();
                 }
             } catch {}
         });
 
-        // Suscripción cambiada por admin â†’ actualizar estado
+        // Suscripción cambiada por admin → actualizar estado
         source.addEventListener('subscription_changed', function() {
             localStorage.removeItem('fixpromax_sub_cache');
             checkAccess();
         });
 
-        // Permisos cambiados â†’ notificar al usuario y recargar datos
+        // Permisos cambiados → notificar al usuario y recargar datos
         source.addEventListener('permissions_updated', function(e) {
             try {
                 const d = JSON.parse(e.data);
@@ -210,7 +210,7 @@
             } catch {}
         });
 
-        // Tasa de cambio actualizada â†’ limpiar caché de tasas
+        // Tasa de cambio actualizada → limpiar caché de tasas
         source.addEventListener('exchange_rate_updated', function() {
             if (typeof window.CurrencySystem === 'object' && typeof window.CurrencySystem.init === 'function') {
                 window.CurrencySystem.init();
@@ -218,22 +218,22 @@
         });
 
         source.onerror = function() {
-            // Reconexión automática de EventSource â€” no hacer nada
+            // Reconexión automática de EventSource — no hacer nada
         };
 
         window._appSSESource = source;
     })();
     document.addEventListener('visibilitychange', function() {
         if (document.visibilityState === 'visible' && _subStatus && !_subStatus.access) {
-            // Volvemos a la pestaña y estábamos bloqueados â†’ verificar de inmediato
+            // Volvemos a la pestaña y estábamos bloqueados → verificar de inmediato
             localStorage.removeItem('fixpromax_sub_cache');
             checkAccess();
         }
     });
 
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       PAYWALL â€” pantalla de bloqueo cuando trial/sub expira
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+    /* ══════════════════════════════════════════════════════════════
+       PAYWALL — pantalla de bloqueo cuando trial/sub expira
+       ══════════════════════════════════════════════════════════════ */
     function _showPaywall(status) {
         // Ocultar la app completamente
         const app = document.getElementById('appMain');
@@ -293,18 +293,18 @@
                  <span style="font-size:12px;color:#64748b;">Prueba gratuita</span>
                  <span style="background:#7f1d1d;color:#fca5a5;font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;">FINALIZADA</span>
                  <span style="font-size:12px;color:#64748b;">Estado</span>
-                 <span style="background:#1c1917;color:#f87171;font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;">SIN SUSCRIPCIÃ“N ACTIVA</span>
+                 <span style="background:#1c1917;color:#f87171;font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;">SIN SUSCRIPCIÓN ACTIVA</span>
                  ${trialEndFmt ? `<span style="font-size:11px;color:#475569;">Venció el ${trialEndFmt}</span>` : ''}
                </div>`
             : `<div style="display:inline-flex;gap:8px;align-items:center;background:#1e293b;border:1px solid #334155;border-radius:10px;padding:10px 20px;margin-bottom:20px;">
                  <span style="background:#1c1917;color:#f87171;font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;">SIN ACCESO ACTIVO</span>
                </div>`;
 
-        // â”€â”€ Mostrar esqueleto mientras carga â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Mostrar esqueleto mientras carga ──────────────────────────────────
         pw.innerHTML = `
         <div style="max-width:860px;width:100%;margin:0 auto;padding:32px 20px 40px;">
             <div style="text-align:center;margin-bottom:24px;">
-                <div style="font-size:52px;margin-bottom:8px;">âš¡</div>
+                <div style="font-size:52px;margin-bottom:8px;">⚡</div>
                 <div style="font-size:28px;font-weight:900;background:linear-gradient(135deg,#4f46e5,#7c3aed);
                             -webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;">
                     FIX PRO MAX
@@ -314,7 +314,7 @@
                 ${statusBadge}
             </div>
             <div id="pwPlanCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:24px;">
-                <div style="grid-column:1/-1;text-align:center;padding:40px;color:#64748b;">â³ Cargando planes...</div>
+                <div style="grid-column:1/-1;text-align:center;padding:40px;color:#64748b;">⏳ Cargando planes...</div>
             </div>
             <div id="pwPayMsg" style="display:none;border-radius:10px;padding:12px 18px;font-size:13px;margin-bottom:16px;text-align:center;font-weight:600;"></div>
             <div style="background:#1e1b4b;border:1px solid #3730a3;border-radius:10px;padding:10px 18px;
@@ -325,7 +325,7 @@
                            border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit;transition:all .2s;"
                     onmouseover="this.style.borderColor='#64748b';this.style.color='#e2e8f0'"
                     onmouseout="this.style.borderColor='#334155';this.style.color='#94a3b8'">
-                    🔞 Ya pagué â€” restaurar acceso
+                    ✅ Ya pagué — restaurar acceso
                 </button>
                 <button onclick="window.logoutUser()"
                     style="background:none;border:none;color:#475569;padding:9px 20px;
@@ -341,7 +341,7 @@
             </p>
         </div>`;
 
-        // â”€â”€ Fetch planes frescos del servidor â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Fetch planes frescos del servidor ─────────────────────────────────
         let livePlans = null;
         try {
             const r = await fetch(_apiBase() + '/api/subscription/plans', {
@@ -357,7 +357,7 @@
             console.warn('[Paywall] No se pudieron cargar planes frescos, usando caché:', e.message);
         }
 
-        // â”€â”€ Generar tarjetas con datos actualizados â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Generar tarjetas con datos actualizados ───────────────────────────
         const plansToShow = livePlans
             ? livePlans.filter(p => p.active !== false).sort((a, b) => (a.order || 0) - (b.order || 0))
             : Object.values(_PLANS);
@@ -370,7 +370,7 @@
             const isBest      = pid === 'semestral';
             const multiUsers  = p.maxUsers || _PLANS[pid]?.maxUsers || 1;
             const multiUser   = p.multiUser ?? _PLANS[pid]?.multiUser ?? false;
-            const price       = p.price != null ? `$${Number(p.price).toFixed(2)}` : (_PLANS[pid]?.price || '$â€”');
+            const price       = p.price != null ? `$${Number(p.price).toFixed(2)}` : (_PLANS[pid]?.price || '$—');
             const period      = p.period || _PLANS[pid]?.period || '';
             const name        = p.name   || _PLANS[pid]?.name   || pid;
             const icon        = p.icon   || _PLANS[pid]?.icon   || '📦';
@@ -379,7 +379,7 @@
 
             const featHtml = features.map(f =>
                 `<li style="font-size:11px;color:#94a3b8;padding:2px 0;display:flex;gap:6px;align-items:flex-start;">
-                    <span style="color:#10b981;flex-shrink:0;margin-top:1px;">âœ”</span>${f}
+                    <span style="color:#10b981;flex-shrink:0;margin-top:1px;">✔</span>${f}
                 </li>`
             ).join('');
 
@@ -389,7 +389,7 @@
                  onmouseover="this.style.borderColor='${accent}';this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px ${accent}33'"
                  onmouseout="this.style.borderColor='${isRec ? accent : '#334155'}';this.style.transform='none';this.style.boxShadow='none'"
                  onclick="window.startSubscription('${pid}')">
-                ${isRec  ? `<div style="position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:${accent};color:#fff;font-size:10px;font-weight:800;padding:3px 14px;border-radius:20px;white-space:nowrap;">â­ RECOMENDADO</div>` : ''}
+                ${isRec  ? `<div style="position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:${accent};color:#fff;font-size:10px;font-weight:800;padding:3px 14px;border-radius:20px;white-space:nowrap;">⭐ RECOMENDADO</div>` : ''}
                 ${isBest ? `<div style="position:absolute;top:-11px;right:16px;background:#f59e0b;color:#000;font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;white-space:nowrap;">👑 MEJOR VALOR</div>` : ''}
                 ${badge && !isRec && !isBest ? `<div style="position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:${accent};color:#fff;font-size:10px;font-weight:800;padding:3px 14px;border-radius:20px;white-space:nowrap;">${badge}</div>` : ''}
                 <div style="font-size:28px;margin-bottom:8px;">${icon}</div>
@@ -410,20 +410,20 @@
         const grid = pw.querySelector('#pwPlanCards');
         if (grid) grid.innerHTML = planCards || '<div style="grid-column:1/-1;text-align:center;padding:30px;color:#f87171;">No hay planes disponibles.</div>';
 
-        // Nota multiusuario â€” usando el plan pro real
+        // Nota multiusuario — usando el plan pro real
         const proPlan   = plansToShow.find(p => p.id === 'pro');
         const semesPlan = plansToShow.find(p => p.id === 'semestral');
         const noteEl    = pw.querySelector('#pwMultiNote');
         if (noteEl) {
             const proUsers  = proPlan?.maxUsers   || 3;
             const semesUsers = semesPlan?.maxUsers || 5;
-            noteEl.innerHTML = `👥 <strong>Multiusuario</strong> disponible desde el <strong>${proPlan?.name || 'Plan Pro'}</strong> (hasta ${proUsers} usuarios) â€” o <strong>${semesPlan?.name || 'Plan Semestral'}</strong> (hasta ${semesUsers} usuarios).`;
+            noteEl.innerHTML = `👥 <strong>Multiusuario</strong> disponible desde el <strong>${proPlan?.name || 'Plan Pro'}</strong> (hasta ${proUsers} usuarios) — o <strong>${semesPlan?.name || 'Plan Semestral'}</strong> (hasta ${semesUsers} usuarios).`;
         }
     }
 
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    /* ══════════════════════════════════════════════════════════════
        BANNER DE TRIAL (aviso discreto en la topbar)
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+       ══════════════════════════════════════════════════════════════ */
     function _showTrialBanner(status) {
         if (status.status !== 'trial') return;
 
@@ -445,9 +445,9 @@
 
         const d = status.daysLeft;
         let msg = '';
-        if (d <= 1)       msg = 'âš ï¸ Tu prueba gratuita <strong>termina hoy</strong>. Sin multiusuario.';
-        else if (d === 2) msg = 'âš ï¸ Tu prueba gratuita termina <strong>mañana</strong>. Sin multiusuario.';
-        else              msg = `âš¡ Prueba gratuita activa â€” <strong>${d} días restantes</strong> · Sin multiusuario`;
+        if (d <= 1)       msg = '⚠️ï¸ Tu prueba gratuita <strong>termina hoy</strong>. Sin multiusuario.';
+        else if (d === 2) msg = '⚠️ï¸ Tu prueba gratuita termina <strong>mañana</strong>. Sin multiusuario.';
+        else              msg = `⚡ Prueba gratuita activa — <strong>${d} días restantes</strong> · Sin multiusuario`;
 
         banner.innerHTML = `
             <span>${msg}</span>
@@ -463,9 +463,9 @@
             </button>`;
     }
 
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       ACTUALIZAR UI DE SUSCRIPCIÃ“N EN CONFIGURACIÃ“N
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+    /* ══════════════════════════════════════════════════════════════
+       ACTUALIZAR UI DE SUSCRIPCIÓN EN CONFIGURACIÓN
+       ══════════════════════════════════════════════════════════════ */
     function _updateSubUI(status) {
         const el = document.getElementById('settingsSubStatus');
         if (!el) return;
@@ -485,7 +485,7 @@
                 bg:    status.plan === 'semestral' || status.plan === 'premium' ? '#fef3c7'  :
                        status.plan === 'pro'     ? '#eef2ff'  : '#dcfce7',
             },
-            cancelled_active:{ badge: 'âš ï¸ Cancelada (activa)',      color: '#d97706', bg: '#fef3c7' },
+            cancelled_active:{ badge: '⚠️ï¸ Cancelada (activa)',      color: '#d97706', bg: '#fef3c7' },
             trial_expired:   { badge: '🔴 Prueba expirada',         color: '#dc2626', bg: '#fee2e2' },
             no_access:       { badge: '🔴 Sin acceso',              color: '#dc2626', bg: '#fee2e2' },
         };
@@ -525,7 +525,7 @@
                 style="margin-top:10px;background:linear-gradient(135deg,#4f46e5,#7c3aed);
                        color:#fff;border:none;padding:8px 20px;border-radius:8px;
                        font-weight:700;cursor:pointer;font-family:inherit;font-size:14px;">
-                âš¡ Suscribirme ahora
+                ⚡ Suscribirme ahora
             </button>` : ''}
             ${status.status === 'subscribed' ? `
             <button onclick="window.cancelSubscription()"
@@ -537,13 +537,13 @@
     }
 
     function _fmtDate(iso) {
-        if (!iso) return 'â€”';
+        if (!iso) return '—';
         return new Date(iso).toLocaleDateString('es', { day:'2-digit', month:'short', year:'numeric' });
     }
 
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    /* ══════════════════════════════════════════════════════════════
        ACCIONES GLOBALES
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+       ══════════════════════════════════════════════════════════════ */
 
     // Abrir pantalla de suscripción (desde banner o menú)
     window.openSubscribePage = function() {
@@ -554,12 +554,12 @@
         }, 200);
     };
 
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    // PANEL DE SUSCRIPCIÃ“N â€” 3 pasos:
+    // ══════════════════════════════════════════════════════════════
+    // PANEL DE SUSCRIPCIÓN — 3 pasos:
     //   Paso 1: Elegir plan
     //   Paso 2: Elegir método de pago + datos
     //   Paso 3: Confirmar y activar
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // ══════════════════════════════════════════════════════════════
 
     const _PLANS_DEFAULT = {
         basic:     { id:'basic',     name:'Plan Básico',   price:'$15.00', amount:15.00, period:'1 mes',   icon:'📦', accent:'#64748b', accentLight:'#1e293b', multiUser:false, features:['1 usuario','Inventario y ventas','Facturas y gastos','Reportes básicos','Sin multiusuario'] },
@@ -597,9 +597,9 @@
 
     let _PLANS = _buildPlans(window.__INITIAL_PLANS__);
 
-    // Métodos de suscripción â€” se cargan desde el servidor, estos son el fallback
+    // Métodos de suscripción — se cargan desde el servidor, estos son el fallback
     const _METHODS_FALLBACK = [
-        { id:'ZELLE',     icon:'âš¡', label:'Zelle',               isManual:true,  fields:['zellePhone'] },
+        { id:'ZELLE',     icon:'⚡', label:'Zelle',               isManual:true,  fields:['zellePhone'] },
         { id:'USDT',      icon:'🟡', label:'Binance Pay / USDT',  isManual:true,  fields:['binanceId'] },
         { id:'PAGO_MOVIL',icon:'📱', label:'Pago Móvil (Venezuela)', isManual:true, fields:['pagoMovilPhone','pagoMovilBank','pagoMovilId'] },
         { id:'CREDIT_CARD',icon:'💳',label:'Tarjeta de crédito / débito', isManual:false, fields:['cardNumber','cardName','cardExpiry','cardCvc'] },
@@ -668,7 +668,7 @@
 
     window.openSubscribePanelStep1 = function() { _openSubscribePanel(1); };
 
-    // â”€â”€ Abrir el panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Abrir el panel ────────────────────────────────────────────
     function _openSubscribePanel(step) {
         const old = document.getElementById('subPanel');
         if (old) old.remove();
@@ -693,7 +693,7 @@
             <div style="display:flex;align-items:center;justify-content:space-between;
                         padding:18px 24px;border-bottom:1px solid #1e293b;">
                 <div>
-                    <div style="font-size:18px;font-weight:800;color:#f8fafc;">âš¡ FIX PRO MAX â€” Suscripción</div>
+                    <div style="font-size:18px;font-weight:800;color:#f8fafc;">⚡ FIX PRO MAX — Suscripción</div>
                     <div id="subPanelCrumbs" style="font-size:12px;color:#64748b;margin-top:2px;"></div>
                 </div>
                 <button onclick="document.getElementById('subPanel').remove()"
@@ -730,7 +730,7 @@
         ]).then(() => _renderStep(step));
     }
 
-    // â”€â”€ Renderizar paso â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Renderizar paso ───────────────────────────────────────────
     function _renderStep(step) {
         // Actualizar indicadores
         [1,2,3].forEach(n => {
@@ -753,7 +753,7 @@
         if (crumbs) {
             const planName = _selectedPlan ? (_PLANS[_selectedPlan]?.name || '') : '';
             const methName = _selectedMethod ? (_METHODS.find(m => m.id === _selectedMethod)?.label || '') : '';
-            crumbs.textContent = [planName, methName].filter(Boolean).join(' â†’ ');
+            crumbs.textContent = [planName, methName].filter(Boolean).join(' → ');
         }
 
         const body = document.getElementById('subPanelBody');
@@ -764,7 +764,7 @@
         if (step === 3) _renderStep3(body);
     }
 
-    // â”€â”€ PASO 1 â€” Elegir plan â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── PASO 1 — Elegir plan ──────────────────────────────────────
     function _renderStep1(body) {
         body.innerHTML = `
         <h3 style="font-size:16px;font-weight:700;color:#f8fafc;margin:0 0 18px;">
@@ -778,7 +778,7 @@
                         background:${p.id === _selectedPlan ? p.accentLight : '#0f172a'};
                         border-radius:16px;padding:20px 18px;cursor:pointer;
                         transition:all .2s;position:relative;">
-                ${p.id === 'pro' ? '<div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:#4f46e5;color:#fff;font-size:10px;font-weight:800;padding:2px 12px;border-radius:20px;white-space:nowrap;">â­ RECOMENDADO</div>' : ''}
+                ${p.id === 'pro' ? '<div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:#4f46e5;color:#fff;font-size:10px;font-weight:800;padding:2px 12px;border-radius:20px;white-space:nowrap;">⭐ RECOMENDADO</div>' : ''}
                 ${p.id === 'semestral' ? '<div style="position:absolute;top:-10px;right:16px;background:#f59e0b;color:#000;font-size:10px;font-weight:800;padding:2px 10px;border-radius:20px;white-space:nowrap;">👑 MEJOR VALOR</div>' : ''}
                 <div style="font-size:32px;margin-bottom:10px;">${p.icon}</div>
                 <div style="font-size:15px;font-weight:700;color:#f8fafc;margin-bottom:4px;">${p.name}</div>
@@ -786,10 +786,10 @@
                 <div style="font-size:12px;color:#64748b;margin-bottom:14px;">${p.period} de acceso</div>
                 <ul style="list-style:none;padding:0;margin:0;">
                     ${p.features.map(f => `<li style="font-size:12px;color:#94a3b8;padding:3px 0;display:flex;gap:8px;align-items:flex-start;">
-                        <span style="color:${f.startsWith('👥') ? p.accent : '#10b981'};flex-shrink:0;">âœ”</span>${f}
+                        <span style="color:${f.startsWith('👥') ? p.accent : '#10b981'};flex-shrink:0;">✔</span>${f}
                     </li>`).join('')}
                 </ul>
-                ${p.id === _selectedPlan ? `<div style="margin-top:14px;background:${p.accent};color:#fff;text-align:center;padding:6px;border-radius:8px;font-size:12px;font-weight:700;">âœ” Seleccionado</div>` : ''}
+                ${p.id === _selectedPlan ? `<div style="margin-top:14px;background:${p.accent};color:#fff;text-align:center;padding:6px;border-radius:8px;font-size:12px;font-weight:700;">✔ Seleccionado</div>` : ''}
             </div>`).join('')}
         </div>
         <div style="display:flex;justify-content:flex-end;">
@@ -798,7 +798,7 @@
                        padding:12px 28px;border-radius:10px;font-size:15px;font-weight:700;
                        cursor:pointer;font-family:inherit;opacity:${_selectedPlan ? 1 : .4};"
                 ${_selectedPlan ? '' : 'disabled'}>
-                Continuar â†’
+                Continuar →
             </button>
         </div>`;
     }
@@ -808,7 +808,7 @@
         _renderStep(1);
     };
 
-    // â”€â”€ PASO 2 â€” Método de pago â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── PASO 2 — Método de pago ───────────────────────────────────
     function _renderStep2(body) {
         const plan = _PLANS[_selectedPlan];
         body.innerHTML = `
@@ -865,7 +865,7 @@
                        padding:12px 28px;border-radius:10px;font-size:15px;font-weight:700;
                        cursor:pointer;font-family:inherit;opacity:${_selectedMethod ? 1 : .4};"
                 ${_selectedMethod ? '' : 'disabled'}>
-                Revisar pedido â†’
+                Revisar pedido →
             </button>
         </div>`;
 
@@ -1023,12 +1023,12 @@
     }
 
 
-    // â”€â”€ PASO 3 â€” Confirmar y pagar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── PASO 3 — Confirmar y pagar ────────────────────────────────
     function _renderStep3(body) {
         const plan = _PLANS[_selectedPlan];
         const meth = _METHODS.find(m => m.id === _selectedMethod);
 
-        // Métodos que requieren verificación manual â€” usar el campo del método si está disponible
+        // Métodos que requieren verificación manual — usar el campo del método si está disponible
         const isManual = meth ? !!meth.isManual : ['zelle','binance','pago_movil','ZELLE','USDT','PAGO_MOVIL'].includes(_selectedMethod);
 
         body.innerHTML = `
@@ -1075,7 +1075,7 @@
         <!-- Aviso pago manual -->
         <div style="background:#1c1506;border:1px solid #f59e0b55;border-radius:10px;padding:12px 16px;
                     margin-bottom:18px;font-size:12px;color:#fbbf24;line-height:1.6;">
-            â³ <strong>Verificación manual:</strong> Tras confirmar, nuestro equipo verificará tu pago y activará el plan
+            ⏳ <strong>Verificación manual:</strong> Tras confirmar, nuestro equipo verificará tu pago y activará el plan
             en menos de <strong>2 horas hábiles</strong>. Recibirás una notificación.
         </div>` : ''}
 
@@ -1095,12 +1095,12 @@
                        padding:14px 32px;border-radius:10px;font-size:15px;font-weight:800;
                        cursor:pointer;font-family:inherit;min-width:180px;">
                 <span id="subFinalBtnTxt">${isManual ? '📤 Confirmar y enviar' : '💳 Pagar ahora'}</span>
-                <span id="subFinalBtnSpin" style="display:none;">â³ Procesando...</span>
+                <span id="subFinalBtnSpin" style="display:none;">⏳ Procesando...</span>
             </button>
         </div>`;
     }
 
-    // â”€â”€ Navegación entre pasos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Navegación entre pasos ────────────────────────────────────
     window._subNextStep = function(step) {
         // Al pasar del paso 2 al 3, validar formulario
         if (step === 3) {
@@ -1114,7 +1114,7 @@
         _renderStep(step);
     };
 
-    // â”€â”€ Ejecutar el pago â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Ejecutar el pago ──────────────────────────────────────────
     window._subExecutePay = async function() {
         const btn     = document.getElementById('subFinalBtn');
         const btnTxt  = document.getElementById('subFinalBtnTxt');
@@ -1163,7 +1163,7 @@
                 return;
             }
 
-            // Ã‰xito
+            // Éxito
             if (msg) {
                 msg.style.display    = 'block';
                 msg.style.background = '#064e3b';
@@ -1182,7 +1182,7 @@
                 document.getElementById('subPanel')?.remove();
                 _hidPaywall();
                 if (!isManual) {
-                    // Pago automático confirmado â€” mostrar la app
+                    // Pago automático confirmado — mostrar la app
                     _subStatus = j.data;
                     window._appShown = false; // permitir que _showAppAfterAuth corra de nuevo
                     if (typeof window._showAppAfterAuth === 'function') {
@@ -1198,7 +1198,7 @@
                     if (typeof loadTeamMembers === 'function') loadTeamMembers();
                 } else {
                     if (typeof showToast === 'function')
-                        showToast('📤', 'Solicitud enviada â€” verificaremos tu pago pronto.');
+                        showToast('📤', 'Solicitud enviada — verificaremos tu pago pronto.');
                 }
             }, 1800);
 
@@ -1242,7 +1242,7 @@
                 if (typeof showToast === 'function') showToast('â„¹ï¸', 'No se encontraron compras activas para restaurar.');
             }
         } catch {
-            if (typeof showToast === 'function') showToast('âš ï¸', 'No se pudo conectar al servidor.');
+            if (typeof showToast === 'function') showToast('⚠️ï¸', 'No se pudo conectar al servidor.');
         }
     };
 
@@ -1257,11 +1257,11 @@
             });
             const j = await r.json();
             if (j.ok) {
-                if (typeof showToast === 'function') showToast('âš ï¸', j.data?.message || 'Suscripción cancelada.');
+                if (typeof showToast === 'function') showToast('⚠️ï¸', j.data?.message || 'Suscripción cancelada.');
                 await checkAccess();
             }
         } catch {
-            if (typeof showToast === 'function') showToast('âš ï¸', 'No se pudo cancelar. Intenta de nuevo.');
+            if (typeof showToast === 'function') showToast('⚠️ï¸', 'No se pudo cancelar. Intenta de nuevo.');
         }
     };
 
@@ -1292,10 +1292,10 @@
         } catch (e) { console.error('Error verificando pago Google Play:', e); }
     };
 
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       INTEGRACIÃ“N CON auth.js â€” Hook post-login
+    /* ══════════════════════════════════════════════════════════════
+       INTEGRACIÓN CON auth.js — Hook post-login
        Se ejecuta después de que auth.js llama _enterApp
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+       ══════════════════════════════════════════════════════════════ */
     // Sobrescribir la función _enterApp de auth.js para añadir verificación de suscripción
     const _origEnterApp = window._enterAppHook || null;
 
@@ -1306,7 +1306,7 @@
             if (m.type === 'attributes' && m.attributeName === 'class') {
                 const app = document.getElementById('appMain');
                 if (app && app.classList.contains('visible')) {
-                    // App acaba de mostrarse â†’ verificar suscripción
+                    // App acaba de mostrarse → verificar suscripción
                     setTimeout(checkAccess, 300);
                 }
             }
