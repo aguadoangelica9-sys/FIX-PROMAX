@@ -51,6 +51,20 @@ async function startServer(port) {
         console.error('Error del servidor:', e.message);
         process.exit(1);
     });
+    // Arrancar el cron de tasas BCV despues de que el servidor este listo
+    // Se envuelve en try/catch para que un fallo aqui NO derribe el servidor
+    try {
+        ExchangeRateService.scheduleDailyUpdate(
+            _readGlobalDB,
+            _writeGlobalDB,
+            _readCompanyDB,
+            _writeCompanyDB,
+            _listCompanies
+        );
+    } catch (e) {
+        console.warn('  [ExchangeRateService] Advertencia al programar cron BCV:', e.message);
+    }
+
     return server;
 }
 
@@ -469,6 +483,11 @@ function requireSubscription(req, res, next) {
 // ❌”€❌”€ Ping público "” usado por el frontend para verificar disponibilidad ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/ping', async (req, res) => {
     res.json({ ok: true, ts: Date.now() });
+});
+
+// /health — alias para Render health check (responde siempre, sin depender de DB)
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok', ts: Date.now() });
 });
 
 // ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•

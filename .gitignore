@@ -3,9 +3,26 @@ node_modules/
 # Variables de entorno — NUNCA subir a Git
 .env
 
-# Scripts temporales de migración de código (no necesarios en producción)
+# Scripts temporales de análisis y migración de código (no necesarios en producción)
 _patch-async.js
 _fix-handlers.js
+_analyze-render.js
+_apply-fixes.js
+_audit.js
+_fix-all-files.js
+_fix-encoding.js
+_fix-json-encoding.js
+_fix-residual.js
+_fix-server-emojis.js
+_render-output.html
+
+# Archivos de prueba locales
+test-team*.txt
+test-team*.js
+tsx
+
+# Archivos de respaldo locales
+*.bak-head
 
 # Logs y archivos de sistema
 *.log

@@ -230,9 +230,9 @@ async function fetchAndSave(readDB, writeDB, triggeredBy = 'sistema-automatico',
         const fetched = await _fetchRates();
 
         // 2. Guardar en la BD global (db.json) y en TODAS las BDs de empresa
-        const db      = readDB();
+        const db      = await readDB();
         const changed = _saveRatesToDB(db, fetched, triggeredBy, updateType);
-        if (changed) writeDB(db);
+        if (changed) await writeDB(db);
 
         // 3. Actualizar estado global
         _status.lastSuccess = new Date().toISOString();
@@ -287,9 +287,9 @@ async function fetchAndSaveAll(readDB, writeDB, readCompanyDB, writeCompanyDB, r
 
     // Guardar en db.json global
     try {
-        const db = readDB();
+        const db = await readDB();
         _saveRatesToDB(db, fetched, triggeredBy, updateType);
-        writeDB(db);
+        await writeDB(db);
     } catch (e) {
         console.error(`  [ExchangeRateService] ⚠️  Error guardando en db.json global: ${e.message}`);
     }
