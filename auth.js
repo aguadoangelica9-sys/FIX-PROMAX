@@ -628,7 +628,7 @@
         const tabs_row = document.querySelector('.auth-tabs');
         if (tabs_row) tabs_row.style.display = '';
         switchAuthTab('login');
-        _toast('👙', 'Sesión cerrada correctamente.');
+        _toast('👋', 'Sesión cerrada correctamente.');
     }
     window.logoutUser = logoutUser;
 
@@ -863,7 +863,7 @@
             }
 
             // Toast de bienvenida
-            _toast('👙', '¡Hola, ' + user.name.split(' ')[0] + '!');
+            _toast('👋', '¡Hola, ' + user.name.split(' ')[0] + '!');
 
             // Cargar datos frescos del servidor
             const _authToken = localStorage.getItem(AUTH_KEY);
