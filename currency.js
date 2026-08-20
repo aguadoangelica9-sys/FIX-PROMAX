@@ -237,7 +237,7 @@
      */
     async function setRate(rate, notes) {
         const val = parseFloat(rate);
-        if (!val || val <= 0) { if (typeof showToast === 'function') showToast('⚠️ï¸', 'Tasa inválida'); return; }
+        if (!val || val <= 0) { if (typeof showToast === 'function') showToast('⚠️', 'Tasa inválida'); return; }
         _activeRate = val;
 
         // Actualizar en data local
@@ -264,7 +264,7 @@
         // Persistir en servidor
         await _post('/api/exchange-rates', { fromCurrency: 'EUR', toCurrency: 'VES', rate: val, notes: notes || '' });
         if (typeof showToast === 'function')
-            showToast('✕�', `1 EUR = ${format(val, 'VES')} — Tasa actualizada`);
+            showToast('✕', `1 EUR = ${format(val, 'VES')} — Tasa actualizada`);
         // Re-renderizar si es posible
         if (typeof renderAll === 'function') renderAll();
     }
@@ -425,7 +425,7 @@
                     <div style="font-size:12px;color:var(--text-3,#64748b);margin-top:2px;">Administración global · VES / EUR</div>
                 </div>
                 <button onclick="document.getElementById('currencyRatesPanel').remove()"
-                    style="background:none;border:none;color:var(--text-2,#94a3b8);font-size:22px;cursor:pointer;padding:4px 8px;">✕�</button>
+                    style="background:none;border:none;color:var(--text-2,#94a3b8);font-size:22px;cursor:pointer;padding:4px 8px;">✕</button>
             </div>
 
             <div style="padding:24px;display:flex;flex-direction:column;gap:20px;">
@@ -447,7 +447,7 @@
                                     <div style="font-weight:700;font-size:14px;">${c.code} — ${c.symbol}</div>
                                     <div style="font-size:11px;color:var(--text-3,#64748b);">${c.name}</div>
                                 </div>
-                                ${sel ? '<span style="margin-left:auto;color:var(--primary,#818cf8);font-size:16px;">✕�</span>' : ''}
+                                ${sel ? '<span style="margin-left:auto;color:var(--primary,#818cf8);font-size:16px;">✕</span>' : ''}
                             </button>`;
                         }).join('')}
                     </div>
@@ -537,7 +537,7 @@
 
                 <!-- Nota importante -->
                 <div style="background:#1c1a06;border:1px solid #a16207;border-radius:10px;padding:12px 16px;font-size:12px;color:#fbbf24;line-height:1.6;">
-                    ⚠️ï¸ <strong>Importante:</strong> Cambiar la tasa NO modifica operaciones históricas.
+                    ⚠️ <strong>Importante:</strong> Cambiar la tasa NO modifica operaciones históricas.
                     Cada operación registrada conserva la tasa y moneda del momento en que se realizó.
                     La nueva tasa aplica solo a operaciones futuras y conversiones en reportes.
                 </div>
@@ -591,7 +591,7 @@
                     <div style="font-size:12px;color:var(--text-3,#64748b);margin-top:2px;">Tasa activa: 1 EUR = ${format(rate,'VES')}</div>
                 </div>
                 <button onclick="document.getElementById('currencyStatsPanel').remove()"
-                    style="background:none;border:none;color:var(--text-2,#94a3b8);font-size:22px;cursor:pointer;padding:4px 8px;">✕�</button>
+                    style="background:none;border:none;color:var(--text-2,#94a3b8);font-size:22px;cursor:pointer;padding:4px 8px;">✕</button>
             </div>
             <div style="padding:24px;">
                 <table style="width:100%;border-collapse:collapse;">
@@ -715,7 +715,7 @@
                                    background:${sel ? 'var(--primary-light)' : 'var(--surface)'};
                                    color:var(--text);font-family:inherit;font-size:13px;font-weight:${sel?700:500};">
                             <span>${cu.flag}</span> <span>${cu.code}</span>
-                            ${sel ? '<span style="color:var(--primary);font-size:14px;">✕�</span>' : ''}
+                            ${sel ? '<span style="color:var(--primary);font-size:14px;">✕</span>' : ''}
                         </button>`;
                     }).join('')}
                 </div>
@@ -804,7 +804,7 @@
         const val   = parseFloat(document.getElementById('manualRateValue')?.value);
         const notes = document.getElementById('manualRateNote')?.value?.trim() || 'Manual';
         const [from, to] = pair.split('_');
-        if (!val || val <= 0) { if (typeof showToast === 'function') showToast('⚠️ï¸', 'Tasa inválida'); return; }
+        if (!val || val <= 0) { if (typeof showToast === 'function') showToast('⚠️', 'Tasa inválida'); return; }
         const tok = localStorage.getItem('fixpromax_token') || '';
         try {
             const r = await fetch(CurrencySystem._apiBase ? CurrencySystem._apiBase() + '/api/rates/manual' : '/api/rates/manual', {
@@ -816,13 +816,13 @@
             if (j.ok) {
                 if (from === 'EUR') { window.CurrencySystem._setActiveRate && window.CurrencySystem._setActiveRate(val); }
                 CurrencySystem.renderCurrencySettings();
-                if (typeof showToast === 'function') showToast('✕�', `Tasa manual guardada: 1 ${from} = ${val} ${to}`);
+                if (typeof showToast === 'function') showToast('✕', `Tasa manual guardada: 1 ${from} = ${val} ${to}`);
                 if (typeof renderAll === 'function') renderAll();
             } else {
-                if (typeof showToast === 'function') showToast('⚠️ï¸', j.error || 'Error al guardar');
+                if (typeof showToast === 'function') showToast('⚠️', j.error || 'Error al guardar');
             }
         } catch (e) {
-            if (typeof showToast === 'function') showToast('⚠️ï¸', 'Error de conexión');
+            if (typeof showToast === 'function') showToast('⚠️', 'Error de conexión');
         }
     };
 
@@ -1008,11 +1008,11 @@
             _updateRateWidgets();
             if (document.getElementById('currencySettingsBlock')) renderCurrencySettings();
             if (typeof showToast === 'function')
-                showToast('✕�', `Tasas actualizadas: 1 USD = ${CURRENCIES.VES.format(result.USD)} · 1 EUR = ${CURRENCIES.VES.format(result.EUR)}`);
+                showToast('✕', `Tasas actualizadas: 1 USD = ${CURRENCIES.VES.format(result.USD)} · 1 EUR = ${CURRENCIES.VES.format(result.EUR)}`);
             if (typeof renderAll === 'function') renderAll();
         } else {
             if (typeof showToast === 'function')
-                showToast('⚠️ï¸', result?.error || 'No se pudo obtener la tasa. Se usa la última válida.');
+                showToast('⚠️', result?.error || 'No se pudo obtener la tasa. Se usa la última válida.');
         }
         return result;
     }
@@ -1023,7 +1023,7 @@
         if (old) old.remove();
 
         const resp = await _get('/api/rates/history');
-        if (!resp) { if (typeof showToast === 'function') showToast('⚠️ï¸', 'No se pudo cargar historial'); return; }
+        if (!resp) { if (typeof showToast === 'function') showToast('⚠️', 'No se pudo cargar historial'); return; }
 
         const { rates, currentUSD, currentEUR, serviceStatus } = resp;
         const svc = serviceStatus || {};
@@ -1081,7 +1081,7 @@
                         ✅ Actualizar ahora
                     </button>
                     <button onclick="document.getElementById('bcvRatesHistoryPanel').remove()"
-                        style="background:none;border:none;color:var(--text-2,#94a3b8);font-size:22px;cursor:pointer;padding:4px 8px;">✕�</button>
+                        style="background:none;border:none;color:var(--text-2,#94a3b8);font-size:22px;cursor:pointer;padding:4px 8px;">✕</button>
                 </div>
             </div>
             <div style="padding:20px 24px;display:flex;flex-direction:column;gap:16px;">
@@ -1127,7 +1127,7 @@
 
                 <!-- Aviso -->
                 <div style="background:#1c1a06;border:1px solid #a16207;border-radius:10px;padding:10px 16px;font-size:12px;color:#fbbf24;line-height:1.6;">
-                    ⚠️ï¸ Las tasas históricas <strong>nunca modifican operaciones pasadas</strong>.
+                    ⚠️ Las tasas históricas <strong>nunca modifican operaciones pasadas</strong>.
                     Cada venta, factura y gasto conserva la tasa que estaba vigente al momento de su creación.
                     La nueva tasa aplica solo a operaciones futuras y conversiones en reportes.
                 </div>

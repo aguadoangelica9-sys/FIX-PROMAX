@@ -244,7 +244,7 @@
         if (local) {
             _setLoading('loginBtn', false);
             _enterApp(local);
-            _toast('⚠️ï¸', 'Modo sin conexión — usando datos locales');
+            _toast('⚠️', 'Modo sin conexión — usando datos locales');
             return;
         }
 
@@ -297,7 +297,7 @@
             <span>🎭 <strong>MODO DEMO</strong> — Los datos de esta sesión son independientes y no afectan cuentas reales.</span>
             <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
                 <button onclick="window._resetDemo()" style="padding:4px 12px;background:#000;color:#f59e0b;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:12px;">✅ Restablecer datos</button>
-                <button onclick="document.getElementById('demoBanner').remove()" style="background:none;border:none;font-size:16px;cursor:pointer;color:#000;">✕�</button>
+                <button onclick="document.getElementById('demoBanner').remove()" style="background:none;border:none;font-size:16px;cursor:pointer;color:#000;">✕</button>
             </div>`;
         document.body.prepend(banner);
         // Bajar el contenido para que no quede tapado por el banner
@@ -323,7 +323,7 @@
                 window._setAppData(dbJson.data);
             }
             if (typeof renderAll === 'function') renderAll();
-            if (typeof showToast === 'function') showToast('✕�', 'Datos demo restablecidos correctamente');
+            if (typeof showToast === 'function') showToast('✕', 'Datos demo restablecidos correctamente');
         }
     };
 
@@ -376,7 +376,7 @@
         const local = _localRegister({ name, email, password, company, mode });
         _setLoading('registerBtn', false);
         _enterApp(local);
-        _toast('⚠️ï¸', 'Cuenta creada localmente. Abre desde http://localhost:3000 para sincronizar.');
+        _toast('⚠️', 'Cuenta creada localmente. Abre desde http://localhost:3000 para sincronizar.');
     }
     window.submitRegister = submitRegister;
 
@@ -409,16 +409,16 @@
                 }
                 // Modo desarrollo: el código viene en la respuesta
                 if (json.data && json.data.devCode) {
-                    _setSuccess('recover', '✕� Código enviado. <br><strong>Código de prueba: ' +
+                    _setSuccess('recover', '✕ Código enviado. <br><strong>Código de prueba: ' +
                         json.data.devCode + '</strong> (solo visible en desarrollo)');
                 } else {
-                    _setSuccess('recover', '✕� Código enviado a ' + email + '. Revisa tu bandeja de entrada.');
+                    _setSuccess('recover', '✕ Código enviado a ' + email + '. Revisa tu bandeja de entrada.');
                 }
             } else {
                 // Sin servidor → generar código local
                 const code = Math.floor(100000 + Math.random() * 900000).toString();
                 localStorage.setItem(RECOVER_KEY, JSON.stringify({ email, code, exp: Date.now() + 600000 }));
-                _setSuccess('recover', '✕� Código generado localmente: <strong>' + code + '</strong><br>' +
+                _setSuccess('recover', '✕ Código generado localmente: <strong>' + code + '</strong><br>' +
                     '<small>(el servidor no está disponible — usa este código)</small>');
             }
 
@@ -448,7 +448,7 @@
                     _setError('recover', json.error || 'Código incorrecto o expirado. Intenta nuevamente.');
                     return;
                 }
-                _setSuccess('recover', '✕� Contraseña restablecida correctamente. Ahora puedes iniciar sesión.');
+                _setSuccess('recover', '✕ Contraseña restablecida correctamente. Ahora puedes iniciar sesión.');
                 setTimeout(() => {
                     _recoverStep = 1;
                     _recoverEmail = null;
@@ -474,7 +474,7 @@
                     });
                     _localSave(users);
                     localStorage.removeItem(RECOVER_KEY);
-                    _setSuccess('recover', '✕� Contraseña restablecida localmente.');
+                    _setSuccess('recover', '✕ Contraseña restablecida localmente.');
                     setTimeout(() => { _recoverStep = 1; switchAuthTab('login'); }, 2000);
                 } catch {
                     _setError('recover', 'No pudimos completar la operación. Inténtalo nuevamente.');
@@ -506,7 +506,7 @@
             const updatedUser = { ..._pendingUser, mustChange: false };
             _pendingUser = null;
             _enterApp(updatedUser);
-            _toast('✕�', 'Contraseña actualizada. ¡Bienvenido!');
+            _toast('✕', 'Contraseña actualizada. ¡Bienvenido!');
         } else if (json === null) {
             // Sin servidor → cambiar localmente
             if (_pendingUser) {
@@ -770,7 +770,7 @@
         }
 
         if (msg) {
-            msg.textContent = '✕� Perfil actualizado correctamente.';
+            msg.textContent = '✕ Perfil actualizado correctamente.';
             msg.className = 'profileMsg ok';
             // Limpiar campos de contraseña
             ['profileCurrentPass','profileNewPass','profileNewPass2'].forEach(id => {
@@ -779,7 +779,7 @@
             });
             setTimeout(() => { msg.textContent = ''; msg.className = 'profileMsg'; }, 3000);
         }
-        _toast('✕�', 'Perfil actualizado');
+        _toast('✕', 'Perfil actualizado');
     }
     window.saveUserProfile = saveUserProfile;
 

@@ -445,8 +445,8 @@
 
         const d = status.daysLeft;
         let msg = '';
-        if (d <= 1)       msg = '⚠️ï¸ Tu prueba gratuita <strong>termina hoy</strong>. Sin multiusuario.';
-        else if (d === 2) msg = '⚠️ï¸ Tu prueba gratuita termina <strong>mañana</strong>. Sin multiusuario.';
+        if (d <= 1)       msg = '⚠️ Tu prueba gratuita <strong>termina hoy</strong>. Sin multiusuario.';
+        else if (d === 2) msg = '⚠️ Tu prueba gratuita termina <strong>mañana</strong>. Sin multiusuario.';
         else              msg = `⚡ Prueba gratuita activa — <strong>${d} días restantes</strong> · Sin multiusuario`;
 
         banner.innerHTML = `
@@ -459,7 +459,7 @@
             </button>
             <button onclick="this.parentElement.style.display='none';document.body.style.paddingTop=''"
                 style="background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;font-size:16px;padding:0 4px;">
-                ✕�
+                ✕
             </button>`;
     }
 
@@ -479,13 +479,13 @@
                        status.plan === 'semestral' ? '💎 Plan Semestral' :
                        status.plan === 'premium'   ? '💎 Plan Semestral' :  // retrocompat.
                        status.plan === 'monthly'   ? '📆 Plan Mensual'   :
-                       status.plan === 'annual'    ? '📀 Plan Anual'     : '✕� Suscripción activa',
+                       status.plan === 'annual'    ? '📀 Plan Anual'     : '✕ Suscripción activa',
                 color: status.plan === 'semestral' || status.plan === 'premium' ? '#b45309' :
                        status.plan === 'pro'     ? '#4f46e5'  : '#16a34a',
                 bg:    status.plan === 'semestral' || status.plan === 'premium' ? '#fef3c7'  :
                        status.plan === 'pro'     ? '#eef2ff'  : '#dcfce7',
             },
-            cancelled_active:{ badge: '⚠️ï¸ Cancelada (activa)',      color: '#d97706', bg: '#fef3c7' },
+            cancelled_active:{ badge: '⚠️ Cancelada (activa)',      color: '#d97706', bg: '#fef3c7' },
             trial_expired:   { badge: '🔴 Prueba expirada',         color: '#dc2626', bg: '#fee2e2' },
             no_access:       { badge: '🔴 Sin acceso',              color: '#dc2626', bg: '#fee2e2' },
         };
@@ -699,7 +699,7 @@
                 <button onclick="document.getElementById('subPanel').remove()"
                     style="background:none;border:none;color:#64748b;font-size:22px;
                            cursor:pointer;line-height:1;padding:4px 8px;"
-                    title="Cerrar">✕�</button>
+                    title="Cerrar">✕</button>
             </div>
 
             <!-- Indicador de pasos -->
@@ -744,7 +744,7 @@
             if (circle) {
                 circle.style.background = active ? '#4f46e5' : done ? '#10b981' : '#1e293b';
                 circle.style.color      = active || done ? '#fff' : '#94a3b8';
-                if (done) circle.textContent = '✕�';
+                if (done) circle.textContent = '✕';
             }
         });
 
@@ -1237,12 +1237,12 @@
                     if (app && !app.classList.contains('visible')) app.classList.add('visible');
                 }
                 _updateSubUI(j.data);
-                if (typeof showToast === 'function') showToast('✕�', 'Compras restauradas correctamente.');
+                if (typeof showToast === 'function') showToast('✕', 'Compras restauradas correctamente.');
             } else {
                 if (typeof showToast === 'function') showToast('â„¹ï¸', 'No se encontraron compras activas para restaurar.');
             }
         } catch {
-            if (typeof showToast === 'function') showToast('⚠️ï¸', 'No se pudo conectar al servidor.');
+            if (typeof showToast === 'function') showToast('⚠️', 'No se pudo conectar al servidor.');
         }
     };
 
@@ -1257,11 +1257,11 @@
             });
             const j = await r.json();
             if (j.ok) {
-                if (typeof showToast === 'function') showToast('⚠️ï¸', j.data?.message || 'Suscripción cancelada.');
+                if (typeof showToast === 'function') showToast('⚠️', j.data?.message || 'Suscripción cancelada.');
                 await checkAccess();
             }
         } catch {
-            if (typeof showToast === 'function') showToast('⚠️ï¸', 'No se pudo cancelar. Intenta de nuevo.');
+            if (typeof showToast === 'function') showToast('⚠️', 'No se pudo cancelar. Intenta de nuevo.');
         }
     };
 
