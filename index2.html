@@ -8568,9 +8568,10 @@
         let totalTax  = 0;
         let totalDisc = 0;
 
-        if (sale && Array.isArray(sale.items) && sale.items.length > 0) {
-            itemsHtml = sale.items.map((it, idx) => {
-                const nombre  = it.productName || getProductName(it.productId) || 'Producto';
+        if ((sale && Array.isArray(sale.items) && sale.items.length > 0) || (Array.isArray(inv.items) && inv.items.length > 0)) {
+            const srcItems = (sale && Array.isArray(sale.items) && sale.items.length > 0) ? sale.items : inv.items;
+            itemsHtml = srcItems.map((it, idx) => {
+                const nombre  = it.productName || getProductName(it.productId) || it.name || it.description || 'Producto';
                 const qty     = Number(it.qty   || it.quantity || 1);
                 const price   = Number(it.price || 0);
                 const disc    = Number(it.discount || 0);
@@ -8596,10 +8597,10 @@
         } else {
             subtotal  = Number(inv.total || 0);
             // Mostrar el concepto/descripción como ítem visible en la factura
-            const concepto = inv.notes || 'Servicios / Productos';
+            const concepto = (inv.notes && String(inv.notes).trim()) ? String(inv.notes).trim() : (inv.description && String(inv.description).trim()) ? String(inv.description).trim() : 'Servicios / Productos';
             itemsHtml = `
             <tr style="background:#f8fafc;border-bottom:1px solid #f1f5f9;">
-                <td style="padding:12px 14px;font-weight:500;">${concepto}</td>
+                <td style="padding:12px 14px;font-weight:500;color:#0f172a;">${concepto}</td>
                 <td style="padding:12px 8px;text-align:center;color:#475569;">1</td>
                 <td style="padding:12px 8px;text-align:right;">${formatCurrency(subtotal, inv.currency)}</td>
                 <td style="padding:12px 8px;text-align:center;color:#94a3b8;">—</td>
