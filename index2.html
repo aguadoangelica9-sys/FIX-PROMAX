@@ -8808,6 +8808,8 @@
 </body>
 </html>`);
         win.document.close();
+    }
+
     function closePrintModal() {
         document.getElementById('printModalOverlay').style.display = 'none';
     }
@@ -10461,8 +10463,7 @@
     /** Escapa un valor para CSV: envuelve en comillas si tiene comas, comillas o saltos de línea */
     function csvEscape(val) {
         const s = String(val === null || val === undefined ? '' : val);
-        if (s.includes(',') || s.includes('"') || s.includes('\n
-        ')) {
+        if (s.includes(',') || s.includes('"') || s.includes('\n')) {
             return '"' + s.replace(/"/g, '""') + '"';
         }
         return s;

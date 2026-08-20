@@ -297,13 +297,13 @@ async function fetchAndSaveAll(readDB, writeDB, readCompanyDB, writeCompanyDB, r
     // Guardar en cada BD de empresa (db_{companyId}.json)
     let companiesUpdated = 0;
     try {
-        const companies = readCompanies ? readCompanies() : [];
-        for (const company of companies) {
+        const companies = readCompanies ? (await Promise.resolve(readCompanies())) : [];
+        for (const company of (Array.isArray(companies) ? companies : [])) {
             try {
-                const cdb = readCompanyDB(company.id || company.companyId);
+                const cdb = await Promise.resolve(readCompanyDB(company.id || company.companyId));
                 if (cdb) {
                     _saveRatesToDB(cdb, fetched, triggeredBy, updateType);
-                    writeCompanyDB(company.id || company.companyId, cdb);
+                    await Promise.resolve(writeCompanyDB(company.id || company.companyId, cdb));
                     companiesUpdated++;
                 }
             } catch (ce) {
