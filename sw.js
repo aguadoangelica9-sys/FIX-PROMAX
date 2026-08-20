@@ -4,7 +4,7 @@
  *             Cache-first solo para assets estáticos (íconos, imágenes).
  */
 
-const CACHE_NAME = 'fixpromax-v5-nocache-html';
+const CACHE_NAME = 'fixpromax-v6-nocache-html';
 const API_BASE   = '/api/';
 
 // NO precachear el HTML — siempre va a la red para tener datos frescos

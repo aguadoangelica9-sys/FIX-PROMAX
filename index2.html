@@ -12471,7 +12471,7 @@
             try {
                 // 1. Borrar TODOS los caches existentes
                 const cacheKeys = await caches.keys();
-                const oldCaches = cacheKeys.filter(k => k !== 'fixpromax-v5-nocache-html');
+                const oldCaches = cacheKeys.filter(k => k !== 'fixpromax-v6-nocache-html');
                 if (oldCaches.length > 0) {
                     await Promise.all(oldCaches.map(k => caches.delete(k)));
                     console.log('🧹 Caches viejos borrados:', oldCaches.join(', '));
