@@ -1,6 +1,6 @@
 ﻿/**
- * FIX PRO MAX â€” Sistema de Autenticación Completo
- * auth.js â€” Módulo independiente, no modifica el ERP existente.
+ * FIX PRO MAX — Sistema de Autenticación Completo
+ * auth.js — Módulo independiente, no modifica el ERP existente.
  *
  * Funciones exportadas al window:
  *   switchAuthTab, submitLogin, submitRegister, submitRecover,
@@ -16,7 +16,7 @@
     const RECOVER_KEY     = 'fixpromax_recover';          // código de recuperación en tránsito
     const API_BASE        = (() => {
         const h = window.location.hostname;
-        // Si es localhost, 127.0.0.1 o una IP privada â†’ usar el origen actual
+        // Si es localhost, 127.0.0.1 o una IP privada → usar el origen actual
         if (h === 'localhost' || h === '127.0.0.1' ||
             h.startsWith('192.168.') || h.startsWith('10.') || h.startsWith('172.')) {
             return window.location.origin;
@@ -33,7 +33,7 @@
        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
     function _h(str) {
-        // Hash djb2 simple â€” solo para fallback offline
+        // Hash djb2 simple — solo para fallback offline
         let h = 5381;
         for (let i = 0; i < str.length; i++) h = ((h << 5) + h) ^ str.charCodeAt(i);
         return 'L' + (h >>> 0).toString(16).padStart(8, '0') + str.length;
@@ -135,7 +135,7 @@
     }
 
     /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       UI HELPERS â€” mostrar/ocultar elementos del auth
+       UI HELPERS — mostrar/ocultar elementos del auth
        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     function _form(id) { return document.getElementById(id); }
 
@@ -164,7 +164,7 @@
     }
 
     /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       TABS â€” Iniciar sesión / Crear cuenta / Recuperar
+       TABS — Iniciar sesión / Crear cuenta / Recuperar
        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     function switchAuthTab(tab) {
         const tabs = { login: 'loginForm', register: 'registerForm',
@@ -239,12 +239,12 @@
             return;
         }
 
-        // Servidor no responde â†’ intentar offline
+        // Servidor no responde → intentar offline
         const local = _localLogin(email, password);
         if (local) {
             _setLoading('loginBtn', false);
             _enterApp(local);
-            _toast('âš ï¸', 'Modo sin conexión â€” usando datos locales');
+            _toast('⚠️ï¸', 'Modo sin conexión — usando datos locales');
             return;
         }
 
@@ -257,11 +257,11 @@
     window.submitLogin = submitLogin;
 
     /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       LOGIN DEMO â€” acceso sin credenciales, BD completamente aislada
+       LOGIN DEMO — acceso sin credenciales, BD completamente aislada
        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     async function loginDemo() {
         const btn = document.getElementById('demoBtnLogin') || document.getElementById('demoBtn');
-        if (btn) { btn.disabled = true; btn.textContent = 'â³ Cargando demo...'; }
+        if (btn) { btn.disabled = true; btn.textContent = '⏳ Cargando demo...'; }
         _setError('login', '');
 
         const json = await _post('/api/demo/login', {});
@@ -294,10 +294,10 @@
             'gap:12px;flex-wrap:wrap;box-shadow:0 2px 8px rgba(0,0,0,.3)',
         ].join(';');
         banner.innerHTML = `
-            <span>🎭 <strong>MODO DEMO</strong> â€” Los datos de esta sesión son independientes y no afectan cuentas reales.</span>
+            <span>🎭 <strong>MODO DEMO</strong> — Los datos de esta sesión son independientes y no afectan cuentas reales.</span>
             <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
-                <button onclick="window._resetDemo()" style="padding:4px 12px;background:#000;color:#f59e0b;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:12px;">🔞 Restablecer datos</button>
-                <button onclick="document.getElementById('demoBanner').remove()" style="background:none;border:none;font-size:16px;cursor:pointer;color:#000;">âœ•</button>
+                <button onclick="window._resetDemo()" style="padding:4px 12px;background:#000;color:#f59e0b;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:12px;">✅ Restablecer datos</button>
+                <button onclick="document.getElementById('demoBanner').remove()" style="background:none;border:none;font-size:16px;cursor:pointer;color:#000;">✕�</button>
             </div>`;
         document.body.prepend(banner);
         // Bajar el contenido para que no quede tapado por el banner
@@ -323,7 +323,7 @@
                 window._setAppData(dbJson.data);
             }
             if (typeof renderAll === 'function') renderAll();
-            if (typeof showToast === 'function') showToast('âœ…', 'Datos demo restablecidos correctamente');
+            if (typeof showToast === 'function') showToast('✕�', 'Datos demo restablecidos correctamente');
         }
     };
 
@@ -366,7 +366,7 @@
             return;
         }
 
-        // Sin servidor â†’ registro local
+        // Sin servidor → registro local
         // Verificar si ya existe localmente
         if (_localUsers().find(u => u.email === email.toLowerCase())) {
             _setError('register', 'Ya existe una cuenta registrada con ese correo electrónico.');
@@ -376,7 +376,7 @@
         const local = _localRegister({ name, email, password, company, mode });
         _setLoading('registerBtn', false);
         _enterApp(local);
-        _toast('âš ï¸', 'Cuenta creada localmente. Abre desde http://localhost:3000 para sincronizar.');
+        _toast('⚠️ï¸', 'Cuenta creada localmente. Abre desde http://localhost:3000 para sincronizar.');
     }
     window.submitRegister = submitRegister;
 
@@ -409,17 +409,17 @@
                 }
                 // Modo desarrollo: el código viene en la respuesta
                 if (json.data && json.data.devCode) {
-                    _setSuccess('recover', 'âœ… Código enviado. <br><strong>Código de prueba: ' +
+                    _setSuccess('recover', '✕� Código enviado. <br><strong>Código de prueba: ' +
                         json.data.devCode + '</strong> (solo visible en desarrollo)');
                 } else {
-                    _setSuccess('recover', 'âœ… Código enviado a ' + email + '. Revisa tu bandeja de entrada.');
+                    _setSuccess('recover', '✕� Código enviado a ' + email + '. Revisa tu bandeja de entrada.');
                 }
             } else {
-                // Sin servidor â†’ generar código local
+                // Sin servidor → generar código local
                 const code = Math.floor(100000 + Math.random() * 900000).toString();
                 localStorage.setItem(RECOVER_KEY, JSON.stringify({ email, code, exp: Date.now() + 600000 }));
-                _setSuccess('recover', 'âœ… Código generado localmente: <strong>' + code + '</strong><br>' +
-                    '<small>(el servidor no está disponible â€” usa este código)</small>');
+                _setSuccess('recover', '✕� Código generado localmente: <strong>' + code + '</strong><br>' +
+                    '<small>(el servidor no está disponible — usa este código)</small>');
             }
 
             _recoverEmail = email;
@@ -448,7 +448,7 @@
                     _setError('recover', json.error || 'Código incorrecto o expirado. Intenta nuevamente.');
                     return;
                 }
-                _setSuccess('recover', 'âœ… Contraseña restablecida correctamente. Ahora puedes iniciar sesión.');
+                _setSuccess('recover', '✕� Contraseña restablecida correctamente. Ahora puedes iniciar sesión.');
                 setTimeout(() => {
                     _recoverStep = 1;
                     _recoverEmail = null;
@@ -460,7 +460,7 @@
                     switchAuthTab('login');
                 }, 2500);
             } else {
-                // Sin servidor â†’ verificar código local
+                // Sin servidor → verificar código local
                 try {
                     const stored = JSON.parse(localStorage.getItem(RECOVER_KEY) || '{}');
                     if (!stored.code || stored.code !== code || stored.email !== _recoverEmail || Date.now() > stored.exp) {
@@ -474,7 +474,7 @@
                     });
                     _localSave(users);
                     localStorage.removeItem(RECOVER_KEY);
-                    _setSuccess('recover', 'âœ… Contraseña restablecida localmente.');
+                    _setSuccess('recover', '✕� Contraseña restablecida localmente.');
                     setTimeout(() => { _recoverStep = 1; switchAuthTab('login'); }, 2000);
                 } catch {
                     _setError('recover', 'No pudimos completar la operación. Inténtalo nuevamente.');
@@ -506,9 +506,9 @@
             const updatedUser = { ..._pendingUser, mustChange: false };
             _pendingUser = null;
             _enterApp(updatedUser);
-            _toast('âœ…', 'Contraseña actualizada. ¡Bienvenido!');
+            _toast('✕�', 'Contraseña actualizada. ¡Bienvenido!');
         } else if (json === null) {
-            // Sin servidor â†’ cambiar localmente
+            // Sin servidor → cambiar localmente
             if (_pendingUser) {
                 _saveLocalUser({ ..._pendingUser, passwordHash: _h(p1), mustChange: false });
                 const u = { ..._pendingUser, mustChange: false };
@@ -522,7 +522,7 @@
     window.submitMustChange = submitMustChange;
 
     /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       VERIFICAR SESIÃ“N AL CARGAR
+       VERIFICAR SESIÓN AL CARGAR
        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     async function checkExistingSession() {
         // 1. Token en URL (desde /entrar-como)
@@ -546,7 +546,7 @@
 
         // 2. Token en localStorage
         const token = localStorage.getItem(AUTH_KEY);
-        if (!token) return;   // Sin token â†’ mostrar login
+        if (!token) return;   // Sin token → mostrar login
 
         // 2a. Token local
         if (token.startsWith('lt_')) {
@@ -559,7 +559,7 @@
         // 2b. Token del servidor
         const json = await _get('/api/auth/me', token);
         if (json === null) {
-            // Sin servidor â†’ intentar sesión local
+            // Sin servidor → intentar sesión local
             const u = _localSession(token);
             if (u) { _enterApp(u); return; }
             localStorage.removeItem(AUTH_KEY);
@@ -584,7 +584,7 @@
         // Si __INITIAL_SUB__ ya lo sabemos del servidor (inyectado en el HTML)
         const initSub = window.__INITIAL_SUB__;
         if (initSub && initSub.access === false && json.data.role !== 'admin') {
-            // No hay acceso â€” entrar a la app pero el paywall se mostrará
+            // No hay acceso — entrar a la app pero el paywall se mostrará
             _enterApp(json.data);
             return;
         }
@@ -679,7 +679,7 @@
     }
     window.openUserProfile = openUserProfile;
 
-    // closeUserProfile ya no cierra modal â€” simplemente es un no-op por compatibilidad
+    // closeUserProfile ya no cierra modal — simplemente es un no-op por compatibilidad
     function closeUserProfile() {}
     window.closeUserProfile = closeUserProfile;
 
@@ -770,7 +770,7 @@
         }
 
         if (msg) {
-            msg.textContent = 'âœ… Perfil actualizado correctamente.';
+            msg.textContent = '✕� Perfil actualizado correctamente.';
             msg.className = 'profileMsg ok';
             // Limpiar campos de contraseña
             ['profileCurrentPass','profileNewPass','profileNewPass2'].forEach(id => {
@@ -779,12 +779,12 @@
             });
             setTimeout(() => { msg.textContent = ''; msg.className = 'profileMsg'; }, 3000);
         }
-        _toast('âœ…', 'Perfil actualizado');
+        _toast('✕�', 'Perfil actualizado');
     }
     window.saveUserProfile = saveUserProfile;
 
     /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       ENTRAR A LA APP â€” delega en el ERP existente
+       ENTRAR A LA APP — delega en el ERP existente
        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     function _enterApp(user) {
         window._currentUser = user;
@@ -822,7 +822,7 @@
         document.getElementById('authScreen').style.display = 'none';
 
         // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-        // FASE 1 â€” Setup silencioso (sin mostrar la app todavía)
+        // FASE 1 — Setup silencioso (sin mostrar la app todavía)
         // Preparar todo en memoria pero NO mostrar #appMain.
         // La app solo se muestra en FASE 2, después de que el servidor confirme
         // que el usuario tiene acceso activo (trial o suscripción).
@@ -842,7 +842,7 @@
         }, 500);
 
         // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-        // FASE 2 â€” Mostrar app (solo la llama subscription.js tras verificar)
+        // FASE 2 — Mostrar app (solo la llama subscription.js tras verificar)
         // Esta función se expone globalmente para que subscription.js la invoque
         // cuando el servidor confirme access: true.
         // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -940,7 +940,7 @@
     }
 
     /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       LIMPIAR SESIÃ“N (botón emergencia)
+       LIMPIAR SESIÓN (botón emergencia)
        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     function clearSessionAndReload() {
         localStorage.removeItem(AUTH_KEY);
@@ -999,7 +999,7 @@
             return;
         }
 
-        // Si llegó aquí es porque el servidor sirvió esta página â†’ siempre está disponible
+        // Si llegó aquí es porque el servidor sirvió esta página → siempre está disponible
         // Hacemos un ping rápido solo para confirmar (usando el mismo origin)
         try {
             const ctrl = new AbortController();
@@ -1011,19 +1011,19 @@
                 badge.style.color = '#16a34a';
                 localStorage.removeItem('fixpromax_local_users');
             } else {
-                badge.innerHTML = '🟡 Servidor con problemas â€” intenta recargar';
+                badge.innerHTML = '🟡 Servidor con problemas — intenta recargar';
                 badge.style.color = '#d97706';
             }
         } catch {
             // Si falla el ping pero la página cargó, probablemente es un timeout de red breve
-            // No mostramos error â€” la página está funcionando
+            // No mostramos error — la página está funcionando
             badge.innerHTML = '🟢 Servidor conectado';
             badge.style.color = '#16a34a';
         }
     }
 
     /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       INICIALIZACIÃ“N â€” se ejecuta cuando el DOM está listo
+       INICIALIZACIÓN — se ejecuta cuando el DOM está listo
        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     function _init() {
         _checkServer();

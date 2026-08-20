@@ -459,7 +459,7 @@
             </button>
             <button onclick="this.parentElement.style.display='none';document.body.style.paddingTop=''"
                 style="background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;font-size:16px;padding:0 4px;">
-                âœ•
+                ✕�
             </button>`;
     }
 
@@ -479,7 +479,7 @@
                        status.plan === 'semestral' ? '💎 Plan Semestral' :
                        status.plan === 'premium'   ? '💎 Plan Semestral' :  // retrocompat.
                        status.plan === 'monthly'   ? '📆 Plan Mensual'   :
-                       status.plan === 'annual'    ? '📀 Plan Anual'     : 'âœ… Suscripción activa',
+                       status.plan === 'annual'    ? '📀 Plan Anual'     : '✕� Suscripción activa',
                 color: status.plan === 'semestral' || status.plan === 'premium' ? '#b45309' :
                        status.plan === 'pro'     ? '#4f46e5'  : '#16a34a',
                 bg:    status.plan === 'semestral' || status.plan === 'premium' ? '#fef3c7'  :
@@ -699,7 +699,7 @@
                 <button onclick="document.getElementById('subPanel').remove()"
                     style="background:none;border:none;color:#64748b;font-size:22px;
                            cursor:pointer;line-height:1;padding:4px 8px;"
-                    title="Cerrar">âœ•</button>
+                    title="Cerrar">✕�</button>
             </div>
 
             <!-- Indicador de pasos -->
@@ -744,7 +744,7 @@
             if (circle) {
                 circle.style.background = active ? '#4f46e5' : done ? '#10b981' : '#1e293b';
                 circle.style.color      = active || done ? '#fff' : '#94a3b8';
-                if (done) circle.textContent = 'âœ“';
+                if (done) circle.textContent = '✕�';
             }
         });
 
@@ -858,7 +858,7 @@
             <button onclick="window._subNextStep(1)"
                 style="background:none;border:1px solid #334155;color:#94a3b8;padding:12px 22px;
                        border-radius:10px;font-size:14px;cursor:pointer;font-family:inherit;">
-                â† Atrás
+                ← Atrás
             </button>
             <button id="btnStep2Next" onclick="window._subNextStep(3)"
                 style="background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;border:none;
@@ -1087,7 +1087,7 @@
             <button onclick="window._subNextStep(2)"
                 style="background:none;border:1px solid #334155;color:#94a3b8;padding:12px 22px;
                        border-radius:10px;font-size:14px;cursor:pointer;font-family:inherit;">
-                â† Atrás
+                ← Atrás
             </button>
             <button id="subFinalBtn" onclick="window._subExecutePay()"
                 style="background:linear-gradient(135deg,${plan.accent},${plan.accent}cc);
@@ -1237,7 +1237,7 @@
                     if (app && !app.classList.contains('visible')) app.classList.add('visible');
                 }
                 _updateSubUI(j.data);
-                if (typeof showToast === 'function') showToast('âœ…', 'Compras restauradas correctamente.');
+                if (typeof showToast === 'function') showToast('✕�', 'Compras restauradas correctamente.');
             } else {
                 if (typeof showToast === 'function') showToast('â„¹ï¸', 'No se encontraron compras activas para restaurar.');
             }

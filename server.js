@@ -226,9 +226,9 @@ function defaultData() {
         },
         // ❌”€❌”€ MONEDAS GLOBALES ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
         currencies: [
-            { code:'VES', name:'Bolívar venezolano',      symbol:'Bs.', flag:'🁻🁪', active:true,  isBase:true,  format:'es-VE', decimals:2 },
-            { code:'EUR', name:'Euro',                    symbol:'❌‚¬',   flag:'🁪🁺', active:true,  isBase:false, format:'de-DE', decimals:2 },
-            { code:'USD', name:'Dólar estadounidense',    symbol:'$',   flag:'🁺🁸', active:true,  isBase:false, format:'en-US', decimals:2 },
+            { code:'VES', name:'Bolívar venezolano',      symbol:'Bs.', flag:'🇻🇪', active:true,  isBase:true,  format:'es-VE', decimals:2 },
+            { code:'EUR', name:'Euro',                    symbol:'❌‚¬',   flag:'🇪🇺', active:true,  isBase:false, format:'de-DE', decimals:2 },
+            { code:'USD', name:'Dólar estadounidense',    symbol:'$',   flag:'🇺🇸', active:true,  isBase:false, format:'en-US', decimals:2 },
         ],
         // ❌”€❌”€ TASAS DE CAMBIO "” pendientes de actualización automática BCV ❌”€❌”€
         exchangeRates: [
@@ -2628,7 +2628,7 @@ async function alertWA(type, data) {
     } else if (type === 'payment_pending') {
         msg = `🟡 PAGO PENDIENTE - FIX PRO MAX\n👤 Usuario: ${data.userName||data.userEmail}\n🏢 Empresa: ${data.company||'"”'}\n📦 Plan: ${data.planName}\n💰 Monto: $${Number(data.amount).toFixed(2)}\n📆 Fecha: ${now}\n❌³ Estado: PENDIENTE DE VERIFICACION`;
     } else if (type === 'subscription_cancelled') {
-        msg = `🔞 SUSCRIPCION CANCELADA - FIX PRO MAX\n👤 Usuario: ${data.userName||data.userEmail}\n🏢 Empresa: ${data.company||'"”'}\n📦 Plan: ${data.planName||'"”'}\n📆 Fecha: ${now}\nEstado: CANCELADA`;
+        msg = `✅ SUSCRIPCION CANCELADA - FIX PRO MAX\n👤 Usuario: ${data.userName||data.userEmail}\n🏢 Empresa: ${data.company||'"”'}\n📦 Plan: ${data.planName||'"”'}\n📆 Fecha: ${now}\nEstado: CANCELADA`;
     } else if (type === 'ticket_new') {
         msg = `🚨 NUEVO TICKET DE SOPORTE - FIX PRO MAX\n👤 Usuario: ${data.userName}\n🏢 Empresa: ${data.company||'"”'}\n📚 Categoria: ${data.category}\n📝 Titulo: ${data.title}\n🔴 Prioridad: ${(data.priority||'media').toUpperCase()}\n📆 Fecha: ${now}\n🀔 ID: ${data.id}`;
     } else if (type === 'refund') {
@@ -3834,9 +3834,9 @@ function demoData() {
         { id:'inv-d2', number:'FAC-DEMO-002', customerId:'cus-d1', date:today, dueDate:today, total:9396,  paid:9396,  notes:'Pagada',       currency:'VES', status:'Pagada',    createdAt:now, updatedAt:now },
     ];
     d.currencies = [
-        { code:'VES', name:'Bolívar venezolano',   symbol:'Bs.', flag:'🁻🁪', active:true,  isBase:true  },
-        { code:'EUR', name:'Euro',                 symbol:'❌‚¬',   flag:'🁪🁺', active:true,  isBase:false },
-        { code:'USD', name:'Dólar estadounidense', symbol:'$',   flag:'🁺🁸', active:true,  isBase:false },
+        { code:'VES', name:'Bolívar venezolano',   symbol:'Bs.', flag:'🇻🇪', active:true,  isBase:true  },
+        { code:'EUR', name:'Euro',                 symbol:'❌‚¬',   flag:'🇪🇺', active:true,  isBase:false },
+        { code:'USD', name:'Dólar estadounidense', symbol:'$',   flag:'🇺🇸', active:true,  isBase:false },
     ];
     d.exchangeRates = [
         { id:'r-eur-d', fromCurrency:'EUR', toCurrency:'VES', rate:40.00, date:today, createdAt:now, createdBy:'demo', notes:'Tasa demo inicial', isActive:true,  updateType:'manual' },
@@ -4112,7 +4112,7 @@ app.get('/api/currencies', requireAuth, async (req, res) => {
     }
     // Asegurar que USD está en currencies
     if (!db.currencies.find(c => c.code === 'USD')) {
-        db.currencies.push({ code:'USD', name:'Dólar estadounidense', symbol:'$', flag:'🁺🁸', active:true, isBase:false, format:'en-US', decimals:2 });
+        db.currencies.push({ code:'USD', name:'Dólar estadounidense', symbol:'$', flag:'🇺🇸', active:true, isBase:false, format:'en-US', decimals:2 });
     }
     const svcStatus = ExchangeRateService.getStatus();
     ok(res, {
@@ -4449,7 +4449,7 @@ app.post('/api/fix-encoding', async (req, res) => {
                         result.push(0xC2, inputBuf[i+3]);
                         i += 4; changed = true; continue;
                     }
-                    // Patrón tilde triple-encoded: C3 83 C2 83 C2 XX → C3 XX (ÁÂ­ → í)
+                    // Patrón tilde triple-encoded: C3 83 C2 83 C2 XX → C3 XX (Áí → í)
                     if (inputBuf[i] === 0xC3 && inputBuf[i+1] === 0x83 &&
                         inputBuf[i+2] === 0xC2 && inputBuf[i+3] === 0x83 &&
                         inputBuf[i+4] === 0xC2) {
