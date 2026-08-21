@@ -13860,6 +13860,13 @@
 
         // Persistir en el usuario actual
         if (_currentUser) _currentUser.mode = mode;
+
+        // Re-aplicar restricciones de plan después de cambiar el modo visual,
+        // para que los módulos bloqueados por suscripción no queden visibles
+        // aunque el modo CSS sea 'pro'.
+        if (window._planModules && typeof window._updateSidebarByPlan === 'function') {
+            window._updateSidebarByPlan(window._planModules);
+        }
     }
 
     // ── Cambiar modo desde Configuración ──────────────────────────

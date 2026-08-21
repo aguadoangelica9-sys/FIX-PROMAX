@@ -4013,7 +4013,7 @@ app.post('/api/demo/login', async (req, res) => {
         demoUser = {
             id: 'demo-user-fixed', name: 'Usuario Demo', email: DEMO_EMAIL,
             password: hashPassword(DEMO_PASSWORD), company: 'Empresa Demo',
-            role: 'user', mode: 'pro', avatar: 'DE',
+            role: 'user', mode: 'basic', avatar: 'DE',
             createdAt: new Date().toISOString(), trialStart: new Date().toISOString(),
             active: true, isDemo: true,
             companyId: DEMO_COMPANY_ID, teamRole: 'owner', permissions: null,
