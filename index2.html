@@ -5047,6 +5047,9 @@
         <div class="module-panel" id="module-payables">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
                 <h2 style="font-size:20px;font-weight:700;">💰 Cuentas por Pagar</h2>
+                <button class="btn btn-primary btn-sm" onclick="openNewPayable()" style="display:flex;align-items:center;gap:6px;">
+                    <span style="font-size:16px;">+</span> Nueva cuenta por pagar
+                </button>
             </div>
             <div class="grid-4" id="payablesStats"></div>
             <div style="margin:12px 0 10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
@@ -5071,6 +5074,9 @@
         <div class="module-panel" id="module-receivables">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
                 <h2 style="font-size:20px;font-weight:700;">💳 Cuentas por Cobrar</h2>
+                <button class="btn btn-primary btn-sm" onclick="openNewReceivable()" style="display:flex;align-items:center;gap:6px;">
+                    <span style="font-size:16px;">+</span> Nueva cuenta por cobrar
+                </button>
             </div>
             <div class="grid-4" id="receivablesStats"></div>
             <div style="margin:12px 0 10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
@@ -9932,6 +9938,234 @@
         await _persistAndNotify('Devolución anulada', 'Cambio guardado localmente');
     }
 
+    /* ─── Crear nueva Cuenta por Cobrar / Cuenta por Pagar manualmente ─── */
+
+    function openNewReceivable() {
+        const title = document.getElementById('modalTitle');
+        const body  = document.getElementById('modalBody');
+        const overlay = document.getElementById('modalOverlay');
+        const defCurr = data?.settings?.defaultCurrency || 'VES';
+
+        // Construir opciones de clientes
+        const customerOpts = (data.customers || [])
+            .filter(c => c.status !== 'anulado')
+            .map(c => `<option value="${c.id}">${c.firstName} ${c.lastName}</option>`)
+            .join('');
+
+        title.textContent = '💳 Nueva Cuenta por Cobrar';
+        body.innerHTML = `
+            <div class="form-group">
+                <label>Cliente *</label>
+                <select id="nr_customerId" required>
+                    <option value="">— Seleccionar cliente —</option>
+                    ${customerOpts}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Concepto / Descripción *</label>
+                <input id="nr_description" type="text" placeholder="Ej: Servicio de consultoría, Venta a crédito..." />
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group">
+                    <label>Monto total *</label>
+                    <input id="nr_total" type="number" step="0.01" inputmode="decimal" placeholder="0.00" />
+                </div>
+                <div class="form-group">
+                    <label>Moneda</label>
+                    <select id="nr_currency">
+                        ${(data.currencies||[]).filter(c=>c.active).map(c=>`<option value="${c.code}"${c.code===defCurr?' selected':''}>${c.code} ${c.symbol}</option>`).join('')}
+                    </select>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group">
+                    <label>Fecha de emisión *</label>
+                    <input id="nr_date" type="date" value="${new Date().toISOString().slice(0,10)}" />
+                </div>
+                <div class="form-group">
+                    <label>Fecha de vencimiento</label>
+                    <input id="nr_dueDate" type="date" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Notas (opcional)</label>
+                <textarea id="nr_notes" rows="2" placeholder="Notas adicionales..."></textarea>
+            </div>
+            <div class="form-actions">
+                <button class="btn" onclick="closeModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveSafe(this, saveNewReceivable)">💾 Guardar</button>
+            </div>`;
+        overlay.classList.add('open');
+    }
+
+    async function saveNewReceivable() {
+        const customerId  = document.getElementById('nr_customerId').value;
+        const description = document.getElementById('nr_description').value.trim();
+        const total       = parseFloat(document.getElementById('nr_total').value) || 0;
+        const currency    = document.getElementById('nr_currency').value;
+        const date        = document.getElementById('nr_date').value;
+        const dueDate     = document.getElementById('nr_dueDate').value;
+        const notes       = document.getElementById('nr_notes').value.trim();
+
+        if (!customerId)  { showToast('⚠️', 'Selecciona un cliente');         return; }
+        if (!description) { showToast('⚠️', 'Ingresa una descripción');        return; }
+        if (total <= 0)   { showToast('⚠️', 'El monto debe ser mayor a cero'); return; }
+
+        const number = `CXC-${Date.now().toString().slice(-6)}`;
+        const invoice = {
+            id:          generateId(),
+            number,
+            customerId,
+            description,
+            date:        date || new Date().toISOString().slice(0,10),
+            dueDate:     dueDate || '',
+            total,
+            paid:        0,
+            currency,
+            status:      'Pendiente',
+            notes,
+            createdAt:   new Date().toISOString(),
+            source:      'manual',
+        };
+
+        if (!Array.isArray(data.invoices)) data.invoices = [];
+        data.invoices.push(invoice);
+
+        // Asiento contable: débito CxC, crédito Ingresos
+        const receivableAcc = data.chartOfAccounts?.find(a => a.code === '1-02');
+        const revenueAcc    = data.chartOfAccounts?.find(a => a.code === '4-01');
+        if (receivableAcc) receivableAcc.balance = (receivableAcc.balance || 0) + total;
+        if (revenueAcc)    revenueAcc.balance    = (revenueAcc.balance    || 0) + total;
+        data.journalEntries?.push(
+            { date: invoice.date, ref: number, desc: `CxC: ${description}`, debit: total,  credit: null },
+            { date: invoice.date, ref: number, desc: `CxC: ${description}`, debit: null,   credit: total }
+        );
+
+        logAudit('create', 'invoice', invoice.id, { number, total, customerId });
+        closeModal();
+        renderAll();
+        await _persistAndNotify(
+            `Cuenta por cobrar ${number} creada correctamente`,
+            'CxC guardada localmente — verifica conexión'
+        );
+    }
+
+    function openNewPayable() {
+        const title = document.getElementById('modalTitle');
+        const body  = document.getElementById('modalBody');
+        const overlay = document.getElementById('modalOverlay');
+        const defCurr = data?.settings?.defaultCurrency || 'VES';
+
+        // Construir opciones de proveedores
+        const supplierOpts = (data.suppliers || [])
+            .filter(s => s.status !== 'anulado')
+            .map(s => `<option value="${s.id}">${s.name}</option>`)
+            .join('');
+
+        title.textContent = '💰 Nueva Cuenta por Pagar';
+        body.innerHTML = `
+            <div class="form-group">
+                <label>Proveedor *</label>
+                <select id="np_supplierId" required>
+                    <option value="">— Seleccionar proveedor —</option>
+                    ${supplierOpts}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Concepto / Descripción *</label>
+                <input id="np_description" type="text" placeholder="Ej: Compra de mercancía, Servicio de mantenimiento..." />
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group">
+                    <label>Monto total *</label>
+                    <input id="np_total" type="number" step="0.01" inputmode="decimal" placeholder="0.00" />
+                </div>
+                <div class="form-group">
+                    <label>Moneda</label>
+                    <select id="np_currency">
+                        ${(data.currencies||[]).filter(c=>c.active).map(c=>`<option value="${c.code}"${c.code===defCurr?' selected':''}>${c.code} ${c.symbol}</option>`).join('')}
+                    </select>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group">
+                    <label>Fecha de emisión *</label>
+                    <input id="np_date" type="date" value="${new Date().toISOString().slice(0,10)}" />
+                </div>
+                <div class="form-group">
+                    <label>Fecha de vencimiento</label>
+                    <input id="np_dueDate" type="date" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label>N° de factura del proveedor (opcional)</label>
+                <input id="np_refNumber" type="text" placeholder="Ej: FAC-001, INV-2024-100..." />
+            </div>
+            <div class="form-group">
+                <label>Notas (opcional)</label>
+                <textarea id="np_notes" rows="2" placeholder="Notas adicionales..."></textarea>
+            </div>
+            <div class="form-actions">
+                <button class="btn" onclick="closeModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveSafe(this, saveNewPayable)">💾 Guardar</button>
+            </div>`;
+        overlay.classList.add('open');
+    }
+
+    async function saveNewPayable() {
+        const supplierId  = document.getElementById('np_supplierId').value;
+        const description = document.getElementById('np_description').value.trim();
+        const total       = parseFloat(document.getElementById('np_total').value) || 0;
+        const currency    = document.getElementById('np_currency').value;
+        const date        = document.getElementById('np_date').value;
+        const dueDate     = document.getElementById('np_dueDate').value;
+        const refNumber   = document.getElementById('np_refNumber').value.trim();
+        const notes       = document.getElementById('np_notes').value.trim();
+
+        if (!supplierId)  { showToast('⚠️', 'Selecciona un proveedor');        return; }
+        if (!description) { showToast('⚠️', 'Ingresa una descripción');         return; }
+        if (total <= 0)   { showToast('⚠️', 'El monto debe ser mayor a cero'); return; }
+
+        const number = refNumber || `CXP-${Date.now().toString().slice(-6)}`;
+        const purchase = {
+            id:          generateId(),
+            number,
+            supplierId,
+            description,
+            date:        date || new Date().toISOString().slice(0,10),
+            dueDate:     dueDate || '',
+            total,
+            paid:        0,
+            currency,
+            status:      'Pendiente',
+            notes,
+            createdAt:   new Date().toISOString(),
+            source:      'manual',
+            items:       [],
+        };
+
+        if (!Array.isArray(data.purchases)) data.purchases = [];
+        data.purchases.push(purchase);
+
+        // Asiento contable: débito Gastos/Compras, crédito CxP
+        const payableAcc = data.chartOfAccounts?.find(a => a.code === '2-01');
+        const costAcc    = data.chartOfAccounts?.find(a => a.code === '5-01');
+        if (payableAcc) payableAcc.balance = (payableAcc.balance || 0) + total;
+        if (costAcc)    costAcc.balance    = (costAcc.balance    || 0) + total;
+        data.journalEntries?.push(
+            { date: purchase.date, ref: number, desc: `CxP: ${description}`, debit: total,  credit: null },
+            { date: purchase.date, ref: number, desc: `CxP: ${description}`, debit: null,   credit: total }
+        );
+
+        logAudit('create', 'purchase', purchase.id, { number, total, supplierId });
+        closeModal();
+        renderAll();
+        await _persistAndNotify(
+            `Cuenta por pagar ${number} creada correctamente`,
+            'CxP guardada localmente — verifica conexión'
+        );
+    }
+
     /* ─── Cuentas por Cobrar / Pagar ─── */
     function renderPayables() {
         const today   = new Date().toISOString().slice(0,10);
@@ -10041,15 +10275,26 @@
 
     // Ver pagos de una factura
     function viewPayments(type, id) {
-        const payments = data.payments.filter(p => p.type === (type === 'receivable' ? 'cobro' : 'pago') && (p
-            .reference === id || p.reference === id));
+        // Buscar la factura/compra por ID para obtener su número
+        const record = type === 'receivable'
+            ? data.invoices.find(i => i.id === id)
+            : data.purchases.find(p => p.id === id);
+        const refNumber = record?.number;
+
+        const payments = data.payments.filter(p => {
+            const matchType = p.type === (type === 'receivable' ? 'cobro' : 'pago');
+            // Comparar por invoiceId (nuevo) o por número de referencia (legado)
+            const matchRef  = p.invoiceId === id || (refNumber && p.reference === refNumber);
+            return matchType && matchRef;
+        });
+
         if (payments.length === 0) {
             showToast('📋', 'No hay pagos registrados');
             return;
         }
-        let msg = 'Pagos:\n';
+        let msg = 'Pagos registrados:\n\n';
         payments.forEach(p => {
-            msg += `${new Date(p.date).toLocaleString()} - ${formatCurrency(p.amount)} (${p.method}) ${p.reference || ''}\n`;
+            msg += `📅 ${new Date(p.date).toLocaleString()}\n💵 ${formatCurrency(p.amount)} · ${p.method}${p.ref ? ' · Ref: ' + p.ref : ''}\n\n`;
         });
         alert(msg);
     }
@@ -10113,6 +10358,7 @@
         data.payments.push({
             id: generateId(),
             type: paymentType,
+            invoiceId: invoiceId,
             reference: invoice.number,
             amount,
             date: new Date().toISOString(),

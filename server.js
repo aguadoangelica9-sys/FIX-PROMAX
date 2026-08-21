@@ -1935,7 +1935,7 @@ const PLANS = {
             inventory: true, customers: true, suppliers: true,
             expenses: true, purchases: true, returns: true,
             reports: true, finance: false, accounting: false,
-            payables: false, receivables: false, ai: false,
+            payables: true, receivables: true, ai: false,
             team: false,
         },
         features: [
@@ -2062,7 +2062,7 @@ const TRIAL_MODULES = {
     inventory: true, customers: true, suppliers: true,
     expenses: true, purchases: true, returns: true,
     reports: true, finance: false, accounting: false,
-    payables: false, receivables: false, ai: false,
+    payables: true, receivables: true, ai: false,
     team: false,
 };
 // Módulos permitidos cuando no hay acceso (solo lectura básica)
