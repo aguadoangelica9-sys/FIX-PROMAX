@@ -2034,16 +2034,22 @@ function getPlan(planId) {
 }
 
 function getMaxTeamByPlan(user) {
+    if (!user) return 1;
     if (user.role === 'admin') return 99;
-    const plan = getPlan(user.subscriptionPlan);
-    if (!plan) return 1;
-    return plan.maxUsers || 1;
+    // Usar getAccessStatus como fuente de verdad única — evita inconsistencias
+    // entre subscriptionPlan, subscriptionStatus y subscriptionEnd
+    const status = getAccessStatus(user);
+    if (!status.access) return 1;
+    return status.maxUsers || 1;
 }
 
 function planAllowsMultiUser(user) {
+    if (!user) return false;
     if (user.role === 'admin') return true;
-    const plan = getPlan(user.subscriptionPlan);
-    return plan ? (plan.multiUser === true) : false;
+    // Usar getAccessStatus como fuente de verdad única
+    const status = getAccessStatus(user);
+    if (!status.access) return false;
+    return status.multiUser === true;
 }
 
 // Módulos permitidos durante el trial (igual que plan básico)
@@ -2993,24 +2999,48 @@ async function writeDB(data) {
 // ❌”€❌”€ TEAM: Listar empleados de la empresa ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/team/members', requireAuth, async (req, res) => {
     const allUsers  = await readUsers();
-    const ownerFull = allUsers.find(u => u.companyId === req.user.companyId && u.teamRole === 'owner');
-    const maxAllowed = ownerFull ? getMaxTeamByPlan(ownerFull) : 1;
-    const multiUser  = ownerFull ? planAllowsMultiUser(ownerFull) : false;
 
-    // Determinar qué usuarios tienen sesión activa en sessions.json
+    // Buscar owner real de la empresa para evaluar el plan
+    const ownerFull  = allUsers.find(u => u.companyId === req.user.companyId && u.teamRole === 'owner')
+                    || allUsers.find(u => u.id === req.user.id);
+
+    // getAccessStatus como fuente de verdad unica para maxUsers y multiUser
+    const subStatus  = ownerFull ? getAccessStatus(ownerFull) : { maxUsers: 1, multiUser: false };
+    const maxAllowed = subStatus.maxUsers || 1;
+    const multiUser  = subStatus.multiUser === true;
+
+    // Sesiones activas para indicar quien esta en linea
     const sessions  = await readSessions();
     const onlineIds = new Set(
         Object.values(sessions).map(e => (typeof e === 'object' ? e.userId : e))
     );
 
     const team = allUsers.filter(u => u.companyId === req.user.companyId).map(u => ({
-        id: u.id, name: u.name, email: u.email, avatar: u.avatar,
-        teamRole: u.teamRole || 'employee', active: u.active !== false,
-        createdAt: u.createdAt, permissions: u.permissions || DEFAULT_EMPLOYEE_PERMISSIONS,
-        lastLogin: u.lastLogin || null,
-        isOnline: onlineIds.has(u.id),   // true si tiene token activo en sessions.json
+        id:          u.id,
+        name:        u.name,
+        email:       u.email,
+        avatar:      u.avatar,
+        teamRole:    u.teamRole || 'employee',
+        active:      u.active !== false,
+        createdAt:   u.createdAt,
+        permissions: u.permissions || DEFAULT_EMPLOYEE_PERMISSIONS,
+        lastLogin:   u.lastLogin || null,
+        isOnline:    onlineIds.has(u.id),
     }));
-    ok(res, { members: team, count: team.length, max: maxAllowed, multiUser, planRequired: 'pro' });
+
+    // Contar solo activos para el indicador de uso del limite
+    const activeCount = team.filter(u => u.active).length;
+
+    ok(res, {
+        members:      team,
+        count:        team.length,
+        activeCount,
+        max:          maxAllowed,
+        multiUser,
+        planRequired: 'pro',
+        planName:     subStatus.planName || subStatus.plan || '',
+        canAddMore:   activeCount < maxAllowed && multiUser,
+    });
 });
 
 // ❌”€❌”€ TEAM: Invitar / crear empleado ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
@@ -3019,39 +3049,63 @@ app.post('/api/team/invite', requireAuth, async (req, res) => {
     if (req.user.teamRole !== 'owner' && req.user.role !== 'admin') {
         return err(res, 'Solo el propietario puede invitar empleados', 403);
     }
-    const { name, email, password, permissions } = req.body;
-    if (!name || !email || !password) return err(res, 'Nombre, email y contraseÁ±a son obligatorios');
-    if (password.length < 6)         return err(res, 'La contraseÁ±a debe tener al menos 6 caracteres');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return err(res, 'Email inválido');
 
-    // Verificar que el plan activo del propietario permita multiusuario
-    const allUsers  = await readUsers();
-    // Buscar al owner de la empresa (puede ser el propio usuario o buscarlo por teamRole)
+    const { name, email, password, permissions } = req.body;
+    if (!name || !email || !password) return err(res, 'Nombre, email y contrasena son obligatorios');
+    if (password.length < 6)          return err(res, 'La contrasena debe tener al menos 6 caracteres');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return err(res, 'Email invalido');
+
+    const allUsers = await readUsers();
+
+    // Buscar el owner real de la empresa — siempre por teamRole=owner primero,
+    // luego el propio usuario como fallback. Garantiza leer el plan correcto
+    // sin importar quien hace la peticion (owner o admin del sistema).
     const ownerFull = allUsers.find(u => u.companyId === req.user.companyId && u.teamRole === 'owner')
                    || allUsers.find(u => u.id === req.user.id);
-    if (ownerFull && !planAllowsMultiUser(ownerFull)) {
-        return err(res, 'Tu plan actual (Básico o prueba) no incluye multiusuario. Actualiza a Plan Pro o Semestral para agregar empleados.', 403);
+
+    if (!ownerFull) return err(res, 'No se encontro el propietario de la empresa', 500);
+
+    // Evaluar acceso real usando getAccessStatus (fuente de verdad unica).
+    // Esta funcion evalua subscriptionStatus + subscriptionEnd + subscriptionPlan juntos,
+    // evitando falsos negativos por campos desincronizados.
+    const subStatus = getAccessStatus(ownerFull);
+
+    // Verificar que el plan permita multiusuario
+    if (!subStatus.multiUser) {
+        const planName = subStatus.planName || subStatus.plan || 'actual';
+        return err(res,
+            'Tu plan ' + planName + ' no incluye multiusuario. Actualiza a Plan Pro o Semestral para agregar empleados.',
+            403
+        );
     }
 
-    // Verificar límite de usuarios según el plan del propietario
-    // Solo contar usuarios activos (no suspendidos/eliminados) para el límite
-    const maxAllowed  = ownerFull ? getMaxTeamByPlan(ownerFull) : 1;
-    const currentTeam = allUsers.filter(u => u.companyId === req.user.companyId && u.active !== false);
-    if (currentTeam.length >= maxAllowed) {
-        return err(res, `Has alcanzado el límite de ${maxAllowed} usuarios activos para tu plan.`, 403);
+    // Contar solo usuarios ACTIVOS de la empresa para el limite.
+    // Los usuarios suspendidos (active=false) no consumen slot — asi el owner
+    // puede siempre agregar miembros nuevos aunque tenga empleados desactivados.
+    const maxAllowed = subStatus.maxUsers || 1;
+    const activeTeam = allUsers.filter(u => u.companyId === req.user.companyId && u.active !== false);
+    if (activeTeam.length >= maxAllowed) {
+        const planName = subStatus.planName || subStatus.plan || 'tu plan';
+        return err(res,
+            'Has alcanzado el limite de ' + maxAllowed + ' usuario' + (maxAllowed !== 1 ? 's' : '') +
+            ' activos para ' + planName + '. Actualiza tu plan para agregar mas miembros.',
+            403
+        );
     }
-    // Verificar email único
-    if (allUsers.find(u => u.email.toLowerCase() === email.toLowerCase())) {
+
+    // Email unico global — un email no puede pertenecer a dos empresas distintas
+    const emailClean = email.toLowerCase().trim();
+    if (allUsers.find(u => u.email.toLowerCase() === emailClean)) {
         return err(res, 'Ya existe una cuenta con ese email');
     }
 
     const newEmployee = {
         id:          generateId(),
         name:        name.trim(),
-        email:       email.toLowerCase().trim(),
+        email:       emailClean,
         password:    hashPassword(password),
         companyId:   req.user.companyId,
-        company:     req.user.company || '',
+        company:     req.user.company || ownerFull.company || '',
         role:        'user',
         teamRole:    'employee',
         mode:        'basic',
@@ -3062,10 +3116,11 @@ app.post('/api/team/invite', requireAuth, async (req, res) => {
         invitedBy:   req.user.id,
         mustChange:  true,
     };
+
     allUsers.push(newEmployee);
     await writeUsers(allUsers);
     await logAdminAction(req.user.id, req.user.email, 'invite_employee', newEmployee.id, newEmployee.email, '');
-    console.log(`✅ Empleado invitado: ${newEmployee.email} ❌†’ empresa ${req.user.companyId}`);
+    console.log(`[Team] Empleado invitado: ${newEmployee.email} -> empresa ${req.user.companyId} (${activeTeam.length + 1}/${maxAllowed})`);
     ok(res, { id: newEmployee.id, name: newEmployee.name, email: newEmployee.email, teamRole: 'employee' });
 });
 
@@ -3221,7 +3276,9 @@ app.get('/api/team/company', requireAuth, async (req, res) => {
         companyId:    req.user.companyId,
         companyName:  req.user.company || owner?.company || '',
         memberCount:  team.length,
-        maxMembers:   owner ? getMaxTeamByPlan(owner) : 1,
+        maxMembers:   subStatus.maxUsers || 1,
+        activeCount:  (getTeam(req.user.companyId)).filter(u => u.active !== false).length,
+        canAddMore:   subStatus.multiUser === true && ((getTeam(req.user.companyId)).filter(u => u.active !== false).length < (subStatus.maxUsers || 1)),
         subscription: subStatus,
         ownerId:      owner?.id,
         ownerEmail:   owner?.email,
