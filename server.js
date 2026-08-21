@@ -4430,8 +4430,12 @@ global._sseAdmin   = sseAdmin;
 global._sseUser    = sseUser;
 global._sseCompany = sseCompany;
 
-// GET /api/events "” conexión SSE (autenticado, acepta token via header O query param)
-app.get('/api/events', async (req, res) => {
+
+// ── SSE handler compartido — /api/events y /api/events/admin ─────────────────
+// Admin.html llama a /api/events/admin?token=...
+// La app llama a /api/events con header Authorization
+// Ambos endpoints usan el mismo handler; /api/events/admin solo exige role=admin
+async function _sseHandler(req, res, requireAdminRole) {
     const headerTok = (req.headers['authorization'] || '').replace('Bearer ', '').trim();
     const queryTok  = (req.query.token || '').trim();
     const token     = headerTok || queryTok;
@@ -4443,12 +4447,15 @@ app.get('/api/events', async (req, res) => {
     const userId = typeof entry === 'object' ? entry.userId : entry;
     const users  = await readUsers();
     const user   = users.find(u => u.id === userId);
-    if (!user) return res.status(401).end();
+    if (!user || user.active === false) return res.status(401).end();
 
-    res.setHeader('Content-Type',  'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection',    'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no');
+    // /api/events/admin exige role=admin
+    if (requireAdminRole && user.role !== 'admin') return res.status(403).end();
+
+    res.setHeader('Content-Type',       'text/event-stream');
+    res.setHeader('Cache-Control',      'no-cache');
+    res.setHeader('Connection',         'keep-alive');
+    res.setHeader('X-Accel-Buffering',  'no');   // importante para Nginx/Render — evita buffering
     res.flushHeaders();
 
     const clientId = _sseId();
@@ -4456,16 +4463,30 @@ app.get('/api/events', async (req, res) => {
         res,
         role:      user.role,
         userId:    user.id,
-        companyId: user.companyId,
+        companyId: user.companyId || user.id,
     });
 
-        const pingTimer = setInterval(() => {
-        try { res.write(': ping\n\n'); } catch { clearInterval(pingTimer); _sseClients.delete(clientId); }
-    }, 25000);
+    // Ping cada 20s para mantener la conexion viva en Render (que cierra idle >30s)
+    const pingTimer = setInterval(() => {
+        try { res.write(': ping\n\n'); }
+        catch { clearInterval(pingTimer); _sseClients.delete(clientId); }
+    }, 20000);
 
-    res.write(`event: connected\ndata: ` + JSON.stringify({ clientId, ts: new Date().toISOString() }) + `\n\n`);
-    req.on('close', () => { clearInterval(pingTimer); _sseClients.delete(clientId); });
-});
+    // Confirmar conexion al cliente
+    res.write(`event: connected\ndata: ${JSON.stringify({ clientId, ts: new Date().toISOString() })}\n\n`);
+
+    req.on('close', () => {
+        clearInterval(pingTimer);
+        _sseClients.delete(clientId);
+    });
+}
+
+// Endpoint principal (usado por la app)
+app.get('/api/events', (req, res) => _sseHandler(req, res, false));
+
+// Alias para el panel admin (admin.html lo llama con /api/events/admin?token=...)
+app.get('/api/events/admin', (req, res) => _sseHandler(req, res, true));
+
 
 // ══════════════════════════════════════════════════════════════════════════════
 // ENDPOINT DE PRUEBA UTF-8 — verifica que el servidor procesa Unicode correctamente

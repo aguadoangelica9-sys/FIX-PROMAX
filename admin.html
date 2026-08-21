@@ -3207,61 +3207,102 @@ function renderAudit(list) {
 /* ════════════════════════════════════════════════════════════════
    SSE — Conexión en tiempo real con el servidor
    ════════════════════════════════════════════════════════════════ */
-let _sseSource = null;
+let _sseSource     = null;
+let _sseRetryDelay = 3000;   // ms — aumenta con cada fallo (backoff)
+let _sseRetryTimer = null;
+let _sseConnected  = false;
+
+function _sseBadge(text) {
+    const el = document.getElementById('serverBadge');
+    if (el) el.textContent = text;
+}
 
 function connectSSE() {
-    if (_sseSource) { _sseSource.close(); }
+    // Cancelar cualquier reintento pendiente
+    if (_sseRetryTimer) { clearTimeout(_sseRetryTimer); _sseRetryTimer = null; }
+    // Cerrar conexión anterior si existía
+    if (_sseSource) { try { _sseSource.close(); } catch {} _sseSource = null; }
+
     const tok = localStorage.getItem('fixpromax_admin_token');
-    if (!tok) return;
+    if (!tok) { _sseBadge('⚫ Sin sesión'); return; }
 
-    // SSE no soporta headers en el navegador directamente,
-    // así que usamos un endpoint que verifica el token via cookie o parámetro
-    _sseSource = new EventSource(`${API}/api/events/admin?token=${tok}`);
+    _sseBadge('🟡 Conectando...');
+    _sseConnected = false;
 
+    // EventSource no admite headers — el token va como query param
+    // El servidor valida que sea un admin antes de abrir el stream
+    _sseSource = new EventSource(`${API}/api/events/admin?token=${encodeURIComponent(tok)}`);
+
+    // ── Conexión establecida ──────────────────────────────────────
     _sseSource.addEventListener('connected', () => {
-        document.getElementById('serverBadge').textContent = '🟢 Tiempo real';
+        _sseConnected  = true;
+        _sseRetryDelay = 3000;           // resetear backoff al conectar
+        _sseBadge('🟢 Tiempo real');
     });
 
+    // ── Eventos de negocio ────────────────────────────────────────
     _sseSource.addEventListener('user_status_updated', (e) => {
-        const d = JSON.parse(e.data);
-        toast('🔔', `Usuario ${d.email} → ${d.active ? 'reactivado' : 'suspendido'}`, d.active?'success':'warn');
-        // Si la sección activa muestra usuarios, actualizar
-        const active = document.querySelector('.section.active')?.id;
-        if (active === 'sec-users')   loadUsers();
-        if (active === 'sec-subs')    loadSubs();
+        try {
+            const d = JSON.parse(e.data);
+            toast('🔔', `Usuario ${d.email} → ${d.active ? 'reactivado' : 'suspendido'}`, d.active ? 'success' : 'warn');
+            const sec = document.querySelector('.section.active')?.id;
+            if (sec === 'sec-users') loadUsers();
+            if (sec === 'sec-subs')  loadSubs();
+        } catch {}
     });
 
     _sseSource.addEventListener('user_subscription_updated', (e) => {
-        const d = JSON.parse(e.data);
-        toast('💳', `Suscripción actualizada: ${d.email}`, 'success');
-        const active = document.querySelector('.section.active')?.id;
-        if (active === 'sec-subs')    loadSubs();
-        if (active === 'sec-payments')loadPayments();
+        try {
+            const d = JSON.parse(e.data);
+            toast('💳', `Suscripción actualizada: ${d.email}`, 'success');
+            const sec = document.querySelector('.section.active')?.id;
+            if (sec === 'sec-subs')      loadSubs();
+            if (sec === 'sec-payments')  loadPayments();
+        } catch {}
     });
 
     _sseSource.addEventListener('plan_updated', (e) => {
-        const d = JSON.parse(e.data);
-        toast('📋', `Plan ${d.planId} actualizado`, 'success');
-        const active = document.querySelector('.section.active')?.id;
-        if (active === 'sec-plans') loadPlans();
+        try {
+            const d = JSON.parse(e.data);
+            toast('📋', `Plan ${d.planId} actualizado`, 'success');
+            const sec = document.querySelector('.section.active')?.id;
+            if (sec === 'sec-plans') loadPlans();
+        } catch {}
     });
 
     _sseSource.addEventListener('exchange_rate_updated', (e) => {
-        const d = JSON.parse(e.data);
-        toast('💱', `Tasa ${d.fromCurrency}→VES actualizada: Bs. ${d.rate}`, 'success');
-        const active = document.querySelector('.section.active')?.id;
-        if (active === 'sec-rates') loadRates();
+        try {
+            const d = JSON.parse(e.data);
+            toast('💱', `Tasa ${d.fromCurrency}→VES actualizada: Bs. ${d.rate}`, 'success');
+            const sec = document.querySelector('.section.active')?.id;
+            if (sec === 'sec-rates') loadRates();
+        } catch {}
     });
 
+    // ── Error / desconexión — backoff exponencial ─────────────────
     _sseSource.onerror = () => {
-        document.getElementById('serverBadge').textContent = '🟡 Reconectando...';
-        // EventSource reconecta automáticamente
+        _sseConnected = false;
+        _sseBadge('🟡 Reconectando...');
+
+        // Cerrar para evitar que EventSource intente reconectar en paralelo
+        try { _sseSource.close(); } catch {}
+        _sseSource = null;
+
+        // Backoff: 3s → 6s → 12s → 24s → máx 30s
+        _sseRetryDelay = Math.min(_sseRetryDelay * 2, 30000);
+        _sseRetryTimer = setTimeout(() => {
+            if (localStorage.getItem('fixpromax_admin_token')) connectSSE();
+        }, _sseRetryDelay);
     };
 }
 
-// El SSE para el admin requiere enviar el token — como EventSource no soporta headers,
-// el endpoint /api/events/admin lo acepta via query param con validación igual de estricta
-// (ver server.js — requireAdmin acepta ?token= en este endpoint)
+// Reconectar cuando la pestaña vuelve a estar visible (usuario cambia de tab)
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && !_sseConnected) {
+        _sseRetryDelay = 3000;  // resetear backoff al volver
+        connectSSE();
+    }
+});
 
 
 
