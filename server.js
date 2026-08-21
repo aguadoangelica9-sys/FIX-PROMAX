@@ -3358,6 +3358,66 @@ app.get('/admin', async (req, res) => {
 });
 app.get('/admin/login', async (req, res) => res.redirect('/admin'));
 
+// ── COMPANIES OVERVIEW (admin) ────────────────────────────────────────────────
+// Agrupa todos los usuarios por empresa (companyId) y devuelve una vista
+// consolidada: owner, plan, estado, días restantes y ventas totales del ERP.
+// Lo usa el panel admin en la sección "Empresas".
+app.get('/api/admin/companies/overview', requireAdmin, async (req, res) => {
+    const users = await readUsers();
+    const now   = Date.now();
+
+    // Agrupar por companyId — tomar solo owners (o primer usuario si no hay owner)
+    const byCompany = {};
+    for (const u of users) {
+        const cid = u.companyId || u.id;
+        if (!byCompany[cid]) byCompany[cid] = { owner: null, members: [] };
+        byCompany[cid].members.push(u);
+        if (u.teamRole === 'owner' || !byCompany[cid].owner) {
+            byCompany[cid].owner = u;
+        }
+    }
+
+    const companies = await Promise.all(
+        Object.entries(byCompany).map(async ([companyId, { owner, members }]) => {
+            const sub      = getAccessStatus(owner);
+            const plan     = getPlan(owner.subscriptionPlan) || {};
+
+            // Intentar leer ventas totales de la BD de la empresa
+            let salesTotal = 0;
+            try {
+                const cdb = await DB.readCompanyDB(companyId);
+                if (cdb && Array.isArray(cdb.sales)) {
+                    salesTotal = cdb.sales.reduce((s, v) => s + (Number(v.total) || 0), 0);
+                }
+            } catch {}
+
+            return {
+                companyId,
+                ownerName:  owner.name  || '',
+                ownerEmail: owner.email || '',
+                ownerId:    owner.id,
+                company:    owner.company || owner.name || '',
+                planId:     owner.subscriptionPlan || 'trial',
+                planName:   plan.name || sub.planName || (sub.status === 'trial' ? 'Trial' : '—'),
+                status:     sub.status,
+                access:     sub.access,
+                daysLeft:   sub.daysLeft ?? null,
+                subscriptionEnd: owner.subscriptionEnd || null,
+                memberCount: members.length,
+                salesTotal,
+                createdAt:  owner.createdAt || null,
+                active:     owner.active !== false,
+            };
+        })
+    );
+
+    // Ordenar: activos primero, luego trial, luego expirados
+    const ORDER = { subscribed: 0, cancelled_active: 1, trial: 2, trial_expired: 3, no_access: 4, admin: 5 };
+    companies.sort((a, b) => (ORDER[a.status] ?? 9) - (ORDER[b.status] ?? 9));
+
+    ok(res, companies);
+});
+
 // ❌”€❌”€ DASHBOARD STATS ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/admin/stats', requireAdmin, async (req, res) => {
     const users   = await readUsers();
