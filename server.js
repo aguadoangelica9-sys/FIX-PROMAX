@@ -3026,16 +3026,19 @@ app.post('/api/team/invite', requireAuth, async (req, res) => {
 
     // Verificar que el plan activo del propietario permita multiusuario
     const allUsers  = await readUsers();
-    const ownerFull = allUsers.find(u => u.id === req.user.id);
+    // Buscar al owner de la empresa (puede ser el propio usuario o buscarlo por teamRole)
+    const ownerFull = allUsers.find(u => u.companyId === req.user.companyId && u.teamRole === 'owner')
+                   || allUsers.find(u => u.id === req.user.id);
     if (ownerFull && !planAllowsMultiUser(ownerFull)) {
         return err(res, 'Tu plan actual (Básico o prueba) no incluye multiusuario. Actualiza a Plan Pro o Semestral para agregar empleados.', 403);
     }
 
     // Verificar límite de usuarios según el plan del propietario
+    // Solo contar usuarios activos (no suspendidos/eliminados) para el límite
     const maxAllowed  = ownerFull ? getMaxTeamByPlan(ownerFull) : 1;
-    const currentTeam = allUsers.filter(u => u.companyId === req.user.companyId);
+    const currentTeam = allUsers.filter(u => u.companyId === req.user.companyId && u.active !== false);
     if (currentTeam.length >= maxAllowed) {
-        return err(res, `Has alcanzado el límite de ${maxAllowed} usuarios para tu plan.`, 403);
+        return err(res, `Has alcanzado el límite de ${maxAllowed} usuarios activos para tu plan.`, 403);
     }
     // Verificar email único
     if (allUsers.find(u => u.email.toLowerCase() === email.toLowerCase())) {
