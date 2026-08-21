@@ -6600,7 +6600,7 @@
                         <div class="form-group"><label>Apellido *</label><input id="f_lastName" value="${c ? c.lastName : ''}" placeholder="Apellido" /></div>
                     </div>
                     <div class="form-row">
-                        <div class="form-group"><label>Email *</label><input id="f_email" type="email" inputmode="email" value="${c ? c.email : ''}" placeholder="correo@ejemplo.com" /></div>
+                        <div class="form-group"><label>Email</label><input id="f_email" type="email" inputmode="email" value="${c ? c.email : ''}" placeholder="correo@ejemplo.com (opcional)" /></div>
                         <div class="form-group"><label>Teléfono</label><input id="f_phone" type="tel" inputmode="tel" value="${c ? c.phone : ''}" placeholder="+58 412 0000000" /></div>
                     </div>
                     <div class="form-row">
@@ -7247,8 +7247,8 @@
         const notes     = document.getElementById('f_customerNotes')?.value.trim() || '';
         const status    = document.getElementById('f_customerStatus')?.value || 'activo';
 
-        if (!firstName || !lastName || !email) {
-            showToast('⚠️', 'Nombre, apellido y email son obligatorios');
+        if (!firstName || !lastName) {
+            showToast('⚠️', 'Nombre y apellido son obligatorios');
             return;
         }
         const isEdit = modalContext.id !== null;
