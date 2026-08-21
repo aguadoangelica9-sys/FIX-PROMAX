@@ -1510,3 +1510,109 @@
         padding-bottom: calc(var(--mob-bottom-nav-h) + var(--mob-safe-bottom) + 8px) !important;
     }
 }
+
+/* ================================================================
+   OVERRIDES CRÍTICOS — alta especificidad para ganar cascade
+   Este bloque va al final para garantizar precedencia.
+   ================================================================ */
+
+/* 1. appMain en móvil: usar block, NO flex — el flex del ERP rompe el layout */
+@media (max-width: 768px) {
+    #appMain,
+    #appMain.visible {
+        display: block !important;
+        width: 100% !important;
+        min-height: 100dvh !important;
+        flex-direction: unset !important;
+    }
+
+    /* 2. Body: nunca flex en móvil */
+    html body {
+        display: block !important;
+        overflow-x: hidden !important;
+    }
+
+    /* 3. El .main ocupa el ancho completo sin sidebar */
+    #appMain.visible > .main,
+    #appMain > .main {
+        flex: unset !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        padding: 0 !important;
+        max-height: none !important;
+        overflow-y: auto !important;
+        height: auto !important;
+        padding-top: calc(var(--mob-header-h) + var(--mob-safe-top)) !important;
+        padding-bottom: calc(var(--mob-bottom-nav-h) + var(--mob-safe-bottom) + 8px) !important;
+        box-sizing: border-box !important;
+    }
+
+    /* 4. Sidebar completamente oculto */
+    #appMain > .sidebar,
+    #appMain > aside.sidebar,
+    .sidebar {
+        display: none !important;
+    }
+
+    /* 5. Sidebar overlay oculto */
+    .sidebar-overlay {
+        display: none !important;
+    }
+
+    /* 6. Topbar oculto — lo reemplaza #mobileHeader */
+    .main > .topbar,
+    .topbar {
+        display: none !important;
+    }
+
+    /* 7. Módulos con padding interno */
+    .module-panel {
+        padding: 16px 16px 12px 16px !important;
+        box-sizing: border-box !important;
+        width: 100% !important;
+    }
+
+    /* 8. Header móvil visible y correcto */
+    #mobileHeader {
+        display: flex !important;
+    }
+
+    /* 9. Bottom nav del ERP visible y correcto */
+    .mobile-bottom-nav {
+        display: flex !important;
+    }
+
+    /* 10. Toasts en top para no tapar nav */
+    #toastContainer {
+        bottom: auto !important;
+        top: calc(var(--mob-header-h) + var(--mob-safe-top) + 8px) !important;
+        left: 12px !important;
+        right: 12px !important;
+    }
+
+    /* 11. Offlinebanner existente del ERP oculto en móvil (usamos el nuestro) */
+    #offlineBanner {
+        display: none !important;
+    }
+}
+
+/* En pantallas grandes: header y elementos móviles ocultos */
+@media (min-width: 769px) {
+    #mobileHeader,
+    #mobileDrawer,
+    #mobileDrawerOverlay,
+    #mobileOfflineBanner,
+    #mobSyncBar,
+    #mobSheet,
+    #mobSheetOverlay,
+    .mob-fab {
+        display: none !important;
+    }
+
+    /* Restaurar el layout PC */
+    #appMain,
+    #appMain.visible {
+        display: flex !important;
+    }
+}

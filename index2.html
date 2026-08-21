@@ -43,8 +43,6 @@
 
     <!-- Apple Splash Screens (los más comunes) -->
     <link rel="apple-touch-startup-image" href="/icons/icon-512.png" />
-    <!-- ── Interfaz Móvil Profesional ── -->
-    <link rel="stylesheet" href="/mobile.css" />
     <script src="https://cdn.tailwindcss.com">
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
@@ -3706,6 +3704,8 @@
     }
 
     </style>
+    <!-- ── Interfaz Móvil Profesional — carga DESPUÉS del style ERP para ganar cascade ── -->
+    <link rel="stylesheet" href="/mobile.css" />
 </head>
 <body>
 

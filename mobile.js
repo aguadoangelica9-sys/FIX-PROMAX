@@ -635,7 +635,6 @@
        ══════════════════════════════════════════════════════════ */
     function _init() {
         if (!isMobile()) {
-            // En PC: no hacer nada, solo monitorear cambios de tamaño
             window.addEventListener('resize', _onResize);
             return;
         }
@@ -650,16 +649,66 @@
         _makeSearchSticky();
 
         // Hooks sobre las funciones del ERP
-        // Algunos pueden no estar listos aún — reintentamos brevemente
         _tryHooks();
 
         // Pull-to-refresh
         setTimeout(_initPullToRefresh, 500);
+
+        // Si el usuario YA está logueado cuando mobile.js carga
+        // (recarga de página con sesión activa), activar UI móvil
+        _watchAppVisible();
+    }
+
+    /* Vigila cuando #appMain se vuelve visible (clase 'visible')
+       para activar la UI móvil aunque el login haya ocurrido antes de que
+       mobile.js cargara */
+    function _watchAppVisible() {
+        const appEl = document.getElementById('appMain');
+        if (!appEl) return;
+
+        // Ya visible — activar inmediatamente
+        if (appEl.classList.contains('visible')) {
+            _onAppShown();
+            return;
+        }
+
+        // Observar cuando se añade la clase 'visible'
+        const obs = new MutationObserver((mutations) => {
+            for (const m of mutations) {
+                if (m.type === 'attributes' && m.attributeName === 'class') {
+                    if (appEl.classList.contains('visible')) {
+                        obs.disconnect();
+                        _onAppShown();
+                        break;
+                    }
+                }
+            }
+        });
+        obs.observe(appEl, { attributes: true });
+    }
+
+    /* Se ejecuta cuando la app se vuelve visible (usuario logueado) */
+    function _onAppShown() {
+        if (!isMobile()) return;
+
+        // Actualizar info del usuario en el drawer
+        setTimeout(_updateDrawerUser, 100);
+
+        // Navegar al módulo correcto según modo del usuario
+        const homeMod = _getHomeMod();
+        _currentMod = homeMod;
+        _updateBottomNav(homeMod);
+        _updateMobHeader(homeMod);
+
+        // Sincronizar estado de UI
+        _syncMobThemeBtn();
+        _syncMobCurrency();
+        _syncAlertBadge();
     }
 
     function _tryHooks(attempt) {
         attempt = attempt || 0;
-        if (attempt > 20) return; // máx 2 segundos de espera
+        if (attempt > 30) return;
 
         const ready = typeof navigateTo !== 'undefined'
                    && typeof toggleDark !== 'undefined'
@@ -670,9 +719,7 @@
             _hookToggleDark();
             _hookSetDisplayCurrency();
             _hookPersist();
-            // _hookEnterApp puede estar listo más tarde (depende de subscription.js)
-            setTimeout(_hookEnterApp, 200);
-            // Sync inicial
+            setTimeout(_hookEnterApp, 300);
             _syncAlertBadge();
         } else {
             setTimeout(() => _tryHooks(attempt + 1), 100);
@@ -681,7 +728,6 @@
 
     function _onResize() {
         if (isMobile()) {
-            // Se volvió móvil (redimensionado)
             _init();
             window.removeEventListener('resize', _onResize);
         }
@@ -691,23 +737,19 @@
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', _init);
     } else {
-        // Ya cargado — esperar un tick para que el ERP termine su init
         setTimeout(_init, 0);
     }
 
     /* ══════════════════════════════════════════════════════════
-       API PÚBLICA — exponer funciones que necesita el HTML
+       API PÚBLICA
        ══════════════════════════════════════════════════════════ */
-    window.showPOSPanel      = window.showPOSPanel;      // ya asignado arriba
-    window.openMobSheet      = window.openMobSheet;      // ya asignado arriba
-    window.closeMobSheet     = window.closeMobSheet;     // ya asignado arriba
-    window.openMobileDrawer  = window.openMobileDrawer;  // ya asignado arriba
-    window.closeMobileDrawer = window.closeMobileDrawer; // ya asignado arriba
-    window.mobNavigate       = window.mobNavigate;       // ya asignado arriba
+    window.showPOSPanel      = window.showPOSPanel;
+    window.openMobSheet      = window.openMobSheet;
+    window.closeMobSheet     = window.closeMobSheet;
+    window.openMobileDrawer  = window.openMobileDrawer;
+    window.closeMobileDrawer = window.closeMobileDrawer;
+    window.mobNavigate       = window.mobNavigate;
 
-    // Exponer función para que updateMobileBottomNav() del ERP funcione
-    // (el ERP llama a updateMobileBottomNav(mod) desde navigateTo)
-    // Sobreescribir la del ERP con la nuestra (que además actualiza header y FABs)
     window.updateMobileBottomNav = function(mod) {
         _updateBottomNav(mod);
         _updateMobHeader(mod);
