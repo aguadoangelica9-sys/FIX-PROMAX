@@ -470,6 +470,10 @@ app.use(express.static(__dirname, {
         if (filePath.endsWith('sw.js')) {
             res.setHeader('Cache-Control', 'no-store');
         }
+        // mobile.css y mobile.js: sin caché para que los cambios se vean de inmediato
+        if (filePath.endsWith('mobile.css') || filePath.endsWith('mobile.js')) {
+            res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+        }
     }
 }));
 

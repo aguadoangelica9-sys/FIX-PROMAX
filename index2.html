@@ -43,6 +43,8 @@
 
     <!-- Apple Splash Screens (los más comunes) -->
     <link rel="apple-touch-startup-image" href="/icons/icon-512.png" />
+    <!-- ── Interfaz Móvil Profesional ── -->
+    <link rel="stylesheet" href="/mobile.css" />
     <script src="https://cdn.tailwindcss.com">
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
@@ -5567,13 +5569,14 @@
             <span class="nav-icon">📦</span>
             <span class="nav-label">Inventario</span>
         </button>
-        <button class="nav-btn" id="mbn-reports" onclick="mobileNavTo('reports')" aria-label="Reportes">
-            <span class="nav-icon">📊</span>
-            <span class="nav-label">Reportes</span>
+        <button class="nav-btn" id="mbn-customers" onclick="mobileNavTo('customers')" aria-label="Clientes">
+            <span class="nav-icon">👥</span>
+            <span class="nav-label">Clientes</span>
         </button>
-        <button class="nav-btn" id="mbn-more" onclick="toggleMobileSidebar()" aria-label="Más opciones">
-            <span class="nav-icon">⋯</span>
+        <button class="nav-btn" id="mbn-more" onclick="openMobileDrawer ? openMobileDrawer() : toggleMobileSidebar()" aria-label="Más opciones">
+            <span class="nav-icon">☰</span>
             <span class="nav-label">Más</span>
+            <span class="nav-badge" id="mobAlertBadge" style="display:none;position:absolute;top:4px;right:calc(50% - 20px);background:#ef4444;color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:none;align-items:center;justify-content:center;padding:0 3px;"></span>
         </button>
     </nav>
 
@@ -14292,15 +14295,28 @@
         const NAV_MAP = {
             'dashboard':       'mbn-dashboard',
             'basic-dashboard': 'mbn-dashboard',
-            'basic-reports':   'mbn-reports',
+            'basic-reports':   'mbn-more',
             'pos':             'mbn-pos',
-            'sales':           'mbn-pos',
-            'invoices':        'mbn-pos',
+            'sales':           'mbn-more',
+            'invoices':        'mbn-more',
             'inventory':       'mbn-inventory',
             'products':        'mbn-inventory',
-            'reports':         'mbn-reports',
-            'accounting':      'mbn-reports',
-            'finance':         'mbn-reports',
+            'customers':       'mbn-customers',
+            'suppliers':       'mbn-more',
+            'expenses':        'mbn-more',
+            'purchases':       'mbn-more',
+            'returns':         'mbn-more',
+            'reports':         'mbn-more',
+            'accounting':      'mbn-more',
+            'finance':         'mbn-more',
+            'payables':        'mbn-more',
+            'receivables':     'mbn-more',
+            'ai':              'mbn-more',
+            'alerts':          'mbn-more',
+            'settings':        'mbn-more',
+            'plans':           'mbn-more',
+            'team':            'mbn-more',
+            'support':         'mbn-more',
         };
 
         function updateMobileBottomNav(mod) {
@@ -14515,5 +14531,183 @@
     ═══════════════════════════════════════════════════════════════ -->
     <script src="excel-import.js"></script>
     <script src="/subscription.js"></script>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         INTERFAZ MÓVIL — Header, Bottom Nav, Drawer, Offline Banner
+         Solo visible en pantallas ≤ 768px (mobile.css lo oculta en PC)
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <!-- ── Banner Offline Móvil ── -->
+    <div id="mobileOfflineBanner" class="mob-only" role="alert" aria-live="polite">
+        📡 Sin conexión — trabajando con datos locales
+    </div>
+
+    <!-- ── Barra de sincronización móvil ── -->
+    <div id="mobSyncBar" class="mob-only" role="progressbar" aria-hidden="true"></div>
+
+    <!-- ── HEADER MÓVIL ── -->
+    <header id="mobileHeader" class="mob-only" role="banner">
+        <span id="mobileHeaderLogo" aria-label="FIX PRO MAX">⚡ FIX PRO MAX</span>
+        <span id="mobileHeaderTitle" aria-live="polite">Inicio</span>
+        <div id="mobileHeaderActions">
+            <!-- Selector de moneda compacto -->
+            <div id="mobileHeaderCurrency" title="Cambiar moneda de visualización">
+                <select id="mobCurrencySelect"
+                    onchange="setDisplayCurrency(this.value)"
+                    aria-label="Moneda de visualización">
+                    <option value="VES">🇻🇪 VES</option>
+                    <option value="USD" selected>🇺🇸 USD</option>
+                    <option value="EUR">🇪🇺 EUR</option>
+                </select>
+            </div>
+            <!-- Tema -->
+            <button class="mob-icon-btn" onclick="toggleDark()" aria-label="Cambiar tema" id="mobThemeBtn">🌙</button>
+            <!-- Abrir drawer -->
+            <button class="mob-icon-btn" onclick="openMobileDrawer()" aria-label="Abrir menú" id="mobMenuBtn">☰</button>
+        </div>
+    </header>
+
+    <!-- Nota: el bottom nav lo provee el ERP en #mobileBottomNav (.mobile-bottom-nav)
+         mobile.css lo mejora visualmente y mobile.js lo controla -->
+
+    <!-- ── OVERLAY DRAWER ── -->
+    <div id="mobileDrawerOverlay" class="mob-only" onclick="closeMobileDrawer()" aria-hidden="true"></div>
+
+    <!-- ── DRAWER MENÚ COMPLETO ── -->
+    <aside id="mobileDrawer" class="mob-only" role="dialog" aria-modal="true" aria-label="Menú de navegación">
+        <!-- Cabecera del drawer con info del usuario -->
+        <div id="mobileDrawerHeader" style="position:relative;">
+            <button id="mobileDrawerCloseBtn" onclick="closeMobileDrawer()" aria-label="Cerrar menú">✕</button>
+            <div style="display:flex;align-items:center;gap:12px;margin-top:4px;">
+                <div id="mobDrawerAvatar" style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;flex-shrink:0;">?</div>
+                <div>
+                    <div id="mobileDrawerUserName" style="color:#fff;">Usuario</div>
+                    <div id="mobileDrawerUserRole" style="color:rgba(255,255,255,0.8);font-size:12px;">—</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cuerpo scrollable del drawer -->
+        <div id="mobileDrawerBody">
+
+            <!-- PRINCIPAL -->
+            <div class="mob-drawer-section-label">Principal</div>
+            <button class="mob-drawer-item" onclick="mobNavigate('dashboard');closeMobileDrawer()">
+                <span class="mob-drawer-icon">🏠</span> Dashboard
+                <span class="mob-drawer-arrow">›</span>
+            </button>
+            <button class="mob-drawer-item" onclick="mobNavigate('pos');closeMobileDrawer()">
+                <span class="mob-drawer-icon">🛒</span> Punto de Venta
+                <span class="mob-drawer-arrow">›</span>
+            </button>
+            <button class="mob-drawer-item" onclick="mobNavigate('sales');closeMobileDrawer()">
+                <span class="mob-drawer-icon">📋</span> Ventas
+                <span class="mob-drawer-arrow">›</span>
+            </button>
+            <button class="mob-drawer-item" onclick="mobNavigate('invoices');closeMobileDrawer()">
+                <span class="mob-drawer-icon">🧾</span> Facturas
+                <span class="mob-drawer-arrow">›</span>
+            </button>
+
+            <!-- GESTIÓN -->
+            <div class="mob-drawer-section-label">Gestión</div>
+            <button class="mob-drawer-item" onclick="mobNavigate('inventory');closeMobileDrawer()">
+                <span class="mob-drawer-icon">📦</span> Inventario
+                <span class="mob-drawer-arrow">›</span>
+            </button>
+            <button class="mob-drawer-item" onclick="mobNavigate('customers');closeMobileDrawer()">
+                <span class="mob-drawer-icon">👤</span> Clientes
+                <span class="mob-drawer-arrow">›</span>
+            </button>
+            <button class="mob-drawer-item" onclick="mobNavigate('suppliers');closeMobileDrawer()">
+                <span class="mob-drawer-icon">🏢</span> Proveedores
+                <span class="mob-drawer-arrow">›</span>
+            </button>
+            <button class="mob-drawer-item" onclick="mobNavigate('expenses');closeMobileDrawer()">
+                <span class="mob-drawer-icon">💸</span> Gastos
+                <span class="mob-drawer-arrow">›</span>
+            </button>
+            <button class="mob-drawer-item" onclick="mobNavigate('purchases');closeMobileDrawer()">
+                <span class="mob-drawer-icon">🛒</span> Compras
+                <span class="mob-drawer-arrow">›</span>
+            </button>
+
+            <!-- FINANZAS -->
+            <div class="mob-drawer-section-label">Finanzas</div>
+            <button class="mob-drawer-item" onclick="mobNavigate('reports');closeMobileDrawer()">
+                <span class="mob-drawer-icon">📈</span> Reportes
+                <span class="mob-drawer-arrow">›</span>
+            </button>
+            <button class="mob-drawer-item" onclick="mobNavigate('accounting');closeMobileDrawer()">
+                <span class="mob-drawer-icon">📒</span> Contabilidad
+                <span class="mob-drawer-arrow">›</span>
+            </button>
+            <button class="mob-drawer-item" onclick="mobNavigate('receivables');closeMobileDrawer()">
+                <span class="mob-drawer-icon">💰</span> Cuentas × Cobrar
+                <span class="mob-drawer-arrow">›</span>
+            </button>
+            <button class="mob-drawer-item" onclick="mobNavigate('payables');closeMobileDrawer()">
+                <span class="mob-drawer-icon">💳</span> Cuentas × Pagar
+                <span class="mob-drawer-arrow">›</span>
+            </button>
+            <button class="mob-drawer-item" onclick="mobNavigate('finance');closeMobileDrawer()">
+                <span class="mob-drawer-icon">💹</span> Finanzas P&amp;L
+                <span class="mob-drawer-arrow">›</span>
+            </button>
+
+            <!-- SISTEMA -->
+            <div class="mob-drawer-section-label">Sistema</div>
+            <button class="mob-drawer-item" id="mobDrawerTeamBtn" onclick="mobNavigate('team');closeMobileDrawer()" style="display:none;">
+                <span class="mob-drawer-icon">👥</span> Equipo
+                <span class="mob-drawer-arrow">›</span>
+            </button>
+            <button class="mob-drawer-item" onclick="mobNavigate('alerts');closeMobileDrawer()">
+                <span class="mob-drawer-icon">🔔</span> Alertas
+                <span class="mob-nav-badge" id="mobDrawerAlertBadge" style="display:none;position:static;margin-left:auto;"></span>
+                <span class="mob-drawer-arrow">›</span>
+            </button>
+            <button class="mob-drawer-item" onclick="mobNavigate('ai');closeMobileDrawer()">
+                <span class="mob-drawer-icon">🤖</span> AI Copilot
+                <span class="mob-drawer-arrow">›</span>
+            </button>
+            <button class="mob-drawer-item" onclick="mobNavigate('settings');closeMobileDrawer()">
+                <span class="mob-drawer-icon">⚙️</span> Configuración
+                <span class="mob-drawer-arrow">›</span>
+            </button>
+            <button class="mob-drawer-item" onclick="mobNavigate('plans');closeMobileDrawer()">
+                <span class="mob-drawer-icon">💳</span> Mi Suscripción
+                <span class="mob-drawer-arrow">›</span>
+            </button>
+            <button class="mob-drawer-item" onclick="mobNavigate('support');closeMobileDrawer()">
+                <span class="mob-drawer-icon">🆘</span> Soporte
+                <span class="mob-drawer-arrow">›</span>
+            </button>
+            <button class="mob-drawer-item" onclick="if(window.CurrencySystem)window.CurrencySystem.openRatesHistory();closeMobileDrawer();">
+                <span class="mob-drawer-icon">💱</span> Monedas &amp; Tasas
+                <span class="mob-drawer-arrow">›</span>
+            </button>
+        </div><!-- /#mobileDrawerBody -->
+
+        <!-- Footer del drawer -->
+        <div id="mobileDrawerFooter">
+            <button class="btn btn-sm" style="flex:1;" onclick="closeMobileDrawer();openUserProfile();" aria-label="Mi perfil">
+                👤 Mi perfil
+            </button>
+            <button class="btn btn-sm btn-danger" style="flex:1;" onclick="closeMobileDrawer();logoutUser();" aria-label="Cerrar sesión">
+                🚪 Salir
+            </button>
+        </div>
+    </aside>
+
+    <!-- ── Bottom Sheet reutilizable (acciones contextuales) ── -->
+    <div id="mobSheetOverlay" class="mob-bottom-sheet-overlay mob-only" onclick="closeMobSheet()"></div>
+    <div id="mobSheet" class="mob-bottom-sheet mob-only" role="dialog" aria-modal="true">
+        <div class="mob-bottom-sheet-handle"></div>
+        <div class="mob-bottom-sheet-title" id="mobSheetTitle">Acciones</div>
+        <div id="mobSheetBody"></div>
+    </div>
+
+    <!-- ── Script principal móvil ── -->
+    <script src="/mobile.js"></script>
 </body>
 </html>

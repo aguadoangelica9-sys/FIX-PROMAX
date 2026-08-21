@@ -1,0 +1,1512 @@
+/* ================================================================
+   FIX PRO MAX — MOBILE.CSS
+   Interfaz móvil propia. No modifica la versión PC.
+   Activo únicamente en viewport ≤ 768px (controlado por JS también).
+   ================================================================ */
+
+/* ── Variables extra para móvil ── */
+:root {
+    --mob-bottom-nav-h: 64px;
+    --mob-header-h: 56px;
+    --mob-safe-bottom: env(safe-area-inset-bottom, 0px);
+    --mob-safe-top: env(safe-area-inset-top, 0px);
+    --mob-touch-min: 48px;
+    --mob-radius: 16px;
+    --mob-radius-sm: 10px;
+    --mob-card-pad: 16px;
+}
+
+/* ================================================================
+   OCULTAR / MOSTRAR según plataforma
+   ================================================================ */
+@media (min-width: 769px) {
+    /* En PC: ocultar todo lo exclusivo móvil */
+    #mobileHeader,
+    #mobileBottomNav,
+    #mobileDrawerOverlay,
+    #mobileDrawer,
+    #mobileOfflineBanner,
+    .mob-only { display: none !important; }
+}
+
+@media (max-width: 768px) {
+    /* En móvil: ocultar lo exclusivo PC */
+    .sidebar,
+    .topbar,
+    .sidebar-overlay,
+    .pc-only { display: none !important; }
+
+    /* El main no tiene padding lateral de PC */
+    .main {
+        padding: 0 !important;
+        max-height: none !important;
+        overflow-y: auto !important;
+        padding-bottom: calc(var(--mob-bottom-nav-h) + var(--mob-safe-bottom) + 8px) !important;
+        padding-top: calc(var(--mob-header-h) + var(--mob-safe-top)) !important;
+    }
+
+    /* Cada módulo tiene su propio padding interior */
+    .module-panel {
+        padding: 16px 16px 8px !important;
+    }
+}
+
+/* ================================================================
+   HEADER MÓVIL FIJO
+   ================================================================ */
+#mobileHeader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--mob-header-h);
+    padding-top: var(--mob-safe-top);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-left: 16px;
+    padding-right: 12px;
+    z-index: 500;
+    box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+    gap: 8px;
+    transition: background var(--transition), border var(--transition);
+}
+
+#mobileHeaderLogo {
+    font-size: 17px;
+    font-weight: 800;
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+#mobileHeaderTitle {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    flex: 1;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#mobileHeaderActions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.mob-icon-btn {
+    width: var(--mob-touch-min);
+    height: var(--mob-touch-min);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    border-radius: var(--mob-radius-sm);
+    cursor: pointer;
+    font-size: 18px;
+    color: var(--text-2);
+    transition: background var(--transition);
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+.mob-icon-btn:active {
+    background: var(--surface-hover);
+}
+
+/* ================================================================
+   BOTTOM NAVIGATION BAR
+   ================================================================ */
+#mobileBottomNav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(var(--mob-bottom-nav-h) + var(--mob-safe-bottom));
+    padding-bottom: var(--mob-safe-bottom);
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: stretch;
+    z-index: 500;
+    box-shadow: 0 -2px 16px rgba(0,0,0,0.06);
+    transition: background var(--transition), border var(--transition);
+}
+
+.mob-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 6px 4px 2px;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    transition: background var(--transition);
+    border-radius: 0;
+    position: relative;
+    min-width: 0;
+}
+
+.mob-nav-item:active {
+    background: var(--surface-hover);
+}
+
+.mob-nav-icon {
+    font-size: 22px;
+    line-height: 1;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: block;
+}
+
+.mob-nav-label {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-3);
+    transition: color var(--transition);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    font-family: inherit;
+}
+
+.mob-nav-item.active .mob-nav-label {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.mob-nav-item.active .mob-nav-icon {
+    transform: translateY(-3px) scale(1.15);
+}
+
+/* Indicador activo */
+.mob-nav-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 3px;
+    background: var(--primary);
+    border-radius: 0 0 3px 3px;
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mob-nav-item.active::before {
+    width: 32px;
+}
+
+/* Badge en tab Más */
+.mob-nav-badge {
+    position: absolute;
+    top: 4px;
+    right: calc(50% - 20px);
+    background: var(--danger);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 3px;
+    line-height: 1;
+}
+
+/* ================================================================
+   DRAWER MENÚ LATERAL COMPLETO
+   ================================================================ */
+#mobileDrawerOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(4px);
+    z-index: 600;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+#mobileDrawerOverlay.open {
+    opacity: 1;
+    pointer-events: all;
+}
+
+#mobileDrawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(320px, 88vw);
+    background: var(--surface);
+    z-index: 700;
+    transform: translateX(100%);
+    transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: -8px 0 32px rgba(0,0,0,0.18);
+}
+
+#mobileDrawer.open {
+    transform: translateX(0);
+}
+
+#mobileDrawerHeader {
+    padding: calc(var(--mob-safe-top) + 16px) 16px 16px;
+    background: var(--primary-gradient);
+    color: #fff;
+    flex-shrink: 0;
+}
+
+#mobileDrawerUserName {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+
+#mobileDrawerUserRole {
+    font-size: 12px;
+    opacity: 0.85;
+}
+
+#mobileDrawerCloseBtn {
+    position: absolute;
+    top: calc(var(--mob-safe-top) + 10px);
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+}
+
+#mobileDrawerBody {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0 16px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.mob-drawer-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-3);
+    padding: 16px 20px 6px;
+}
+
+.mob-drawer-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 13px 20px;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    transition: background var(--transition);
+}
+
+.mob-drawer-item:active,
+.mob-drawer-item.active {
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+.mob-drawer-item .mob-drawer-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--mob-radius-sm);
+    background: var(--surface-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.mob-drawer-item.active .mob-drawer-icon {
+    background: var(--primary-light);
+}
+
+.mob-drawer-item .mob-drawer-arrow {
+    margin-left: auto;
+    color: var(--text-3);
+    font-size: 12px;
+}
+
+#mobileDrawerFooter {
+    padding: 12px 16px calc(var(--mob-safe-bottom) + 12px);
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* ================================================================
+   BANNER OFFLINE MÓVIL
+   ================================================================ */
+#mobileOfflineBanner {
+    position: fixed;
+    top: calc(var(--mob-header-h) + var(--mob-safe-top));
+    left: 0;
+    right: 0;
+    background: #f59e0b;
+    color: #000;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 8px 16px;
+    text-align: center;
+    z-index: 490;
+    display: none;
+}
+
+#mobileOfflineBanner.visible {
+    display: block;
+}
+
+/* ================================================================
+   CARDS MÓVILES — Diseño táctil
+   ================================================================ */
+@media (max-width: 768px) {
+    /* Cards base más compactas */
+    .card {
+        border-radius: var(--mob-radius) !important;
+        padding: var(--mob-card-pad) !important;
+        margin-bottom: 12px !important;
+    }
+
+    /* Grids pasan a 1 columna en móvil pequeño */
+    .grid-4, .grid-3 {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+        margin-bottom: 14px !important;
+    }
+
+    .grid-2 {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+    }
+
+    /* Stat cards más compactas */
+    .stat {
+        gap: 10px;
+    }
+    .stat .icon-box {
+        width: 40px !important;
+        height: 40px !important;
+        font-size: 18px !important;
+    }
+    .stat .content .value {
+        font-size: 18px !important;
+    }
+    .stat .content .label {
+        font-size: 11px !important;
+    }
+
+    /* Tablas con scroll horizontal */
+    .table-wrap {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    table th, table td {
+        padding: 10px 12px !important;
+        font-size: 13px !important;
+        white-space: nowrap;
+    }
+
+    /* Ocultar columnas secundarias en móvil pequeño */
+    @media (max-width: 480px) {
+        .grid-4, .grid-3 {
+            grid-template-columns: 1fr 1fr !important;
+        }
+    }
+}
+
+@media (max-width: 380px) {
+    .grid-4, .grid-3 {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* ================================================================
+   BOTONES MÓVILES — Touch targets mínimo 48px
+   ================================================================ */
+@media (max-width: 768px) {
+    .btn {
+        min-height: var(--mob-touch-min) !important;
+        font-size: 14px !important;
+        padding: 0 20px !important;
+        border-radius: var(--mob-radius-sm) !important;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+    }
+    .btn-sm {
+        min-height: 40px !important;
+        font-size: 13px !important;
+        padding: 0 14px !important;
+    }
+    .btn-icon {
+        width: var(--mob-touch-min) !important;
+        height: var(--mob-touch-min) !important;
+    }
+    /* Botón Completar Venta bien grande */
+    .btn-success.w-full {
+        min-height: 54px !important;
+        font-size: 16px !important;
+        font-weight: 700 !important;
+        border-radius: var(--mob-radius) !important;
+    }
+}
+
+/* ================================================================
+   FORMULARIOS MÓVILES
+   ================================================================ */
+@media (max-width: 768px) {
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="search"],
+    input[type="date"],
+    input[type="tel"],
+    textarea,
+    select {
+        min-height: var(--mob-touch-min) !important;
+        font-size: 16px !important;     /* Evita zoom en iOS */
+        border-radius: var(--mob-radius-sm) !important;
+        padding: 12px 14px !important;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    /* Labels más visibles */
+    label {
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        margin-bottom: 6px !important;
+        display: block;
+    }
+
+    /* Campos en columna en móvil */
+    .form-row,
+    [style*="display:grid"],
+    [style*="display: grid"] {
+        flex-direction: column !important;
+    }
+
+    /* Modal adaptado */
+    .modal-overlay {
+        padding: 0 !important;
+        align-items: flex-end !important;
+    }
+
+    .modal-box {
+        border-radius: var(--mob-radius) var(--mob-radius) 0 0 !important;
+        max-height: 92vh !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Quitar animación de entrada lateral en móvil, usar slide-up */
+    @keyframes slideUp {
+        from { transform: translateY(100%); }
+        to   { transform: translateY(0); }
+    }
+    .modal-box {
+        animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+}
+
+/* ================================================================
+   LOGIN MÓVIL
+   ================================================================ */
+@media (max-width: 768px) {
+    #authScreen .auth-bg {
+        flex-direction: column !important;
+        min-height: 100dvh !important;
+        padding: 0 !important;
+    }
+
+    /* Ocultar panel de branding/features en móvil */
+    #authScreen .auth-brand {
+        display: none !important;
+    }
+
+    #authScreen .auth-form-panel {
+        width: 100% !important;
+        min-height: 100dvh !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: flex-start !important;
+        padding: calc(var(--mob-safe-top) + 24px) 20px calc(var(--mob-safe-bottom) + 24px) !important;
+        background: var(--bg) !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #authScreen .auth-card {
+        width: 100% !important;
+        max-width: 440px !important;
+        margin: 0 auto !important;
+        box-shadow: none !important;
+        border: 1px solid var(--border) !important;
+        border-radius: var(--mob-radius) !important;
+    }
+
+    /* Logo en top del formulario móvil */
+    #authScreen .auth-form-panel::before {
+        content: '⚡ FIX PRO MAX';
+        display: block;
+        font-size: 20px;
+        font-weight: 800;
+        text-align: center;
+        margin-bottom: 20px;
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        letter-spacing: -0.4px;
+    }
+
+    /* Tabs de auth más grandes para touch */
+    #authScreen .auth-tabs {
+        display: flex !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        gap: 0 !important;
+        border-bottom: 1px solid var(--border) !important;
+        padding: 0 !important;
+        margin-bottom: 20px !important;
+        scrollbar-width: none;
+    }
+    #authScreen .auth-tabs::-webkit-scrollbar { display: none; }
+
+    #authScreen .auth-tab {
+        min-height: 44px !important;
+        white-space: nowrap !important;
+        flex-shrink: 0 !important;
+        font-size: 13px !important;
+        padding: 0 14px !important;
+    }
+
+    /* Auth inputs grandes */
+    #authScreen input {
+        font-size: 16px !important;
+        min-height: 50px !important;
+    }
+
+    #authScreen .auth-btn {
+        min-height: 50px !important;
+        font-size: 15px !important;
+        border-radius: var(--mob-radius-sm) !important;
+    }
+}
+
+/* ================================================================
+   DASHBOARD MÓVIL — Tarjetas KPI compactas
+   ================================================================ */
+@media (max-width: 768px) {
+    #module-dashboard .grid-4 {
+        grid-template-columns: 1fr 1fr !important;
+    }
+
+    /* Ocultar chart de barras complejo en móvil muy pequeño — usar versión simplificada */
+    @media (max-width: 380px) {
+        #salesChart .bar-label { display: none; }
+    }
+
+    /* Widget BCV en móvil: más compacto */
+    #bcvRateWidgetCard {
+        padding: 10px 14px !important;
+        gap: 8px !important;
+        margin-bottom: 14px !important;
+    }
+}
+
+/* ================================================================
+   POS MÓVIL
+   ================================================================ */
+@media (max-width: 768px) {
+    /* El grid POS cambia a columna única con tabs */
+    #module-pos .pos-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        height: auto !important;
+        gap: 0 !important;
+    }
+
+    /* Panel de productos */
+    #module-pos .pos-grid > div:first-child {
+        display: none; /* oculto por defecto, JS lo muestra */
+    }
+    #module-pos .pos-grid > div:first-child.mob-active {
+        display: block !important;
+    }
+
+    /* Panel carrito */
+    #module-pos .pos-cart {
+        display: none; /* oculto por defecto, JS lo muestra */
+        height: auto !important;
+        border-radius: 0 !important;
+        border-left: none !important;
+        border-right: none !important;
+        border-top: none !important;
+    }
+    #module-pos .pos-cart.mob-active {
+        display: flex !important;
+    }
+
+    /* Grid de productos en móvil: 2 columnas */
+    .pos-products {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+        max-height: none !important;
+    }
+
+    /* Cards de producto táctiles */
+    .pos-product {
+        padding: 12px 8px !important;
+        min-height: 90px !important;
+    }
+
+    .pos-product .name {
+        font-size: 12px !important;
+        white-space: normal !important;
+        -webkit-line-clamp: 2;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .pos-product .price {
+        font-size: 15px !important;
+    }
+
+    /* Barra de tabs POS (productos | carrito) */
+    #posMobileTabs {
+        position: sticky !important;
+        top: calc(var(--mob-header-h) + var(--mob-safe-top)) !important;
+        z-index: 200 !important;
+        background: var(--surface) !important;
+        border-bottom: 1px solid var(--border) !important;
+        display: flex !important;
+        margin: -16px -16px 16px -16px !important;
+    }
+
+    .pos-mobile-tab {
+        flex: 1;
+        padding: 13px 8px;
+        border: none;
+        background: transparent;
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-3);
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+        transition: all var(--transition);
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+    }
+
+    .pos-mobile-tab.active {
+        color: var(--primary);
+        border-bottom-color: var(--primary);
+    }
+
+    /* Items del carrito más espaciados */
+    .pos-cart .cart-item {
+        padding: 12px 4px !important;
+        gap: 8px !important;
+    }
+
+    .pos-cart .cart-item .qty button {
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 18px !important;
+    }
+
+    /* Selector de moneda y pago en columna */
+    .pos-cart .payment-row {
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+
+    .pos-cart .payment-row select,
+    .pos-cart .payment-row input {
+        width: 100% !important;
+    }
+}
+
+/* ================================================================
+   INVENTARIO / PRODUCTOS MÓVIL — vista de cards
+   ================================================================ */
+@media (max-width: 768px) {
+    /* Barra de búsqueda sticky */
+    .mob-search-sticky {
+        position: sticky !important;
+        top: calc(var(--mob-header-h) + var(--mob-safe-top)) !important;
+        z-index: 200 !important;
+        background: var(--bg) !important;
+        padding: 10px 0 8px !important;
+        margin: -16px -16px 0 -16px !important;
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+        border-bottom: 1px solid var(--border) !important;
+    }
+
+    /* Cards de producto en inventario */
+    .mob-product-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--mob-radius);
+        padding: 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
+        box-shadow: var(--shadow);
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+        cursor: pointer;
+        transition: background var(--transition);
+    }
+
+    .mob-product-card:active {
+        background: var(--surface-hover);
+    }
+
+    .mob-product-img {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--mob-radius-sm);
+        background: var(--surface-2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+
+    .mob-product-img img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .mob-product-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .mob-product-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .mob-product-sub {
+        font-size: 12px;
+        color: var(--text-3);
+        margin-top: 2px;
+    }
+
+    .mob-product-price {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--primary);
+        text-align: right;
+        flex-shrink: 0;
+    }
+
+    .mob-product-stock {
+        font-size: 11px;
+        text-align: right;
+        margin-top: 2px;
+    }
+
+    /* FAB — botón flotante para acción principal */
+    .mob-fab {
+        position: fixed;
+        bottom: calc(var(--mob-bottom-nav-h) + var(--mob-safe-bottom) + 16px);
+        right: 20px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: var(--primary-gradient);
+        color: #fff;
+        border: none;
+        box-shadow: 0 4px 20px rgba(79,70,229,0.45);
+        font-size: 26px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 300;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .mob-fab:active {
+        transform: scale(0.92);
+        box-shadow: 0 2px 10px rgba(79,70,229,0.3);
+    }
+}
+
+/* ================================================================
+   CLIENTES / PROVEEDORES MÓVIL
+   ================================================================ */
+.mob-contact-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--mob-radius);
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background var(--transition);
+}
+
+.mob-contact-card:active {
+    background: var(--surface-hover);
+}
+
+.mob-contact-avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: var(--primary-gradient);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.mob-contact-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.mob-contact-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mob-contact-sub {
+    font-size: 12px;
+    color: var(--text-3);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mob-contact-balance {
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.mob-contact-amount {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.mob-contact-amount.debt {
+    color: var(--danger);
+}
+
+.mob-contact-amount.ok {
+    color: var(--success);
+}
+
+/* Acciones rápidas deslizables (call, edit, etc.) */
+.mob-quick-actions {
+    display: flex;
+    gap: 6px;
+    padding: 10px 16px 4px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+}
+.mob-quick-actions::-webkit-scrollbar { display: none; }
+
+.mob-action-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-2);
+    cursor: pointer;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    transition: background var(--transition);
+    flex-shrink: 0;
+    font-family: inherit;
+}
+
+.mob-action-chip:active {
+    background: var(--surface-hover);
+}
+
+.mob-action-chip.primary {
+    background: var(--primary-light);
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
+/* ================================================================
+   FACTURAS / VENTAS MÓVIL — lista de items
+   ================================================================ */
+.mob-invoice-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--mob-radius);
+    padding: 14px;
+    margin-bottom: 8px;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background var(--transition);
+}
+
+.mob-invoice-card:active {
+    background: var(--surface-hover);
+}
+
+.mob-invoice-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.mob-invoice-number {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.mob-invoice-total {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.mob-invoice-customer {
+    font-size: 13px;
+    color: var(--text-2);
+    margin-top: 3px;
+}
+
+.mob-invoice-date {
+    font-size: 11px;
+    color: var(--text-3);
+    margin-top: 2px;
+}
+
+/* ================================================================
+   REPORTES MÓVIL
+   ================================================================ */
+@media (max-width: 768px) {
+    /* Filtros en columna */
+    #module-reports .filters-row,
+    [id*="module-"] .filters-row {
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+
+    /* Charts: scroll horizontal */
+    .chart-container,
+    [id$="Chart"],
+    [id*="chart-"] {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* KPI cards de reportes */
+.mob-kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--mob-radius);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    box-shadow: var(--shadow);
+}
+
+.mob-kpi-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-3);
+}
+
+.mob-kpi-value {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+}
+
+.mob-kpi-sub {
+    font-size: 12px;
+    color: var(--text-2);
+}
+
+.mob-kpi-change {
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.mob-kpi-change.up { color: var(--success); }
+.mob-kpi-change.down { color: var(--danger); }
+
+/* ================================================================
+   ESTADOS DE CARGA / ERROR / VACÍO
+   ================================================================ */
+.mob-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    text-align: center;
+    gap: 12px;
+}
+
+.mob-state-icon {
+    font-size: 48px;
+    line-height: 1;
+}
+
+.mob-state-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.mob-state-sub {
+    font-size: 13px;
+    color: var(--text-2);
+    line-height: 1.5;
+    max-width: 280px;
+}
+
+.mob-spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid var(--border);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: mobSpin 0.8s linear infinite;
+}
+
+@keyframes mobSpin {
+    to { transform: rotate(360deg); }
+}
+
+/* ================================================================
+   TOAST — posición móvil (arriba para no tapar bottom nav)
+   ================================================================ */
+@media (max-width: 768px) {
+    .toast-container {
+        bottom: auto !important;
+        top: calc(var(--mob-header-h) + var(--mob-safe-top) + 12px) !important;
+        right: 12px !important;
+        left: 12px !important;
+    }
+
+    .toast {
+        min-width: 0 !important;
+        width: 100% !important;
+        font-size: 13px !important;
+        padding: 12px 16px !important;
+        border-radius: var(--mob-radius-sm) !important;
+    }
+}
+
+/* ================================================================
+   ORIENTACIÓN LANDSCAPE
+   ================================================================ */
+@media (max-width: 768px) and (orientation: landscape) {
+    .main {
+        padding-top: calc(var(--mob-header-h)) !important;
+    }
+
+    /* POS en landscape: volver al layout side by side */
+    #module-pos .pos-grid {
+        display: grid !important;
+        grid-template-columns: 1fr 320px !important;
+        height: calc(100vh - var(--mob-header-h) - var(--mob-bottom-nav-h)) !important;
+    }
+
+    #module-pos .pos-grid > div:first-child {
+        display: block !important;
+    }
+
+    #module-pos .pos-cart {
+        display: flex !important;
+    }
+
+    #posMobileTabs {
+        display: none !important;
+    }
+
+    /* Grid vuelve a 2 columnas en landscape */
+    .grid-4 {
+        grid-template-columns: repeat(4, 1fr) !important;
+    }
+}
+
+/* ================================================================
+   APP MAIN VISIBLE — override para móvil
+   ================================================================ */
+@media (max-width: 768px) {
+    #appMain {
+        display: block !important;
+        flex-direction: column !important;
+    }
+
+    #appMain.visible {
+        display: block !important;
+    }
+
+    /* Asegurar que el body no tenga flex en móvil */
+    body {
+        display: block !important;
+    }
+}
+
+/* ================================================================
+   SELECTOR MONEDA MÓVIL en header
+   ================================================================ */
+#mobileHeaderCurrency {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-2);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+}
+
+#mobileHeaderCurrency select {
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    color: var(--text) !important;
+    min-height: auto !important;
+    padding: 0 !important;
+    cursor: pointer;
+    font-family: inherit !important;
+    -webkit-appearance: none;
+    appearance: none;
+    max-width: 72px;
+}
+
+/* ================================================================
+   MODO OSCURO — asegurar compatibilidad en todos los elementos móvil
+   ================================================================ */
+.dark #mobileHeader,
+.dark #mobileBottomNav,
+.dark #mobileDrawer {
+    background: var(--surface);
+    border-color: var(--border);
+}
+
+.dark .mob-product-card,
+.dark .mob-contact-card,
+.dark .mob-invoice-card,
+.dark .mob-kpi-card {
+    background: var(--surface);
+    border-color: var(--border);
+}
+
+.dark .mob-action-chip {
+    background: var(--surface-2);
+    border-color: var(--border);
+    color: var(--text-2);
+}
+
+.dark .mob-action-chip.primary {
+    background: var(--primary-light);
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
+.dark #mobileOfflineBanner {
+    background: #b45309;
+    color: #fff;
+}
+
+/* ================================================================
+   ACCESIBILIDAD — focus visible
+   ================================================================ */
+.mob-nav-item:focus-visible,
+.mob-icon-btn:focus-visible,
+.mob-drawer-item:focus-visible,
+.mob-fab:focus-visible {
+    outline: 3px solid var(--primary);
+    outline-offset: 2px;
+}
+
+/* ================================================================
+   BARRA DE PROGRESO / SINCRONIZACIÓN MÓVIL
+   ================================================================ */
+#mobSyncBar {
+    position: fixed;
+    top: calc(var(--mob-header-h) + var(--mob-safe-top));
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--primary);
+    z-index: 499;
+    transform-origin: left;
+    transform: scaleX(0);
+    transition: transform 0.4s ease, opacity 0.3s ease;
+    opacity: 0;
+}
+
+#mobSyncBar.saving {
+    animation: mobSyncPulse 1.4s ease infinite;
+    opacity: 1;
+}
+
+@keyframes mobSyncPulse {
+    0%   { transform: scaleX(0); }
+    50%  { transform: scaleX(0.7); }
+    100% { transform: scaleX(1); opacity: 0; }
+}
+
+/* ================================================================
+   SELECTOR RÁPIDO FLOTANTE (SHEET)
+   ================================================================ */
+.mob-bottom-sheet-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 800;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.mob-bottom-sheet-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.mob-bottom-sheet {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border-radius: var(--mob-radius) var(--mob-radius) 0 0;
+    padding: 8px 0 calc(var(--mob-safe-bottom) + 16px);
+    z-index: 810;
+    transform: translateY(100%);
+    transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+    max-height: 75vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.mob-bottom-sheet.open {
+    transform: translateY(0);
+}
+
+.mob-bottom-sheet-handle {
+    width: 36px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 0 auto 12px;
+}
+
+.mob-bottom-sheet-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    padding: 0 20px 12px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+}
+
+.mob-sheet-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 20px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    font-family: inherit;
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    transition: background var(--transition);
+}
+
+.mob-sheet-item:active {
+    background: var(--surface-hover);
+}
+
+.mob-sheet-item.danger {
+    color: var(--danger);
+}
+
+/* ================================================================
+   OVERRIDE: ocultar bottom nav duplicado que agrega mobile.js
+   El ERP ya tiene su propio #mobileBottomNav (class: mobile-bottom-nav)
+   El que inyectamos en la parte inferior es redundante en este caso
+   ================================================================ */
+
+/* El nav del ERP tiene clase .mobile-bottom-nav — usarlo y mejorarlo */
+@media (max-width: 768px) {
+    /* Ocultar el segundo #mobileBottomNav que inyectamos (con .mob-only que no tiene clase mobile-bottom-nav) */
+    nav#mobileBottomNav.mob-only {
+        display: none !important;
+    }
+
+    /* Mejorar el bottom nav original del ERP */
+    .mobile-bottom-nav {
+        height: calc(var(--mob-bottom-nav-h) + var(--mob-safe-bottom)) !important;
+        padding-bottom: calc(var(--mob-safe-bottom) + 6px) !important;
+        z-index: 500 !important;
+    }
+
+    .mobile-bottom-nav .nav-btn {
+        min-height: var(--mob-touch-min) !important;
+        -webkit-tap-highlight-color: transparent !important;
+        touch-action: manipulation !important;
+    }
+
+    .mobile-bottom-nav .nav-btn .nav-icon {
+        font-size: 22px !important;
+        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    }
+
+    .mobile-bottom-nav .nav-btn.active .nav-icon {
+        transform: translateY(-3px) scale(1.15) !important;
+    }
+
+    .mobile-bottom-nav .nav-btn .nav-label {
+        font-size: 10px !important;
+        font-weight: 600 !important;
+        transition: color var(--transition) !important;
+    }
+
+    /* Indicador activo superior */
+    .mobile-bottom-nav .nav-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 3px;
+        background: var(--primary);
+        border-radius: 0 0 3px 3px;
+        transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .mobile-bottom-nav .nav-btn.active::before {
+        width: 32px;
+    }
+
+    /* El botón POS (vender) — ligeramente más prominente */
+    .mobile-bottom-nav .nav-btn.pos-btn .nav-icon {
+        font-size: 26px !important;
+    }
+
+    /* Ajustar el padding del main para el nuevo height del nav */
+    .main {
+        padding-bottom: calc(var(--mob-bottom-nav-h) + var(--mob-safe-bottom) + 8px) !important;
+    }
+}
