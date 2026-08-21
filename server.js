@@ -3186,7 +3186,7 @@ app.post('/api/team/members/:id/action', requireAuth, async (req, res) => {
 // ❌”€❌”€ TEAM: Dispositivos/sesiones activas del equipo ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/team/devices', requireAuth, async (req, res) => {
     if (req.user.teamRole !== 'owner' && req.user.role !== 'admin') return err(res, 'Sin permisos', 403);
-    const team     = getTeam(req.user.companyId).map(u => u.id);
+    const team = (await getTeam(req.user.companyId)).map(u => u.id);
     const sessions = await readSessions();
     const users    = await readUsers();
     const myToken  = (req.headers['authorization'] || '').replace('Bearer ', '').trim();
@@ -3234,7 +3234,7 @@ app.delete('/api/team/devices/:tokenPrefix', requireAuth, async (req, res) => {
     if (sessions[tokenFull]) {
         const uid = typeof sessions[tokenFull] === 'object' ? sessions[tokenFull].userId : sessions[tokenFull];
         // Verificar que el dispositivo pertenece a la empresa
-        const team = getTeam(req.user.companyId).map(u => u.id);
+        const team = (await getTeam(req.user.companyId)).map(u => u.id);
         if (!team.includes(uid)) return err(res, 'Dispositivo no pertenece a tu empresa', 403);
         // No permitir cerrar la propia sesión activa desde aquí
         const myToken = (req.headers['authorization'] || '').replace('Bearer ', '').trim();
@@ -3256,7 +3256,7 @@ app.post('/api/team/devices/close', requireAuth, async (req, res) => {
     const sessions = await readSessions();
     if (!sessions[tokenFull]) return err(res, 'Sesión no encontrada', 404);
     const uid  = typeof sessions[tokenFull] === 'object' ? sessions[tokenFull].userId : sessions[tokenFull];
-    const team = getTeam(req.user.companyId).map(u => u.id);
+    const team = (await getTeam(req.user.companyId)).map(u => u.id);
     if (!team.includes(uid)) return err(res, 'Dispositivo no pertenece a tu empresa', 403);
     const myToken = (req.headers['authorization'] || '').replace('Bearer ', '').trim();
     if (tokenFull === myToken) return err(res, 'No puedes cerrar tu propia sesión activa desde aquí', 400);
@@ -3268,17 +3268,19 @@ app.post('/api/team/devices/close', requireAuth, async (req, res) => {
 
 // ❌”€❌”€ TEAM: Info de la empresa ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/team/company', requireAuth, async (req, res) => {
-    const users = await readUsers();
-    const owner = users.find(u => u.companyId === req.user.companyId && u.teamRole === 'owner');
-    const team  = getTeam(req.user.companyId);
-    const subStatus = owner ? getAccessStatus(owner) : { status: 'no_access', access: false };
+    const users     = await readUsers();
+    const owner     = users.find(u => u.companyId === req.user.companyId && u.teamRole === 'owner');
+    const team      = users.filter(u => u.companyId === req.user.companyId);
+    const subStatus = owner ? getAccessStatus(owner) : { status: 'no_access', access: false, maxUsers: 1, multiUser: false };
+    const activeCount = team.filter(u => u.active !== false).length;
+    const maxMembers  = subStatus.maxUsers || 1;
     ok(res, {
         companyId:    req.user.companyId,
         companyName:  req.user.company || owner?.company || '',
         memberCount:  team.length,
-        maxMembers:   subStatus.maxUsers || 1,
-        activeCount:  (getTeam(req.user.companyId)).filter(u => u.active !== false).length,
-        canAddMore:   subStatus.multiUser === true && ((getTeam(req.user.companyId)).filter(u => u.active !== false).length < (subStatus.maxUsers || 1)),
+        activeCount,
+        maxMembers,
+        canAddMore:   subStatus.multiUser === true && activeCount < maxMembers,
         subscription: subStatus,
         ownerId:      owner?.id,
         ownerEmail:   owner?.email,
@@ -3289,7 +3291,7 @@ app.get('/api/team/company', requireAuth, async (req, res) => {
 app.get('/api/team/activity', requireAuth, async (req, res) => {
     if (req.user.teamRole !== 'owner' && req.user.role !== 'admin') return err(res, 'Sin permisos', 403);
     const log  = await readAdminLog();
-    const team = getTeam(req.user.companyId).map(u => u.id);
+    const team = (await getTeam(req.user.companyId)).map(u => u.id);
     const filtered = log.filter(e => team.includes(e.adminId) || team.includes(e.targetId)).slice(0, 100);
     ok(res, filtered);
 });
