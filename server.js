@@ -1,4 +1,4 @@
-﻿/**
+/**
  * FIX PRO MAX "” Backend API
  * Servidor Express con persistencia en MongoDB Atlas (vía db-mongo.js).
  * Puerto: process.env.PORT || 3000
@@ -30,13 +30,32 @@ const DB_PATH = path.join(__dirname, 'db.json');
 
 // Función para iniciar "” conecta a MongoDB y luego escucha en el puerto
 async function startServer(port) {
+    // Reintentar conexion a MongoDB hasta 5 veces antes de rendirse
+    let connected = false;
+    for (let attempt = 1; attempt <= 5; attempt++) {
+        try {
+            await DB.connectDB();
+            connected = true;
+            break;
+        } catch (e) {
+            console.error(`\u274c Intento ${attempt}/5 \u2014 No se pudo conectar a MongoDB: ${e.message}`);
+            if (attempt < 5) {
+                const waitSec = attempt * 3;
+                console.log(`   Reintentando en ${waitSec}s...`);
+                await new Promise(r => setTimeout(r, waitSec * 1000));
+            }
+        }
+    }
+    if (!connected) {
+        console.error('\u274c No se pudo conectar a MongoDB tras 5 intentos. Abortando.');
+        process.exit(1);
+    }
+
+    // Aplicar overrides de planes guardados por el admin
     try {
-        await DB.connectDB();
-        // Aplicar overrides de planes guardados por el admin
         await applyPlansOverrides();
     } catch (e) {
-        console.error('❌Œ No se pudo conectar a MongoDB:', e.message);
-        process.exit(1);
+        console.warn('\u26a0\ufe0f applyPlansOverrides fallo (no critico):', e.message);
     }
 
     const server = app.listen(port, '0.0.0.0', () => {
