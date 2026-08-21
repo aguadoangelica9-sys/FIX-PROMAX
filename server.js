@@ -1,4 +1,4 @@
-/**
+﻿/**
  * FIX PRO MAX "” Backend API
  * Servidor Express con persistencia en MongoDB Atlas (vía db-mongo.js).
  * Puerto: process.env.PORT || 3000
@@ -231,7 +231,12 @@ function defaultData() {
         importHistory: [],
         auditLog:      [],
         payments:      [],
-        quotes:        [],  // ❌† Cotizaciones
+        quotes:        [],
+        // Cuentas consolidadas por cliente/proveedor
+        // type: 'receivable' | 'payable'
+        // entityId: customerId o supplierId
+        // payments: [] array de cobros/pagos aplicados al movimiento
+        accountMovements:  [],  // ❌† Cotizaciones
         settings: {
             companyName:        '',
             rif:                '',
@@ -995,6 +1000,418 @@ app.delete('/api/purchases/:id', requireAuth, async (req, res) => {
     await writeDB(db);
     ok(res, { deleted: req.params.id });
 });
+
+// ════════════════════════════════════════════════════════════════════════════════
+// CUENTAS CONSOLIDADAS POR CLIENTE / PROVEEDOR  — /api/account-movements
+//
+// Un "movimiento" es la unidad mínima de deuda dentro de la cuenta consolidada.
+// Cada cliente o proveedor puede tener MÚLTIPLES movimientos bajo un único entityId.
+//
+// type 'receivable' → entityId = customerId  (Cuentas por Cobrar)
+// type 'payable'    → entityId = supplierId  (Cuentas por Pagar)
+//
+// Estructura de un movimiento:
+// {
+//   id, type, entityId, number,
+//   date, dueDate, concept, description, reference, invoiceId,
+//   amount, currency, paid, status,
+//   notes, source, createdAt, updatedAt,
+//   payments: [{ id, amount, date, method, ref, note, createdAt }]
+// }
+//
+// Estado automático:
+//   paid >= amount                 → 'Pagado'
+//   paid > 0 && paid < amount      → 'Parcial'
+//   dueDate < today && paid<amount → 'Vencido'
+//   else                           → 'Pendiente'
+// ════════════════════════════════════════════════════════════════════════════════
+
+function calcMovementStatus(mov) {
+    const amount = Number(mov.amount) || 0;
+    const paid   = Number(mov.paid)   || 0;
+    if (paid >= amount && amount > 0)        return 'Pagado';
+    const today = new Date().toISOString().slice(0, 10);
+    if (mov.dueDate && mov.dueDate < today)  return 'Vencido';
+    if (paid > 0)                            return 'Parcial';
+    return 'Pendiente';
+}
+
+// Asegura que db.accountMovements exista (compatibilidad con BDs antiguas)
+function ensureAccountMovements(db) {
+    if (!Array.isArray(db.accountMovements)) db.accountMovements = [];
+}
+
+// GET /api/account-movements — todos los movimientos de la empresa
+app.get('/api/account-movements', requireAuth, requireModule('receivables'), async (req, res) => {
+    const db = await readDB();
+    ensureAccountMovements(db);
+    ok(res, db.accountMovements);
+});
+
+// GET /api/account-movements/receivable — solo CxC
+app.get('/api/account-movements/receivable', requireAuth, requireModule('receivables'), async (req, res) => {
+    const db = await readDB();
+    ensureAccountMovements(db);
+    ok(res, db.accountMovements.filter(m => m.type === 'receivable'));
+});
+
+// GET /api/account-movements/payable — solo CxP
+app.get('/api/account-movements/payable', requireAuth, requireModule('payables'), async (req, res) => {
+    const db = await readDB();
+    ensureAccountMovements(db);
+    ok(res, db.accountMovements.filter(m => m.type === 'payable'));
+});
+
+// GET /api/account-movements/receivable/entity/:entityId — cuenta consolidada de un cliente
+app.get('/api/account-movements/receivable/entity/:entityId', requireAuth, requireModule('receivables'), async (req, res) => {
+    const db = await readDB();
+    ensureAccountMovements(db);
+    const movements = db.accountMovements.filter(
+        m => m.type === 'receivable' && m.entityId === req.params.entityId
+    );
+    const totalDebt    = movements.reduce((s, m) => s + (Number(m.amount) || 0), 0);
+    const totalPaid    = movements.reduce((s, m) => s + (Number(m.paid)   || 0), 0);
+    const totalBalance = totalDebt - totalPaid;
+    ok(res, { movements, totalDebt, totalPaid, totalBalance });
+});
+
+// GET /api/account-movements/payable/entity/:entityId — cuenta consolidada de un proveedor
+app.get('/api/account-movements/payable/entity/:entityId', requireAuth, requireModule('payables'), async (req, res) => {
+    const db = await readDB();
+    ensureAccountMovements(db);
+    const movements = db.accountMovements.filter(
+        m => m.type === 'payable' && m.entityId === req.params.entityId
+    );
+    const totalDebt    = movements.reduce((s, m) => s + (Number(m.amount) || 0), 0);
+    const totalPaid    = movements.reduce((s, m) => s + (Number(m.paid)   || 0), 0);
+    const totalBalance = totalDebt - totalPaid;
+    ok(res, { movements, totalDebt, totalPaid, totalBalance });
+});
+
+// POST /api/account-movements/receivable — crear movimiento de CxC
+app.post('/api/account-movements/receivable', requireAuth, requireModule('receivables'), async (req, res) => {
+    const db = await readDB();
+    ensureAccountMovements(db);
+
+    const { entityId, concept, description, amount, currency, date, dueDate, reference, invoiceId, notes } = req.body;
+    if (!entityId) return err(res, 'entityId (customerId) es obligatorio');
+    if (!concept)  return err(res, 'concept es obligatorio');
+    if (!amount || Number(amount) <= 0) return err(res, 'amount debe ser mayor a cero');
+
+    // Verificar que el cliente existe
+    const customer = db.customers.find(c => c.id === entityId);
+    if (!customer) return err(res, 'Cliente no encontrado', 404);
+
+    const defCurr = db.settings?.defaultCurrency || 'USD';
+    const movCurr = currency || defCurr;
+    const seq = db.accountMovements.filter(m => m.type === 'receivable').length + 1;
+    const number = `CXC-${String(seq).padStart(6, '0')}`;
+
+    const movement = {
+        id:          generateId(),
+        type:        'receivable',
+        entityId,
+        number,
+        date:        date || new Date().toISOString().slice(0, 10),
+        dueDate:     dueDate || '',
+        concept:     concept.trim(),
+        description: (description || '').trim(),
+        reference:   (reference || '').trim(),
+        invoiceId:   invoiceId || null,
+        amount:      Number(amount),
+        currency:    movCurr,
+        paid:        0,
+        status:      'Pendiente',
+        notes:       (notes || '').trim(),
+        source:      'manual',
+        createdBy:   req.user?.id || null,
+        createdAt:   new Date().toISOString(),
+        updatedAt:   new Date().toISOString(),
+        payments:    [],
+    };
+
+    movement.status = calcMovementStatus(movement);
+    db.accountMovements.push(movement);
+
+    // Asiento contable: débito 1-02 CxC, crédito 4-01 Ventas/Ingresos
+    const cxcAcc = db.chartOfAccounts?.find(a => a.code === '1-02');
+    const ingAcc = db.chartOfAccounts?.find(a => a.code === '4-01');
+    if (cxcAcc) cxcAcc.balance = (cxcAcc.balance || 0) + Number(amount);
+    if (ingAcc) ingAcc.balance = (ingAcc.balance || 0) + Number(amount);
+    if (db.journalEntries) {
+        db.journalEntries.push(
+            { date: movement.date, ref: number, desc: `CxC: ${concept}`, debit: Number(amount), credit: null },
+            { date: movement.date, ref: number, desc: `CxC: ${concept}`, debit: null, credit: Number(amount) }
+        );
+    }
+
+    db.auditLog = db.auditLog || [];
+    db.auditLog.push({ id: generateId(), ts: new Date().toISOString(), action: 'create', entity: 'accountMovement', entityId: movement.id, userId: req.user?.id, detail: `CxC ${number} — ${concept} — $${amount}` });
+
+    await writeDB(db);
+    ok(res, movement);
+});
+
+// POST /api/account-movements/payable — crear movimiento de CxP
+app.post('/api/account-movements/payable', requireAuth, requireModule('payables'), async (req, res) => {
+    const db = await readDB();
+    ensureAccountMovements(db);
+
+    const { entityId, concept, description, amount, currency, date, dueDate, reference, invoiceId, notes } = req.body;
+    if (!entityId) return err(res, 'entityId (supplierId) es obligatorio');
+    if (!concept)  return err(res, 'concept es obligatorio');
+    if (!amount || Number(amount) <= 0) return err(res, 'amount debe ser mayor a cero');
+
+    // Verificar que el proveedor existe
+    const supplier = db.suppliers.find(s => s.id === entityId);
+    if (!supplier) return err(res, 'Proveedor no encontrado', 404);
+
+    const defCurr = db.settings?.defaultCurrency || 'USD';
+    const movCurr = currency || defCurr;
+    const seq = db.accountMovements.filter(m => m.type === 'payable').length + 1;
+    const number = `CXP-${String(seq).padStart(6, '0')}`;
+
+    const movement = {
+        id:          generateId(),
+        type:        'payable',
+        entityId,
+        number,
+        date:        date || new Date().toISOString().slice(0, 10),
+        dueDate:     dueDate || '',
+        concept:     concept.trim(),
+        description: (description || '').trim(),
+        reference:   (reference || '').trim(),
+        invoiceId:   invoiceId || null,
+        amount:      Number(amount),
+        currency:    movCurr,
+        paid:        0,
+        status:      'Pendiente',
+        notes:       (notes || '').trim(),
+        source:      'manual',
+        createdBy:   req.user?.id || null,
+        createdAt:   new Date().toISOString(),
+        updatedAt:   new Date().toISOString(),
+        payments:    [],
+    };
+
+    movement.status = calcMovementStatus(movement);
+    db.accountMovements.push(movement);
+
+    // Asiento contable: débito 5-01 Costo/Compras, crédito 2-01 CxP
+    const cxpAcc  = db.chartOfAccounts?.find(a => a.code === '2-01');
+    const costAcc = db.chartOfAccounts?.find(a => a.code === '5-01');
+    if (cxpAcc)  cxpAcc.balance  = (cxpAcc.balance  || 0) + Number(amount);
+    if (costAcc) costAcc.balance = (costAcc.balance  || 0) + Number(amount);
+    if (db.journalEntries) {
+        db.journalEntries.push(
+            { date: movement.date, ref: number, desc: `CxP: ${concept}`, debit: Number(amount), credit: null },
+            { date: movement.date, ref: number, desc: `CxP: ${concept}`, debit: null, credit: Number(amount) }
+        );
+    }
+
+    db.auditLog = db.auditLog || [];
+    db.auditLog.push({ id: generateId(), ts: new Date().toISOString(), action: 'create', entity: 'accountMovement', entityId: movement.id, userId: req.user?.id, detail: `CxP ${number} — ${concept} — $${amount}` });
+
+    await writeDB(db);
+    ok(res, movement);
+});
+
+// PUT /api/account-movements/:id — editar movimiento (solo campos editables, nunca cambia payments[])
+app.put('/api/account-movements/:id', requireAuth, async (req, res) => {
+    const db = await readDB();
+    ensureAccountMovements(db);
+    const idx = db.accountMovements.findIndex(m => m.id === req.params.id);
+    if (idx === -1) return err(res, 'Movimiento no encontrado', 404);
+
+    const mov = db.accountMovements[idx];
+    // Verificar permiso según tipo
+    const modName = mov.type === 'receivable' ? 'receivables' : 'payables';
+    // Solo editar campos permitidos — NO payments[], NO paid, NO id, NO type, NO entityId, NO createdAt
+    const allowed = ['concept', 'description', 'amount', 'currency', 'date', 'dueDate', 'reference', 'notes'];
+    const updates = {};
+    allowed.forEach(k => { if (req.body[k] !== undefined) updates[k] = req.body[k]; });
+
+    // Si se modifica el monto, recalcular saldo y estado
+    if (updates.amount !== undefined) {
+        updates.amount = Number(updates.amount);
+        // El campo 'paid' no puede superar el nuevo amount
+        if ((mov.paid || 0) > updates.amount) {
+            return err(res, 'El nuevo monto no puede ser menor al total ya pagado');
+        }
+    }
+
+    db.accountMovements[idx] = {
+        ...mov,
+        ...updates,
+        id:        mov.id,
+        type:      mov.type,
+        entityId:  mov.entityId,
+        paid:      mov.paid,
+        payments:  mov.payments,
+        createdAt: mov.createdAt,
+        updatedAt: new Date().toISOString(),
+    };
+    db.accountMovements[idx].status = calcMovementStatus(db.accountMovements[idx]);
+
+    db.auditLog = db.auditLog || [];
+    db.auditLog.push({ id: generateId(), ts: new Date().toISOString(), action: 'update', entity: 'accountMovement', entityId: mov.id, userId: req.user?.id, detail: JSON.stringify(updates) });
+
+    await writeDB(db);
+    ok(res, db.accountMovements[idx]);
+});
+
+// DELETE /api/account-movements/:id — eliminar UN movimiento (no toda la cuenta del cliente)
+app.delete('/api/account-movements/:id', requireAuth, async (req, res) => {
+    const db = await readDB();
+    ensureAccountMovements(db);
+    const mov = db.accountMovements.find(m => m.id === req.params.id);
+    if (!mov) return err(res, 'Movimiento no encontrado', 404);
+
+    // Revertir asiento contable si corresponde
+    const amount = Number(mov.amount) || 0;
+    if (mov.type === 'receivable') {
+        const cxcAcc = db.chartOfAccounts?.find(a => a.code === '1-02');
+        if (cxcAcc) cxcAcc.balance = Math.max(0, (cxcAcc.balance || 0) - amount);
+        const paidBack = Number(mov.paid) || 0;
+        if (paidBack > 0) {
+            const cashAcc = db.chartOfAccounts?.find(a => a.code === '1-01-001');
+            if (cashAcc) cashAcc.balance = Math.max(0, (cashAcc.balance || 0) - paidBack);
+        }
+    } else if (mov.type === 'payable') {
+        const cxpAcc = db.chartOfAccounts?.find(a => a.code === '2-01');
+        if (cxpAcc) cxpAcc.balance = Math.max(0, (cxpAcc.balance || 0) - amount);
+        const paidBack = Number(mov.paid) || 0;
+        if (paidBack > 0) {
+            const cashAcc = db.chartOfAccounts?.find(a => a.code === '1-01-001');
+            if (cashAcc) cashAcc.balance = Math.max(0, (cashAcc.balance || 0) - paidBack);
+        }
+    }
+
+    db.accountMovements = db.accountMovements.filter(m => m.id !== req.params.id);
+
+    db.auditLog = db.auditLog || [];
+    db.auditLog.push({ id: generateId(), ts: new Date().toISOString(), action: 'delete', entity: 'accountMovement', entityId: mov.id, userId: req.user?.id, detail: `Eliminado: ${mov.number}` });
+
+    await writeDB(db);
+    ok(res, { deleted: req.params.id });
+});
+
+// POST /api/account-movements/:id/payment — registrar pago (parcial o completo) a un movimiento
+app.post('/api/account-movements/:id/payment', requireAuth, async (req, res) => {
+    const db = await readDB();
+    ensureAccountMovements(db);
+    const idx = db.accountMovements.findIndex(m => m.id === req.params.id);
+    if (idx === -1) return err(res, 'Movimiento no encontrado', 404);
+
+    const mov    = db.accountMovements[idx];
+    const amount = Number(req.body.amount) || 0;
+    if (amount <= 0) return err(res, 'El monto del pago debe ser mayor a cero');
+
+    const saldo = (Number(mov.amount) || 0) - (Number(mov.paid) || 0);
+    if (amount > saldo + 0.001) {
+        return err(res, `El pago ($${amount}) supera el saldo pendiente ($${saldo.toFixed(2)})`);
+    }
+
+    const payment = {
+        id:        generateId(),
+        amount,
+        date:      req.body.date || new Date().toISOString().slice(0, 10),
+        method:    req.body.method || 'Efectivo',
+        ref:       (req.body.ref || '').trim(),
+        note:      (req.body.note || '').trim(),
+        createdAt: new Date().toISOString(),
+        createdBy: req.user?.id || null,
+    };
+
+    mov.payments = mov.payments || [];
+    mov.payments.push(payment);
+    mov.paid      = (Number(mov.paid) || 0) + amount;
+    mov.updatedAt = new Date().toISOString();
+    mov.status    = calcMovementStatus(mov);
+    db.accountMovements[idx] = mov;
+
+    // Asiento contable
+    const cashAcc = db.chartOfAccounts?.find(a => a.code === '1-01-001');
+    if (mov.type === 'receivable') {
+        const cxcAcc = db.chartOfAccounts?.find(a => a.code === '1-02');
+        if (cashAcc) cashAcc.balance = (cashAcc.balance || 0) + amount;
+        if (cxcAcc)  cxcAcc.balance  = Math.max(0, (cxcAcc.balance || 0) - amount);
+    } else {
+        const cxpAcc = db.chartOfAccounts?.find(a => a.code === '2-01');
+        if (cashAcc) cashAcc.balance = Math.max(0, (cashAcc.balance || 0) - amount);
+        if (cxpAcc)  cxpAcc.balance  = Math.max(0, (cxpAcc.balance  || 0) - amount);
+    }
+    if (db.journalEntries) {
+        db.journalEntries.push(
+            { date: payment.date, ref: `PAY-${mov.number}`, desc: `Pago ${mov.type === 'receivable' ? 'cobro' : 'pago'}: ${mov.number}`, debit: mov.type === 'receivable' ? amount : null, credit: mov.type === 'receivable' ? null : amount },
+            { date: payment.date, ref: `PAY-${mov.number}`, desc: `Pago ${mov.type === 'receivable' ? 'cobro' : 'pago'}: ${mov.number}`, debit: mov.type === 'receivable' ? null : amount, credit: mov.type === 'receivable' ? amount : null }
+        );
+    }
+
+    // Registrar en payments[] global también (compatibilidad con sistema existente)
+    db.payments = db.payments || [];
+    db.payments.push({
+        id:         payment.id,
+        type:       mov.type === 'receivable' ? 'cobro' : 'pago',
+        movementId: mov.id,
+        invoiceId:  mov.id,
+        reference:  mov.number,
+        amount,
+        date:       payment.date,
+        method:     payment.method,
+        customerId: mov.type === 'receivable' ? mov.entityId : null,
+        supplierId: mov.type === 'payable'    ? mov.entityId : null,
+        status:     'activo',
+        ref:        payment.ref,
+        createdAt:  payment.createdAt,
+    });
+
+    db.auditLog = db.auditLog || [];
+    db.auditLog.push({ id: generateId(), ts: new Date().toISOString(), action: 'payment', entity: 'accountMovement', entityId: mov.id, userId: req.user?.id, detail: `Pago $${amount} — ${mov.number}` });
+
+    await writeDB(db);
+    ok(res, { movement: mov, payment });
+});
+
+// DELETE /api/account-movements/:movId/payment/:payId — anular un pago específico
+app.delete('/api/account-movements/:movId/payment/:payId', requireAuth, async (req, res) => {
+    const db = await readDB();
+    ensureAccountMovements(db);
+    const idx = db.accountMovements.findIndex(m => m.id === req.params.movId);
+    if (idx === -1) return err(res, 'Movimiento no encontrado', 404);
+
+    const mov = db.accountMovements[idx];
+    const payIdx = (mov.payments || []).findIndex(p => p.id === req.params.payId);
+    if (payIdx === -1) return err(res, 'Pago no encontrado', 404);
+
+    const payAmt = Number(mov.payments[payIdx].amount) || 0;
+
+    // Revertir asiento contable
+    const cashAcc = db.chartOfAccounts?.find(a => a.code === '1-01-001');
+    if (mov.type === 'receivable') {
+        const cxcAcc = db.chartOfAccounts?.find(a => a.code === '1-02');
+        if (cashAcc) cashAcc.balance = Math.max(0, (cashAcc.balance || 0) - payAmt);
+        if (cxcAcc)  cxcAcc.balance  = (cxcAcc.balance || 0) + payAmt;
+    } else {
+        const cxpAcc = db.chartOfAccounts?.find(a => a.code === '2-01');
+        if (cashAcc) cashAcc.balance = (cashAcc.balance || 0) + payAmt;
+        if (cxpAcc)  cxpAcc.balance  = (cxpAcc.balance || 0) + payAmt;
+    }
+
+    mov.payments.splice(payIdx, 1);
+    mov.paid      = Math.max(0, (Number(mov.paid) || 0) - payAmt);
+    mov.updatedAt = new Date().toISOString();
+    mov.status    = calcMovementStatus(mov);
+    db.accountMovements[idx] = mov;
+
+    // Anular en payments[] global
+    const gPay = (db.payments || []).find(p => p.id === req.params.payId);
+    if (gPay) gPay.status = 'anulado';
+
+    await writeDB(db);
+    ok(res, { movement: mov, annulledPaymentId: req.params.payId });
+});
+
 
 // ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 // GASTOS

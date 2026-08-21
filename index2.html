@@ -5044,58 +5044,64 @@
         <!-- ═══════════════════════════════════════════════════════════
         CUENTAS POR PAGAR
         ═══════════════════════════════════════════════════════════ -->
+        <!-- ═══════════════════════════════════════════════════════════
+        CUENTAS POR PAGAR — Vista consolidada por proveedor
+        ═══════════════════════════════════════════════════════════ -->
         <div class="module-panel" id="module-payables">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
                 <h2 style="font-size:20px;font-weight:700;">💰 Cuentas por Pagar</h2>
-                <button class="btn btn-primary btn-sm" onclick="openNewPayable()" style="display:flex;align-items:center;gap:6px;">
-                    <span style="font-size:16px;">+</span> Nueva cuenta por pagar
-                </button>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button class="btn btn-primary btn-sm" onclick="openNewAccountMovement('payable',null)" style="display:flex;align-items:center;gap:6px;">
+                        <span style="font-size:16px;">+</span> Nueva cuenta
+                    </button>
+                    <button class="btn btn-sm" onclick="openNewPayable()" title="Crear registro individual (modo clásico)" style="display:flex;align-items:center;gap:6px;opacity:.7;">
+                        <span style="font-size:13px;">📄</span> Modo clásico
+                    </button>
+                </div>
             </div>
             <div class="grid-4" id="payablesStats"></div>
             <div style="margin:12px 0 10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-                <input type="text" id="payablesSearch" placeholder="🔍 Proveedor, número..." oninput="renderPayables()"
+                <input type="text" id="payablesSearch" placeholder="🔍 Proveedor, referencia, concepto..." oninput="renderPayables()"
                     style="flex:1;min-width:200px;padding:8px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;outline:none;"
                     onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'" />
-                <span style="font-size:12px;color:var(--text-3);">🔴 Vencida &nbsp; 🟡 Por vencer &nbsp; 🟢 Al día</span>
+                <select id="payablesViewMode" onchange="renderPayables()"
+                    style="padding:8px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;outline:none;cursor:pointer;">
+                    <option value="consolidated">👥 Vista consolidada</option>
+                    <option value="movements">📋 Ver movimientos</option>
+                </select>
             </div>
-            <div class="card p-0 overflow-hidden">
-                <div class="table-wrap border-0">
-                    <table>
-                        <thead><tr><th>Proveedor</th><th>Factura</th><th>Vencimiento</th><th>Monto</th><th>Pagado</th><th>Saldo</th><th>Estado</th><th>Acciones</th></tr></thead>
-                        <tbody id="payablesTableBody"></tbody>
-                    </table>
-                </div>
-            </div>
+            <div id="payablesContainer"></div>
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════
-        CUENTAS POR COBRAR
+        CUENTAS POR COBRAR — Vista consolidada por cliente
         ═══════════════════════════════════════════════════════════ -->
         <div class="module-panel" id="module-receivables">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
                 <h2 style="font-size:20px;font-weight:700;">💳 Cuentas por Cobrar</h2>
-                <button class="btn btn-primary btn-sm" onclick="openNewReceivable()" style="display:flex;align-items:center;gap:6px;">
-                    <span style="font-size:16px;">+</span> Nueva cuenta por cobrar
-                </button>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button class="btn btn-primary btn-sm" onclick="openNewAccountMovement('receivable',null)" style="display:flex;align-items:center;gap:6px;">
+                        <span style="font-size:16px;">+</span> Nueva cuenta
+                    </button>
+                    <button class="btn btn-sm" onclick="openNewReceivable()" title="Crear registro individual (modo clásico)" style="display:flex;align-items:center;gap:6px;opacity:.7;">
+                        <span style="font-size:13px;">📄</span> Modo clásico
+                    </button>
+                </div>
             </div>
             <div class="grid-4" id="receivablesStats"></div>
             <div style="margin:12px 0 10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-                <input type="text" id="receivablesSearch" placeholder="🔍 Cliente, número de factura..." oninput="renderReceivables()"
+                <input type="text" id="receivablesSearch" placeholder="🔍 Cliente, referencia, concepto, factura..." oninput="renderReceivables()"
                     style="flex:1;min-width:200px;padding:8px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;outline:none;"
                     onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'" />
-                <span style="font-size:12px;color:var(--text-3);">🔴 Vencida &nbsp; 🟡 Por vencer &nbsp; 🟢 Al día</span>
+                <select id="receivablesViewMode" onchange="renderReceivables()"
+                    style="padding:8px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;outline:none;cursor:pointer;">
+                    <option value="consolidated">👥 Vista consolidada</option>
+                    <option value="movements">📋 Ver movimientos</option>
+                </select>
             </div>
-            <div class="card p-0 overflow-hidden">
-                <div class="table-wrap border-0">
-                    <table>
-                        <thead><tr><th>Cliente</th><th>Factura</th><th>Vencimiento</th><th>Monto</th><th>Pagado</th><th>Saldo</th><th>Estado</th><th>Acciones</th></tr></thead>
-                        <tbody id="receivablesTableBody"></tbody>
-                    </table>
-                </div>
-            </div>
+            <div id="receivablesContainer"></div>
         </div>
-
-        <!-- ═══════════════════════════════════════════════════════════
+<!-- ═══════════════════════════════════════════════════════════
         AI COPILOT
         ═══════════════════════════════════════════════════════════ -->
         <div class="module-panel" id="module-ai">
@@ -10166,7 +10172,53 @@
         );
     }
 
-    /* ─── Cuentas por Cobrar / Pagar ─── */
+    /* ══════════════════════════════════════════════════════════════════════
+       CUENTAS CONSOLIDADAS POR CLIENTE / PROVEEDOR
+       — renderReceivables(), renderPayables(), openAccountDetail(),
+         openNewAccountMovement(), openMovementPayment(), migrateToAccountMovements()
+       ══════════════════════════════════════════════════════════════════════ */
+
+    // ── Helpers de estado ────────────────────────────────────────────────────
+    function calcMovStatus(mov) {
+        const amount = Number(mov.amount) || 0;
+        const paid   = Number(mov.paid)   || 0;
+        if (paid >= amount && amount > 0) return 'Pagado';
+        const today = new Date().toISOString().slice(0, 10);
+        if (mov.dueDate && mov.dueDate < today) return 'Vencido';
+        if (paid > 0) return 'Parcial';
+        return 'Pendiente';
+    }
+
+    function movStatusBadge(mov) {
+        const s = calcMovStatus(mov);
+        const map = { 'Pagado':'badge-success', 'Parcial':'badge-warning', 'Vencido':'badge-danger', 'Pendiente':'badge-info' };
+        const icons = { 'Pagado':'🟢', 'Parcial':'🟡', 'Vencido':'⚠️', 'Pendiente':'🔴' };
+        return `<span class="badge ${map[s]||'badge-info'}">${icons[s]||''} ${s}</span>`;
+    }
+
+    // Garantizar que accountMovements existe en data
+    function ensureAM() {
+        if (!Array.isArray(data.accountMovements)) data.accountMovements = [];
+    }
+
+    // Agrupa movimientos por entityId y calcula totales consolidados
+    function groupMovements(type) {
+        ensureAM();
+        const movs = data.accountMovements.filter(m => m.type === type);
+        const groups = {};
+        movs.forEach(m => {
+            if (!groups[m.entityId]) {
+                groups[m.entityId] = { entityId: m.entityId, movements: [], totalAmount: 0, totalPaid: 0 };
+            }
+            groups[m.entityId].movements.push(m);
+            groups[m.entityId].totalAmount += Number(m.amount) || 0;
+            groups[m.entityId].totalPaid   += Number(m.paid)   || 0;
+        });
+        Object.values(groups).forEach(g => { g.balance = g.totalAmount - g.totalPaid; });
+        return groups;
+    }
+
+    // ── renderPayables() — vista consolidada por proveedor ──────────────────
     function renderPayables() {
         const today   = new Date().toISOString().slice(0,10);
         const soon    = new Date(); soon.setDate(soon.getDate()+7);
@@ -10174,52 +10226,165 @@
         const defCurr = data?.settings?.defaultCurrency || 'VES';
         const disp    = window._displayCurrency || defCurr;
         const q       = (document.getElementById('payablesSearch')?.value || '').toLowerCase().trim();
+        const viewMode = document.getElementById('payablesViewMode')?.value || 'consolidated';
 
-        const active   = data.purchases.filter(p => p.status !== 'Anulada' && (p.total - p.paid) > 0);
-        const filtered = active.filter(p => !q
-            || getSupplierName(p.supplierId).toLowerCase().includes(q)
-            || (p.number||'').toLowerCase().includes(q));
+        ensureAM();
 
-        const totalPayDisp = filtered.reduce((s,p) => s + dc(p.total - p.paid, p.currency || defCurr), 0);
-        const overdueDisp  = filtered.filter(p=>p.dueDate&&p.dueDate<today)
-                                     .reduce((s,p) => s + dc(p.total - p.paid, p.currency || defCurr), 0);
-        const overdueN = filtered.filter(p=>p.dueDate&&p.dueDate<today).length;
-        const soonN    = filtered.filter(p=>p.dueDate&&p.dueDate>=today&&p.dueDate<=soonStr).length;
+        // ── Estadísticas (incluye legacy purchases con source=manual) ──────
+        const allMovsPay = data.accountMovements.filter(m => m.type === 'payable');
+        const legacyPay  = (data.purchases || []).filter(p => p.status !== 'Anulada' && (p.total - (p.paid||0)) > 0);
+
+        const totalPayDisp = allMovsPay.reduce((s,m)=> s + dc((Number(m.amount)||0)-(Number(m.paid)||0), m.currency||defCurr), 0)
+                           + legacyPay.reduce((s,p)=> s + dc((p.total||0)-(p.paid||0), p.currency||defCurr), 0);
+        const overduePayMovs = allMovsPay.filter(m=> m.dueDate && m.dueDate < today && (Number(m.amount)-Number(m.paid))>0);
+        const overdueDisp  = overduePayMovs.reduce((s,m)=> s + dc((Number(m.amount)||0)-(Number(m.paid)||0), m.currency||defCurr), 0);
+        const overdueN     = overduePayMovs.length;
+        const soonN        = allMovsPay.filter(m=> m.dueDate && m.dueDate>=today && m.dueDate<=soonStr && (Number(m.amount)-Number(m.paid))>0).length;
+        const totalProvs   = Object.keys(groupMovements('payable')).length + new Set(legacyPay.map(p=>p.supplierId)).size;
 
         document.getElementById('payablesStats').innerHTML =
             '<div class="card stat"><div class="icon-box yellow">&#x1F4C4;</div><div class="content"><div class="value">' + dcFmt(totalPayDisp,disp) + '</div><div class="label">Por pagar (' + disp + ')</div></div></div>'
           + '<div class="card stat"><div class="icon-box red">&#x1F534;</div><div class="content"><div class="value" style="color:var(--danger);">' + dcFmt(overdueDisp,disp) + '</div><div class="label">Vencido (' + overdueN + ')</div></div></div>'
           + '<div class="card stat"><div class="icon-box yellow">&#x1F7E1;</div><div class="content"><div class="value" style="color:var(--warning);">' + soonN + '</div><div class="label">Vence en 7 días</div></div></div>'
-          + '<div class="card stat"><div class="icon-box green">&#x2705;</div><div class="content"><div class="value">' + active.length + '</div><div class="label">Facturas abiertas</div></div></div>';
+          + '<div class="card stat"><div class="icon-box green">&#x1F3E2;</div><div class="content"><div class="value">' + totalProvs + '</div><div class="label">Proveedores activos</div></div></div>';
 
-        const tbody = document.getElementById('payablesTableBody');
-        if (filtered.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-2);">&#x2705; Sin cuentas por pagar pendientes.</td></tr>';
-            return;
+        const container = document.getElementById('payablesContainer');
+        if (!container) return;
+
+        if (viewMode === 'movements') {
+            _renderPayablesMovements(container, q, today, soonStr, defCurr);
+        } else {
+            _renderPayablesConsolidated(container, q, defCurr);
         }
-        tbody.innerHTML = filtered.map(p => {
-            const pCurr = p.currency || defCurr;
-            const saldo = p.total - p.paid;
-            let icon = '&#x1F7E2;', rowBg = '';
-            if (p.dueDate) {
-                if (p.dueDate < today)        { icon = '&#x1F534;'; rowBg = 'background:rgba(239,68,68,.04);'; }
-                else if (p.dueDate <= soonStr){ icon = '&#x1F7E1;'; rowBg = 'background:rgba(245,158,11,.04);'; }
-            }
-            return '<tr style="' + rowBg + '">'
-                + '<td>' + icon + ' ' + getSupplierName(p.supplierId) + '</td>'
-                + '<td style="font-size:12px;">' + p.number + '</td>'
-                + '<td style="font-size:12px;">' + (p.dueDate||'—') + '</td>'
-                + '<td>' + dcFmtBadge(p.total, pCurr) + '</td>'
-                + '<td style="color:var(--success);">' + dcFmtBadge(p.paid, pCurr) + '</td>'
-                + '<td style="font-weight:700;color:' + (saldo>0?'var(--danger)':'var(--success)') + ';">' + dcFmtBadge(saldo, pCurr) + '</td>'
-                + '<td>' + getInvoiceStatusBadge(p) + '</td>'
-                + '<td style="white-space:nowrap;">'
-                + (saldo > 0 ? '<button class="btn btn-sm btn-success" onclick="openPaymentModal(\'payable\',\'' + p.id + '\')">&#x1F4B0; Pagar</button>' : '')
-                + (p.paid > 0 ? '<button class="btn btn-sm" onclick="viewPayments(\'payable\',\'' + p.id + '\')">&#x1F4CB;</button>' : '')
-                + '</td></tr>';
-        }).join('');
     }
 
+    // Vista consolidada: un card por proveedor con saldo total
+    function _renderPayablesConsolidated(container, q, defCurr) {
+        const groups = groupMovements('payable');
+        // También incluir proveedores con registros legacy en purchases
+        const legacyBySupp = {};
+        (data.purchases || []).filter(p => p.status !== 'Anulada' && (p.total - (p.paid||0)) > 0)
+            .forEach(p => {
+                if (!legacyBySupp[p.supplierId]) legacyBySupp[p.supplierId] = [];
+                legacyBySupp[p.supplierId].push(p);
+            });
+
+        // Fusionar proveedores con movimientos nuevos y legacy
+        const allSupplierIds = new Set([...Object.keys(groups), ...Object.keys(legacyBySupp)]);
+        let cards = [];
+        allSupplierIds.forEach(suppId => {
+            const supplier = (data.suppliers || []).find(s => s.id === suppId);
+            const name = supplier ? supplier.name : 'Proveedor desconocido';
+            if (q && !name.toLowerCase().includes(q) &&
+                !(supplier?.phone||'').toLowerCase().includes(q) &&
+                !(supplier?.email||'').toLowerCase().includes(q)) return;
+
+            const g = groups[suppId] || { movements: [], totalAmount: 0, totalPaid: 0, balance: 0 };
+            // Sumar legacy
+            const leg = legacyBySupp[suppId] || [];
+            const legAmt  = leg.reduce((s,p)=> s + dc(p.total||0, p.currency||defCurr), 0);
+            const legPaid = leg.reduce((s,p)=> s + dc(p.paid||0,  p.currency||defCurr), 0);
+            const totalBalance = dc(g.balance, defCurr) + (legAmt - legPaid);
+            const totalMovements = g.movements.length + leg.length;
+            if (totalBalance <= 0.001 && totalMovements === 0) return;
+
+            const hasOverdue = g.movements.some(m => m.dueDate && m.dueDate < new Date().toISOString().slice(0,10) && (Number(m.amount)-Number(m.paid))>0)
+                            || leg.some(p => p.dueDate && p.dueDate < new Date().toISOString().slice(0,10));
+            const borderColor = hasOverdue ? 'var(--danger)' : 'var(--border)';
+            const icon = hasOverdue ? '🔴' : (totalBalance > 0 ? '🟡' : '🟢');
+
+            cards.push(`<div class="card" style="margin-bottom:10px;border-left:3px solid ${borderColor};padding:14px 16px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                    <div>
+                        <div style="font-weight:700;font-size:15px;">${icon} ${name}</div>
+                        <div style="font-size:12px;color:var(--text-3);margin-top:2px;">
+                            ${totalMovements} movimiento${totalMovements!==1?'s':''} &nbsp;·&nbsp;
+                            ${supplier?.phone ? '📞 '+supplier.phone : ''}
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:18px;font-weight:800;color:${totalBalance>0?'var(--danger)':'var(--success)'};">${dcFmt(totalBalance, window._displayCurrency||defCurr)}</div>
+                        <div style="font-size:11px;color:var(--text-3);">Saldo pendiente</div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                    <button class="btn btn-sm btn-primary" onclick="openAccountDetail('payable','${suppId}')">📋 Ver cuenta</button>
+                    <button class="btn btn-sm btn-success" onclick="openNewAccountMovement('payable','${suppId}')">➕ Nuevo movimiento</button>
+                </div>
+            </div>`);
+        });
+
+        if (cards.length === 0) {
+            container.innerHTML = '<div class="card" style="text-align:center;padding:32px;color:var(--text-2);">✅ Sin cuentas por pagar pendientes.</div>';
+        } else {
+            container.innerHTML = cards.join('');
+        }
+    }
+
+    // Vista lista de movimientos individuales (modo clásico mejorado)
+    function _renderPayablesMovements(container, q, today, soonStr, defCurr) {
+        ensureAM();
+        const movs = data.accountMovements.filter(m => m.type === 'payable' && (Number(m.amount)-Number(m.paid||0)) > 0);
+        const legacy = (data.purchases||[]).filter(p => p.status !== 'Anulada' && (p.total-(p.paid||0))>0);
+        const filtered = movs.filter(m => !q
+            || getSupplierName(m.entityId).toLowerCase().includes(q)
+            || (m.number||'').toLowerCase().includes(q)
+            || (m.concept||'').toLowerCase().includes(q)
+            || (m.reference||'').toLowerCase().includes(q));
+        const legFiltered = legacy.filter(p => !q
+            || getSupplierName(p.supplierId).toLowerCase().includes(q)
+            || (p.number||'').toLowerCase().includes(q));
+
+        let rows = filtered.map(m => {
+            const pCurr = m.currency || defCurr;
+            const saldo = (Number(m.amount)||0) - (Number(m.paid)||0);
+            const status = calcMovStatus(m);
+            const icons = { 'Pagado':'🟢','Parcial':'🟡','Vencido':'⚠️','Pendiente':'🔴' };
+            let rowBg = '';
+            if (status==='Vencido') rowBg='background:rgba(239,68,68,.04);';
+            else if (m.dueDate && m.dueDate<=soonStr) rowBg='background:rgba(245,158,11,.04);';
+            return `<tr style="${rowBg}">
+                <td>${icons[status]||''} ${getSupplierName(m.entityId)}</td>
+                <td style="font-size:12px;">${m.number||''}</td>
+                <td style="font-size:12px;">${m.concept||''}</td>
+                <td style="font-size:12px;">${m.dueDate||'—'}</td>
+                <td>${dcFmtBadge(m.amount, pCurr)}</td>
+                <td style="color:var(--success);">${dcFmtBadge(m.paid||0, pCurr)}</td>
+                <td style="font-weight:700;color:${saldo>0?'var(--danger)':'var(--success)'};">${dcFmtBadge(saldo, pCurr)}</td>
+                <td>${movStatusBadge(m)}</td>
+                <td style="white-space:nowrap;">
+                    ${saldo>0?`<button class="btn btn-sm btn-success" onclick="openMovementPayment('${m.id}')">💰 Pagar</button>`:''}
+                    <button class="btn btn-sm" onclick="openAccountDetail('payable','${m.entityId}')">📋</button>
+                </td></tr>`;
+        });
+        legFiltered.forEach(p => {
+            const pCurr = p.currency||defCurr;
+            const saldo = (p.total||0)-(p.paid||0);
+            let rowBg = (p.dueDate&&p.dueDate<today)?'background:rgba(239,68,68,.04);':'';
+            rows.push(`<tr style="${rowBg}">
+                <td>🔴 ${getSupplierName(p.supplierId)}</td>
+                <td style="font-size:12px;">${p.number||''}</td>
+                <td style="font-size:12px;">${p.description||''}</td>
+                <td style="font-size:12px;">${p.dueDate||'—'}</td>
+                <td>${dcFmtBadge(p.total, pCurr)}</td>
+                <td style="color:var(--success);">${dcFmtBadge(p.paid||0, pCurr)}</td>
+                <td style="font-weight:700;color:var(--danger);">${dcFmtBadge(saldo, pCurr)}</td>
+                <td><span class="badge badge-info">Pendiente (legado)</span></td>
+                <td style="white-space:nowrap;">
+                    ${saldo>0?`<button class="btn btn-sm btn-success" onclick="openPaymentModal('payable','${p.id}')">💰 Pagar</button>`:''}
+                    ${p.paid>0?`<button class="btn btn-sm" onclick="viewPayments('payable','${p.id}')">📋</button>`:''}
+                </td></tr>`);
+        });
+        if (rows.length===0) {
+            container.innerHTML='<div class="card" style="text-align:center;padding:32px;color:var(--text-2);">✅ Sin movimientos pendientes.</div>';
+        } else {
+            container.innerHTML=`<div class="card p-0 overflow-hidden"><div class="table-wrap border-0"><table>
+                <thead><tr><th>Proveedor</th><th>Número</th><th>Concepto</th><th>Vencimiento</th><th>Monto</th><th>Pagado</th><th>Saldo</th><th>Estado</th><th>Acciones</th></tr></thead>
+                <tbody>${rows.join('')}</tbody></table></div></div>`;
+        }
+    }
+
+    // ── renderReceivables() — vista consolidada por cliente ──────────────────
     function renderReceivables() {
         const today   = new Date().toISOString().slice(0,10);
         const soon    = new Date(); soon.setDate(soon.getDate()+7);
@@ -10227,97 +10392,809 @@
         const defCurr = data?.settings?.defaultCurrency || 'VES';
         const disp    = window._displayCurrency || defCurr;
         const q       = (document.getElementById('receivablesSearch')?.value || '').toLowerCase().trim();
+        const viewMode = document.getElementById('receivablesViewMode')?.value || 'consolidated';
 
-        const active   = data.invoices.filter(i => i.status !== 'Anulada' && (i.total - i.paid) > 0);
-        const filtered = active.filter(i => !q
-            || getCustomerName(i.customerId).toLowerCase().includes(q)
-            || (i.number||'').toLowerCase().includes(q));
+        ensureAM();
 
-        const totalRecDisp = filtered.reduce((s,i) => s + dc(i.total - i.paid, i.currency || defCurr), 0);
-        const overdueDisp  = filtered.filter(i=>i.dueDate&&i.dueDate<today)
-                                     .reduce((s,i) => s + dc(i.total - i.paid, i.currency || defCurr), 0);
-        const overdueN = filtered.filter(i=>i.dueDate&&i.dueDate<today).length;
-        const soonN    = filtered.filter(i=>i.dueDate&&i.dueDate>=today&&i.dueDate<=soonStr).length;
+        const allMovsRec = data.accountMovements.filter(m => m.type === 'receivable');
+        const legacyRec  = (data.invoices || []).filter(i => i.status !== 'Anulada' && (i.total - (i.paid||0)) > 0);
+
+        const totalRecDisp = allMovsRec.reduce((s,m)=> s + dc((Number(m.amount)||0)-(Number(m.paid)||0), m.currency||defCurr), 0)
+                           + legacyRec.reduce((s,i)=> s + dc((i.total||0)-(i.paid||0), i.currency||defCurr), 0);
+        const overdueRecMovs = allMovsRec.filter(m=> m.dueDate && m.dueDate < today && (Number(m.amount)-Number(m.paid||0))>0);
+        const overdueDisp  = overdueRecMovs.reduce((s,m)=> s + dc((Number(m.amount)||0)-(Number(m.paid)||0), m.currency||defCurr), 0);
+        const overdueN     = overdueRecMovs.length;
+        const soonN        = allMovsRec.filter(m=> m.dueDate && m.dueDate>=today && m.dueDate<=soonStr && (Number(m.amount)-Number(m.paid||0))>0).length;
+        const totalClients = Object.keys(groupMovements('receivable')).length + new Set(legacyRec.map(i=>i.customerId)).size;
 
         document.getElementById('receivablesStats').innerHTML =
             '<div class="card stat"><div class="icon-box green">&#x1F4C4;</div><div class="content"><div class="value">' + dcFmt(totalRecDisp,disp) + '</div><div class="label">Por cobrar (' + disp + ')</div></div></div>'
           + '<div class="card stat"><div class="icon-box red">&#x1F534;</div><div class="content"><div class="value" style="color:var(--danger);">' + dcFmt(overdueDisp,disp) + '</div><div class="label">Vencido (' + overdueN + ')</div></div></div>'
           + '<div class="card stat"><div class="icon-box yellow">&#x1F7E1;</div><div class="content"><div class="value" style="color:var(--warning);">' + soonN + '</div><div class="label">Vence en 7 días</div></div></div>'
-          + '<div class="card stat"><div class="icon-box blue">&#x1F4CA;</div><div class="content"><div class="value">' + active.length + '</div><div class="label">Facturas abiertas</div></div></div>';
+          + '<div class="card stat"><div class="icon-box blue">&#x1F465;</div><div class="content"><div class="value">' + totalClients + '</div><div class="label">Clientes activos</div></div></div>';
 
-        const tbody = document.getElementById('receivablesTableBody');
-        if (filtered.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-2);">&#x2705; Sin cuentas por cobrar pendientes.</td></tr>';
-            return;
+        const container = document.getElementById('receivablesContainer');
+        if (!container) return;
+
+        if (viewMode === 'movements') {
+            _renderReceivablesMovements(container, q, today, soonStr, defCurr);
+        } else {
+            _renderReceivablesConsolidated(container, q, defCurr);
         }
-        tbody.innerHTML = filtered.map(i => {
-            const iCurr = i.currency || defCurr;
-            const saldo = i.total - i.paid;
-            let icon = '&#x1F7E2;', rowBg = '';
-            if (i.dueDate) {
-                if (i.dueDate < today)        { icon = '&#x1F534;'; rowBg = 'background:rgba(239,68,68,.04);'; }
-                else if (i.dueDate <= soonStr){ icon = '&#x1F7E1;'; rowBg = 'background:rgba(245,158,11,.04);'; }
-            }
-            return '<tr style="' + rowBg + '">'
-                + '<td>' + icon + ' ' + getCustomerName(i.customerId) + '</td>'
-                + '<td style="font-size:12px;">' + i.number + '</td>'
-                + '<td style="font-size:12px;">' + (i.dueDate||'—') + '</td>'
-                + '<td>' + dcFmtBadge(i.total, iCurr) + '</td>'
-                + '<td style="color:var(--success);">' + dcFmtBadge(i.paid, iCurr) + '</td>'
-                + '<td style="font-weight:700;color:' + (saldo>0?'var(--danger)':'var(--success)') + ';">' + dcFmtBadge(saldo, iCurr) + '</td>'
-                + '<td>' + getInvoiceStatusBadge(i) + '</td>'
-                + '<td style="white-space:nowrap;">'
-                + (saldo > 0 ? '<button class="btn btn-sm btn-success" onclick="openPaymentModal(\'receivable\',\'' + i.id + '\')">&#x1F4B0; Cobrar</button>' : '')
-                + (i.paid > 0 ? '<button class="btn btn-sm" onclick="viewPayments(\'receivable\',\'' + i.id + '\')">&#x1F4CB;</button>' : '')
-                + '</td></tr>';
-        }).join('');
     }
 
-    // Ver pagos de una factura
+    // Vista consolidada: un card por cliente con saldo total
+    function _renderReceivablesConsolidated(container, q, defCurr) {
+        const groups = groupMovements('receivable');
+        const legacyByCust = {};
+        (data.invoices || []).filter(i => i.status !== 'Anulada' && (i.total - (i.paid||0)) > 0)
+            .forEach(i => {
+                if (!legacyByCust[i.customerId]) legacyByCust[i.customerId] = [];
+                legacyByCust[i.customerId].push(i);
+            });
+
+        const allCustIds = new Set([...Object.keys(groups), ...Object.keys(legacyByCust)]);
+        let cards = [];
+        allCustIds.forEach(custId => {
+            const cust = (data.customers || []).find(c => c.id === custId);
+            const name = cust ? (cust.firstName + ' ' + cust.lastName).trim() : 'Cliente desconocido';
+            if (q && !name.toLowerCase().includes(q) &&
+                !(cust?.phone||'').toLowerCase().includes(q) &&
+                !(cust?.email||'').toLowerCase().includes(q) &&
+                !(cust?.identification||'').toLowerCase().includes(q)) return;
+
+            const g = groups[custId] || { movements: [], totalAmount: 0, totalPaid: 0, balance: 0 };
+            const leg = legacyByCust[custId] || [];
+            const legAmt  = leg.reduce((s,i)=> s + dc(i.total||0, i.currency||defCurr), 0);
+            const legPaid = leg.reduce((s,i)=> s + dc(i.paid||0,  i.currency||defCurr), 0);
+            const totalBalance   = dc(g.balance, defCurr) + (legAmt - legPaid);
+            const totalMovements = g.movements.length + leg.length;
+            if (totalBalance <= 0.001 && totalMovements === 0) return;
+
+            const hasOverdue = g.movements.some(m => m.dueDate && m.dueDate < new Date().toISOString().slice(0,10) && (Number(m.amount)-Number(m.paid||0))>0)
+                            || leg.some(i => i.dueDate && i.dueDate < new Date().toISOString().slice(0,10));
+            const borderColor = hasOverdue ? 'var(--danger)' : 'var(--primary)';
+            const icon = hasOverdue ? '🔴' : (totalBalance > 0 ? '🟡' : '🟢');
+
+            cards.push(`<div class="card" style="margin-bottom:10px;border-left:3px solid ${borderColor};padding:14px 16px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                    <div>
+                        <div style="font-weight:700;font-size:15px;">${icon} ${name}</div>
+                        <div style="font-size:12px;color:var(--text-3);margin-top:2px;">
+                            ${totalMovements} movimiento${totalMovements!==1?'s':''} &nbsp;·&nbsp;
+                            ${cust?.phone ? '📞 '+cust.phone : ''}
+                            ${cust?.email ? '&nbsp;✉️ '+cust.email : ''}
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:18px;font-weight:800;color:${totalBalance>0?'var(--warning)':'var(--success)'};">${dcFmt(totalBalance, window._displayCurrency||defCurr)}</div>
+                        <div style="font-size:11px;color:var(--text-3);">Saldo pendiente</div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                    <button class="btn btn-sm btn-primary" onclick="openAccountDetail('receivable','${custId}')">📋 Ver cuenta</button>
+                    <button class="btn btn-sm btn-success" onclick="openNewAccountMovement('receivable','${custId}')">➕ Nuevo movimiento</button>
+                </div>
+            </div>`);
+        });
+
+        if (cards.length === 0) {
+            container.innerHTML = '<div class="card" style="text-align:center;padding:32px;color:var(--text-2);">✅ Sin cuentas por cobrar pendientes.</div>';
+        } else {
+            container.innerHTML = cards.join('');
+        }
+    }
+
+    // Vista lista de movimientos individuales CxC
+    function _renderReceivablesMovements(container, q, today, soonStr, defCurr) {
+        ensureAM();
+        const movs = data.accountMovements.filter(m => m.type === 'receivable' && (Number(m.amount)-Number(m.paid||0)) > 0);
+        const legacy = (data.invoices||[]).filter(i => i.status !== 'Anulada' && (i.total-(i.paid||0))>0);
+        const filtered = movs.filter(m => !q
+            || getCustomerName(m.entityId).toLowerCase().includes(q)
+            || (m.number||'').toLowerCase().includes(q)
+            || (m.concept||'').toLowerCase().includes(q)
+            || (m.reference||'').toLowerCase().includes(q)
+            || (m.invoiceId||'').toLowerCase().includes(q));
+        const legFiltered = legacy.filter(i => !q
+            || getCustomerName(i.customerId).toLowerCase().includes(q)
+            || (i.number||'').toLowerCase().includes(q)
+            || (i.description||'').toLowerCase().includes(q));
+
+        let rows = filtered.map(m => {
+            const mCurr = m.currency || defCurr;
+            const saldo = (Number(m.amount)||0) - (Number(m.paid)||0);
+            const status = calcMovStatus(m);
+            const icons = { 'Pagado':'🟢','Parcial':'🟡','Vencido':'⚠️','Pendiente':'🔴' };
+            let rowBg = '';
+            if (status==='Vencido') rowBg='background:rgba(239,68,68,.04);';
+            else if (m.dueDate && m.dueDate<=soonStr) rowBg='background:rgba(245,158,11,.04);';
+            return `<tr style="${rowBg}">
+                <td>${icons[status]||''} ${getCustomerName(m.entityId)}</td>
+                <td style="font-size:12px;">${m.number||''}</td>
+                <td style="font-size:12px;">${m.concept||''}</td>
+                <td style="font-size:12px;">${m.dueDate||'—'}</td>
+                <td>${dcFmtBadge(m.amount, mCurr)}</td>
+                <td style="color:var(--success);">${dcFmtBadge(m.paid||0, mCurr)}</td>
+                <td style="font-weight:700;color:${saldo>0?'var(--warning)':'var(--success)'};">${dcFmtBadge(saldo, mCurr)}</td>
+                <td>${movStatusBadge(m)}</td>
+                <td style="white-space:nowrap;">
+                    ${saldo>0?`<button class="btn btn-sm btn-success" onclick="openMovementPayment('${m.id}')">💰 Cobrar</button>`:''}
+                    <button class="btn btn-sm" onclick="openAccountDetail('receivable','${m.entityId}')">📋</button>
+                </td></tr>`;
+        });
+        legFiltered.forEach(i => {
+            const iCurr = i.currency||defCurr;
+            const saldo = (i.total||0)-(i.paid||0);
+            let rowBg = (i.dueDate&&i.dueDate<today)?'background:rgba(239,68,68,.04);':'';
+            rows.push(`<tr style="${rowBg}">
+                <td>🔴 ${getCustomerName(i.customerId)}</td>
+                <td style="font-size:12px;">${i.number||''}</td>
+                <td style="font-size:12px;">${i.description||''}</td>
+                <td style="font-size:12px;">${i.dueDate||'—'}</td>
+                <td>${dcFmtBadge(i.total, iCurr)}</td>
+                <td style="color:var(--success);">${dcFmtBadge(i.paid||0, iCurr)}</td>
+                <td style="font-weight:700;color:var(--warning);">${dcFmtBadge(saldo, iCurr)}</td>
+                <td><span class="badge badge-info">Pendiente (legado)</span></td>
+                <td style="white-space:nowrap;">
+                    ${saldo>0?`<button class="btn btn-sm btn-success" onclick="openPaymentModal('receivable','${i.id}')">💰 Cobrar</button>`:''}
+                    ${i.paid>0?`<button class="btn btn-sm" onclick="viewPayments('receivable','${i.id}')">📋</button>`:''}
+                </td></tr>`);
+        });
+        if (rows.length===0) {
+            container.innerHTML='<div class="card" style="text-align:center;padding:32px;color:var(--text-2);">✅ Sin movimientos pendientes.</div>';
+        } else {
+            container.innerHTML=`<div class="card p-0 overflow-hidden"><div class="table-wrap border-0"><table>
+                <thead><tr><th>Cliente</th><th>Número</th><th>Concepto</th><th>Vencimiento</th><th>Monto</th><th>Pagado</th><th>Saldo</th><th>Estado</th><th>Acciones</th></tr></thead>
+                <tbody>${rows.join('')}</tbody></table></div></div>`;
+        }
+    }
+
+    // ── openAccountDetail(type, entityId) ────────────────────────────────────
+    // Abre un modal completo con: datos del cliente/proveedor, tabla de todos los
+    // movimientos (incluidos pagados), totales, botones de acción por movimiento.
+    function openAccountDetail(type, entityId) {
+        ensureAM();
+        const isRec   = type === 'receivable';
+        const defCurr = data?.settings?.defaultCurrency || 'VES';
+        const disp    = window._displayCurrency || defCurr;
+
+        const entity = isRec
+            ? (data.customers||[]).find(c => c.id === entityId)
+            : (data.suppliers||[]).find(s => s.id === entityId);
+        if (!entity) { showToast('⚠️', 'Entidad no encontrada'); return; }
+
+        const entityName = isRec ? ((entity.firstName||'') + ' ' + (entity.lastName||'')).trim() : (entity.name||'');
+
+        // Movimientos nuevos
+        const movs = data.accountMovements.filter(m => m.type === type && m.entityId === entityId);
+        // Movimientos legacy (invoices/purchases)
+        const legacyItems = isRec
+            ? (data.invoices||[]).filter(i => i.customerId === entityId && i.status !== 'Anulada')
+            : (data.purchases||[]).filter(p => p.supplierId === entityId && p.status !== 'Anulada');
+
+        // Calcular totales consolidados
+        const totalDebt   = movs.reduce((s,m)=>s+(Number(m.amount)||0),0) + legacyItems.reduce((s,i)=>s+dc(i.total||0, i.currency||defCurr),0);
+        const totalPaid   = movs.reduce((s,m)=>s+(Number(m.paid)||0), 0) + legacyItems.reduce((s,i)=>s+dc(i.paid||0,  i.currency||defCurr),0);
+        const totalBalance= totalDebt - totalPaid;
+
+        const today = new Date().toISOString().slice(0,10);
+
+        // Filas de movimientos nuevos
+        let movRows = movs.map((m, idx) => {
+            const mCurr  = m.currency || defCurr;
+            const saldo  = (Number(m.amount)||0) - (Number(m.paid)||0);
+            const status = calcMovStatus(m);
+            const icons  = { 'Pagado':'🟢','Parcial':'🟡','Vencido':'⚠️','Pendiente':'🔴' };
+            const map    = { 'Pagado':'badge-success','Parcial':'badge-warning','Vencido':'badge-danger','Pendiente':'badge-info' };
+            return `<tr>
+                <td style="font-size:12px;color:var(--text-3);">#${idx+1}</td>
+                <td style="font-size:12px;">${m.date||''}</td>
+                <td><strong>${m.concept||''}</strong>${m.description?'<br><span style="font-size:11px;color:var(--text-3);">'+m.description+'</span>':''}</td>
+                <td style="font-size:12px;">${m.dueDate||'—'}</td>
+                <td style="font-size:12px;">${m.reference||'—'}</td>
+                <td>${dcFmtBadge(m.amount, mCurr)}</td>
+                <td style="color:var(--success);">${dcFmtBadge(m.paid||0, mCurr)}</td>
+                <td style="font-weight:700;color:${saldo>0?(status==='Vencido'?'var(--danger)':'var(--warning)'):'var(--success)'};">${dcFmtBadge(saldo, mCurr)}</td>
+                <td><span class="badge ${map[status]}">${icons[status]||''} ${status}</span></td>
+                <td style="white-space:nowrap;">
+                    ${saldo>0?`<button class="btn btn-sm btn-success" onclick="openMovementPayment('${m.id}')">💰</button>`:''}
+                    <button class="btn btn-sm" onclick="openEditMovement('${m.id}')" title="Editar">✏️</button>
+                    <button class="btn btn-sm" style="color:var(--danger);" onclick="deleteMovement('${m.id}')" title="Eliminar">🗑️</button>
+                </td></tr>`;
+        });
+
+        // Filas legacy
+        legacyItems.forEach((item, idx) => {
+            const iCurr = item.currency||defCurr;
+            const saldo = (item.total||0)-(item.paid||0);
+            movRows.push(`<tr>
+                <td style="font-size:12px;color:var(--text-3);">L${idx+1}</td>
+                <td style="font-size:12px;">${item.date||''}</td>
+                <td><strong>${item.description||item.number||''}</strong></td>
+                <td style="font-size:12px;">${item.dueDate||'—'}</td>
+                <td style="font-size:12px;">${item.number||'—'}</td>
+                <td>${dcFmtBadge(item.total, iCurr)}</td>
+                <td style="color:var(--success);">${dcFmtBadge(item.paid||0, iCurr)}</td>
+                <td style="font-weight:700;color:${saldo>0?'var(--warning)':'var(--success)'};">${dcFmtBadge(saldo, iCurr)}</td>
+                <td><span class="badge badge-info">Legado</span></td>
+                <td style="white-space:nowrap;">
+                    ${saldo>0?`<button class="btn btn-sm btn-success" onclick="openPaymentModal('${type}','${item.id}')">💰</button>`:''}
+                    ${item.paid>0?`<button class="btn btn-sm" onclick="viewPayments('${type}','${item.id}')">📋</button>`:''}
+                </td></tr>`);
+        });
+
+        const title = document.getElementById('modalTitle');
+        const body  = document.getElementById('modalBody');
+        const overlay = document.getElementById('modalOverlay');
+
+        title.textContent = isRec ? `💳 Cuenta de ${entityName}` : `💰 Cuenta de ${entityName}`;
+        body.innerHTML = `
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
+                <div class="card stat" style="padding:12px;">
+                    <div style="font-size:11px;color:var(--text-3);">Total deudas</div>
+                    <div style="font-size:18px;font-weight:800;">${dcFmt(totalDebt, disp)}</div>
+                </div>
+                <div class="card stat" style="padding:12px;">
+                    <div style="font-size:11px;color:var(--text-3);">Total pagado</div>
+                    <div style="font-size:18px;font-weight:800;color:var(--success);">${dcFmt(totalPaid, disp)}</div>
+                </div>
+                <div class="card stat" style="padding:12px;border:2px solid ${totalBalance>0?'var(--warning)':'var(--success)'};">
+                    <div style="font-size:11px;color:var(--text-3);">Saldo pendiente</div>
+                    <div style="font-size:18px;font-weight:800;color:${totalBalance>0?'var(--warning)':'var(--success)'};">${dcFmt(totalBalance, disp)}</div>
+                </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+                <button class="btn btn-primary btn-sm" onclick="openNewAccountMovement('${type}','${entityId}')">➕ Nuevo movimiento</button>
+                <button class="btn btn-sm" onclick="closeModal()">✕ Cerrar</button>
+            </div>
+            ${movRows.length > 0 ? `
+            <div style="overflow-x:auto;max-height:420px;overflow-y:auto;">
+                <table style="width:100%;font-size:13px;">
+                    <thead><tr style="position:sticky;top:0;background:var(--bg-2);z-index:2;">
+                        <th>#</th><th>Fecha</th><th>Concepto</th><th>Vence</th><th>Ref.</th>
+                        <th>Monto</th><th>Pagado</th><th>Saldo</th><th>Estado</th><th>Acciones</th>
+                    </tr></thead>
+                    <tbody>${movRows.join('')}</tbody>
+                    <tfoot><tr style="font-weight:700;border-top:2px solid var(--border);">
+                        <td colspan="5" style="text-align:right;padding:8px;">TOTALES:</td>
+                        <td>${dcFmt(totalDebt, disp)}</td>
+                        <td style="color:var(--success);">${dcFmt(totalPaid, disp)}</td>
+                        <td style="color:${totalBalance>0?'var(--warning)':'var(--success)'};">${dcFmt(totalBalance, disp)}</td>
+                        <td colspan="2"></td>
+                    </tr></tfoot>
+                </table>
+            </div>` : '<p style="text-align:center;color:var(--text-3);padding:24px;">Sin movimientos registrados.</p>'}
+            <div class="form-actions" style="margin-top:12px;">
+                <button class="btn" onclick="closeModal()">Cerrar</button>
+            </div>`;
+        overlay.classList.add('open');
+    }
+
+    // ── openNewAccountMovement(type, entityId) ────────────────────────────────
+    // Si entityId es null → primero selecciona cliente/proveedor, luego llena el form.
+    // Si entityId ya tiene valor → abre el formulario directo para ese cliente/proveedor.
+    function openNewAccountMovement(type, entityId) {
+        const isRec   = type === 'receivable';
+        const defCurr = data?.settings?.defaultCurrency || 'VES';
+        const title   = document.getElementById('modalTitle');
+        const body    = document.getElementById('modalBody');
+        const overlay = document.getElementById('modalOverlay');
+
+        const currOpts = (data.currencies||[]).filter(c=>c.active)
+            .map(c=>`<option value="${c.code}"${c.code===defCurr?' selected':''}>${c.code} ${c.symbol}</option>`).join('');
+
+        // Opciones de entidades
+        const entityOpts = isRec
+            ? (data.customers||[]).filter(c=>c.status!=='anulado')
+                .map(c=>`<option value="${c.id}"${c.id===entityId?' selected':''}>${c.firstName} ${c.lastName}</option>`).join('')
+            : (data.suppliers||[]).filter(s=>s.status!=='anulado')
+                .map(s=>`<option value="${s.id}"${s.id===entityId?' selected':''}>${s.name}</option>`).join('');
+
+        // Facturas existentes del cliente para vincular (solo CxC)
+        const invOpts = isRec && entityId
+            ? '<option value="">— Sin factura relacionada —</option>' +
+              (data.invoices||[]).filter(i=>i.customerId===entityId && i.status!=='Anulada')
+                .map(i=>`<option value="${i.id}">${i.number} — ${dcFmt(i.total, i.currency||defCurr)}</option>`).join('')
+            : '<option value="">— Sin factura relacionada —</option>';
+
+        title.textContent = isRec ? '💳 Nuevo movimiento — Cuenta por Cobrar' : '💰 Nuevo movimiento — Cuenta por Pagar';
+        body.innerHTML = `
+            <div class="form-group">
+                <label>${isRec ? 'Cliente' : 'Proveedor'} *</label>
+                <select id="nam_entityId" required onchange="openNewAccountMovement('${type}', this.value)">
+                    <option value="">— Seleccionar ${isRec?'cliente':'proveedor'} —</option>
+                    ${entityOpts}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Concepto *</label>
+                <input id="nam_concept" type="text" placeholder="Ej: Compra de repuestos, Servicio de reparación..." value="" />
+            </div>
+            <div class="form-group">
+                <label>Descripción (opcional)</label>
+                <input id="nam_description" type="text" placeholder="Detalles adicionales..." />
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group">
+                    <label>Monto *</label>
+                    <input id="nam_amount" type="number" step="0.01" inputmode="decimal" placeholder="0.00" />
+                </div>
+                <div class="form-group">
+                    <label>Moneda</label>
+                    <select id="nam_currency">${currOpts}</select>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group">
+                    <label>Fecha *</label>
+                    <input id="nam_date" type="date" value="${new Date().toISOString().slice(0,10)}" />
+                </div>
+                <div class="form-group">
+                    <label>Fecha de vencimiento</label>
+                    <input id="nam_dueDate" type="date" />
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group">
+                    <label>Referencia (opcional)</label>
+                    <input id="nam_reference" type="text" placeholder="Ej: ORD-001, FAC-2026-100..." />
+                </div>
+                <div class="form-group">
+                    <label>Factura relacionada (opcional)</label>
+                    <select id="nam_invoiceId">${invOpts}</select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Observaciones</label>
+                <textarea id="nam_notes" rows="2" placeholder="Observaciones adicionales..."></textarea>
+            </div>
+            <div class="form-actions">
+                <button class="btn" onclick="closeModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveSafe(this, ()=>saveNewAccountMovement('${type}'))">💾 Guardar movimiento</button>
+            </div>`;
+        overlay.classList.add('open');
+        // Reenfocar el campo concepto si ya hay entityId
+        if (entityId) setTimeout(()=>{ document.getElementById('nam_concept')?.focus(); }, 100);
+    }
+
+    async function saveNewAccountMovement(type) {
+        const entityId    = document.getElementById('nam_entityId')?.value;
+        const concept     = (document.getElementById('nam_concept')?.value||'').trim();
+        const description = (document.getElementById('nam_description')?.value||'').trim();
+        const amount      = parseFloat(document.getElementById('nam_amount')?.value) || 0;
+        const currency    = document.getElementById('nam_currency')?.value || (data?.settings?.defaultCurrency||'VES');
+        const date        = document.getElementById('nam_date')?.value;
+        const dueDate     = document.getElementById('nam_dueDate')?.value;
+        const reference   = (document.getElementById('nam_reference')?.value||'').trim();
+        const invoiceId   = document.getElementById('nam_invoiceId')?.value || null;
+        const notes       = (document.getElementById('nam_notes')?.value||'').trim();
+
+        if (!entityId) { showToast('⚠️', type==='receivable'?'Selecciona un cliente':'Selecciona un proveedor'); return; }
+        if (!concept)  { showToast('⚠️', 'Ingresa el concepto'); return; }
+        if (amount<=0) { showToast('⚠️', 'El monto debe ser mayor a cero'); return; }
+
+        ensureAM();
+        const defCurr = data?.settings?.defaultCurrency || 'VES';
+        const seq     = data.accountMovements.filter(m=>m.type===type).length + 1;
+        const prefix  = type==='receivable'?'CXC':'CXP';
+        const number  = `${prefix}-${String(seq).padStart(6,'0')}`;
+
+        const movement = {
+            id:          generateId(),
+            type,
+            entityId,
+            number,
+            date:        date || new Date().toISOString().slice(0,10),
+            dueDate:     dueDate || '',
+            concept,
+            description,
+            reference,
+            invoiceId:   invoiceId || null,
+            amount,
+            currency,
+            paid:        0,
+            status:      'Pendiente',
+            notes,
+            source:      'manual',
+            createdAt:   new Date().toISOString(),
+            updatedAt:   new Date().toISOString(),
+            payments:    [],
+        };
+        movement.status = calcMovStatus(movement);
+        data.accountMovements.push(movement);
+
+        // Asiento contable
+        if (type==='receivable') {
+            const cxcAcc = data.chartOfAccounts?.find(a=>a.code==='1-02');
+            const ingAcc = data.chartOfAccounts?.find(a=>a.code==='4-01');
+            if (cxcAcc) cxcAcc.balance = (cxcAcc.balance||0) + amount;
+            if (ingAcc) ingAcc.balance = (ingAcc.balance||0) + amount;
+        } else {
+            const cxpAcc  = data.chartOfAccounts?.find(a=>a.code==='2-01');
+            const costAcc = data.chartOfAccounts?.find(a=>a.code==='5-01');
+            if (cxpAcc)  cxpAcc.balance  = (cxpAcc.balance||0)  + amount;
+            if (costAcc) costAcc.balance = (costAcc.balance||0) + amount;
+        }
+        data.journalEntries?.push(
+            { date: movement.date, ref: number, desc: `${prefix}: ${concept}`, debit: amount, credit: null },
+            { date: movement.date, ref: number, desc: `${prefix}: ${concept}`, debit: null,   credit: amount }
+        );
+        logAudit('create','accountMovement', movement.id, { number, amount, concept, type });
+
+        closeModal();
+        renderAll();
+        await _persistAndNotify(
+            `${type==='receivable'?'Cuenta por cobrar':'Cuenta por pagar'} ${number} registrada`,
+            `${prefix} guardado localmente — verifica conexión`
+        );
+    }
+
+    // ── openEditMovement(movId) ───────────────────────────────────────────────
+    function openEditMovement(movId) {
+        ensureAM();
+        const mov = data.accountMovements.find(m=>m.id===movId);
+        if (!mov) { showToast('⚠️','Movimiento no encontrado'); return; }
+        const defCurr = data?.settings?.defaultCurrency||'VES';
+        const currOpts = (data.currencies||[]).filter(c=>c.active)
+            .map(c=>`<option value="${c.code}"${c.code===mov.currency?' selected':''}>${c.code} ${c.symbol}</option>`).join('');
+
+        const title   = document.getElementById('modalTitle');
+        const body    = document.getElementById('modalBody');
+        const overlay = document.getElementById('modalOverlay');
+        title.textContent = '✏️ Editar movimiento ' + mov.number;
+        body.innerHTML = `
+            <div class="form-group">
+                <label>Concepto *</label>
+                <input id="em_concept" type="text" value="${escHtml(mov.concept||'')}" />
+            </div>
+            <div class="form-group">
+                <label>Descripción</label>
+                <input id="em_description" type="text" value="${escHtml(mov.description||'')}" />
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group">
+                    <label>Monto *</label>
+                    <input id="em_amount" type="number" step="0.01" value="${mov.amount||0}" />
+                    <small style="color:var(--text-3);">Ya pagado: ${dcFmt(mov.paid||0, mov.currency||defCurr)}</small>
+                </div>
+                <div class="form-group">
+                    <label>Moneda</label>
+                    <select id="em_currency">${currOpts}</select>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group">
+                    <label>Fecha</label>
+                    <input id="em_date" type="date" value="${mov.date||''}" />
+                </div>
+                <div class="form-group">
+                    <label>Vencimiento</label>
+                    <input id="em_dueDate" type="date" value="${mov.dueDate||''}" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Referencia</label>
+                <input id="em_reference" type="text" value="${escHtml(mov.reference||'')}" />
+            </div>
+            <div class="form-group">
+                <label>Observaciones</label>
+                <textarea id="em_notes" rows="2">${escHtml(mov.notes||'')}</textarea>
+            </div>
+            <div class="form-actions">
+                <button class="btn" onclick="closeModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveSafe(this, ()=>saveEditMovement('${movId}'))">💾 Guardar cambios</button>
+            </div>`;
+        overlay.classList.add('open');
+    }
+
+    async function saveEditMovement(movId) {
+        ensureAM();
+        const idx = data.accountMovements.findIndex(m=>m.id===movId);
+        if (idx===-1) { showToast('⚠️','Movimiento no encontrado'); return; }
+        const mov = data.accountMovements[idx];
+        const newAmount = parseFloat(document.getElementById('em_amount')?.value) || 0;
+        if (newAmount <= 0) { showToast('⚠️','El monto debe ser mayor a cero'); return; }
+        if (newAmount < (mov.paid||0)) { showToast('⚠️','El monto no puede ser menor al total ya pagado'); return; }
+
+        data.accountMovements[idx] = {
+            ...mov,
+            concept:     (document.getElementById('em_concept')?.value||'').trim() || mov.concept,
+            description: (document.getElementById('em_description')?.value||'').trim(),
+            amount:      newAmount,
+            currency:    document.getElementById('em_currency')?.value || mov.currency,
+            date:        document.getElementById('em_date')?.value || mov.date,
+            dueDate:     document.getElementById('em_dueDate')?.value || '',
+            reference:   (document.getElementById('em_reference')?.value||'').trim(),
+            notes:       (document.getElementById('em_notes')?.value||'').trim(),
+            updatedAt:   new Date().toISOString(),
+        };
+        data.accountMovements[idx].status = calcMovStatus(data.accountMovements[idx]);
+        logAudit('update','accountMovement', movId, { newAmount });
+        closeModal();
+        renderAll();
+        await _persistAndNotify('Movimiento actualizado','Cambio guardado localmente');
+    }
+
+    // ── deleteMovement(movId) ─────────────────────────────────────────────────
+    async function deleteMovement(movId) {
+        ensureAM();
+        const mov = data.accountMovements.find(m=>m.id===movId);
+        if (!mov) { showToast('⚠️','Movimiento no encontrado'); return; }
+        if (!confirm(`¿Seguro que deseas eliminar el movimiento ${mov.number} de ${dcFmt(mov.amount, mov.currency||data?.settings?.defaultCurrency||'VES')}?\n\nEsta acción no se puede deshacer.`)) return;
+
+        // Revertir asiento contable
+        const amount = Number(mov.amount)||0;
+        if (mov.type==='receivable') {
+            const cxcAcc = data.chartOfAccounts?.find(a=>a.code==='1-02');
+            if (cxcAcc) cxcAcc.balance = Math.max(0,(cxcAcc.balance||0)-amount);
+        } else {
+            const cxpAcc = data.chartOfAccounts?.find(a=>a.code==='2-01');
+            if (cxpAcc) cxpAcc.balance = Math.max(0,(cxpAcc.balance||0)-amount);
+        }
+
+        data.accountMovements = data.accountMovements.filter(m=>m.id!==movId);
+        logAudit('delete','accountMovement', movId, { number: mov.number });
+        closeModal();
+        renderAll();
+        await _persistAndNotify(`Movimiento ${mov.number} eliminado`,'Cambio guardado localmente');
+    }
+
+    // ── openMovementPayment(movId) ────────────────────────────────────────────
+    // Registra un pago (parcial o completo) sobre un movimiento específico.
+    function openMovementPayment(movId) {
+        ensureAM();
+        const mov = data.accountMovements.find(m=>m.id===movId);
+        if (!mov) { showToast('⚠️','Movimiento no encontrado'); return; }
+        const defCurr = data?.settings?.defaultCurrency||'VES';
+        const isRec   = mov.type==='receivable';
+        const saldo   = (Number(mov.amount)||0) - (Number(mov.paid)||0);
+        const entityName = isRec
+            ? getCustomerName(mov.entityId)
+            : getSupplierName(mov.entityId);
+
+        const title   = document.getElementById('modalTitle');
+        const body    = document.getElementById('modalBody');
+        const overlay = document.getElementById('modalOverlay');
+
+        title.textContent = isRec ? `💰 Registrar cobro — ${mov.number}` : `💸 Registrar pago — ${mov.number}`;
+        body.innerHTML = `
+            <div class="card" style="background:var(--bg-2);padding:12px;margin-bottom:14px;border-radius:8px;">
+                <div style="font-size:13px;font-weight:600;">${entityName}</div>
+                <div style="font-size:12px;color:var(--text-3);margin-top:4px;">${mov.concept||mov.number}</div>
+                <div style="display:flex;gap:16px;margin-top:8px;font-size:13px;">
+                    <span>Total: <strong>${dcFmt(mov.amount, mov.currency||defCurr)}</strong></span>
+                    <span>Pagado: <strong style="color:var(--success);">${dcFmt(mov.paid||0, mov.currency||defCurr)}</strong></span>
+                    <span>Saldo: <strong style="color:var(--warning);">${dcFmt(saldo, mov.currency||defCurr)}</strong></span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Monto a ${isRec?'cobrar':'pagar'} *</label>
+                <input id="mp_amount" type="number" step="0.01" inputmode="decimal" placeholder="0.00" max="${saldo}" />
+                <small style="color:var(--text-3);">Máximo: ${dcFmt(saldo, mov.currency||defCurr)}</small>
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:10px;">
+                <button class="btn btn-sm" onclick="document.getElementById('mp_amount').value='${saldo.toFixed(2)}'">
+                    ✅ Pagar total (${dcFmt(saldo, mov.currency||defCurr)})
+                </button>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group">
+                    <label>Fecha</label>
+                    <input id="mp_date" type="date" value="${new Date().toISOString().slice(0,10)}" />
+                </div>
+                <div class="form-group">
+                    <label>Método de pago</label>
+                    <select id="mp_method">
+                        <option>Efectivo</option><option>Transferencia bancaria</option>
+                        <option>Zelle</option><option>PayPal</option>
+                        <option>Tarjeta de crédito</option><option>Tarjeta de débito</option>
+                        <option>Cheque</option><option>Criptomoneda</option><option>Otro</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Referencia / N° de comprobante</label>
+                <input id="mp_ref" type="text" placeholder="Ej: TRF-00123, CHQ-456..." />
+            </div>
+            <div class="form-group">
+                <label>Nota (opcional)</label>
+                <input id="mp_note" type="text" placeholder="Observación del pago..." />
+            </div>
+            <div class="form-actions">
+                <button class="btn" onclick="closeModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveSafe(this, ()=>saveMovementPayment('${movId}'))">💾 Registrar ${isRec?'cobro':'pago'}</button>
+            </div>`;
+        overlay.classList.add('open');
+        setTimeout(()=>{ document.getElementById('mp_amount')?.focus(); }, 100);
+    }
+
+    async function saveMovementPayment(movId) {
+        ensureAM();
+        const idx = data.accountMovements.findIndex(m=>m.id===movId);
+        if (idx===-1) { showToast('⚠️','Movimiento no encontrado'); return; }
+        const mov    = data.accountMovements[idx];
+        const amount = parseFloat(document.getElementById('mp_amount')?.value) || 0;
+        if (amount<=0) { showToast('⚠️','El monto debe ser mayor a cero'); return; }
+        const saldo  = (Number(mov.amount)||0) - (Number(mov.paid)||0);
+        if (amount > saldo + 0.001) { showToast('⚠️',`El pago ($${amount}) supera el saldo ($${saldo.toFixed(2)})`); return; }
+
+        const payment = {
+            id:        generateId(),
+            amount,
+            date:      document.getElementById('mp_date')?.value || new Date().toISOString().slice(0,10),
+            method:    document.getElementById('mp_method')?.value || 'Efectivo',
+            ref:       (document.getElementById('mp_ref')?.value||'').trim(),
+            note:      (document.getElementById('mp_note')?.value||'').trim(),
+            createdAt: new Date().toISOString(),
+        };
+
+        const defCurr = data?.settings?.defaultCurrency||'VES';
+        mov.payments = mov.payments || [];
+        mov.payments.push(payment);
+        mov.paid      = (Number(mov.paid)||0) + amount;
+        mov.updatedAt = new Date().toISOString();
+        mov.status    = calcMovStatus(mov);
+        data.accountMovements[idx] = mov;
+
+        // Asiento contable
+        const cashAcc = data.chartOfAccounts?.find(a=>a.code==='1-01-001');
+        if (mov.type==='receivable') {
+            const cxcAcc = data.chartOfAccounts?.find(a=>a.code==='1-02');
+            if (cashAcc) cashAcc.balance = (cashAcc.balance||0) + amount;
+            if (cxcAcc)  cxcAcc.balance  = Math.max(0,(cxcAcc.balance||0) - amount);
+        } else {
+            const cxpAcc = data.chartOfAccounts?.find(a=>a.code==='2-01');
+            if (cashAcc) cashAcc.balance = Math.max(0,(cashAcc.balance||0) - amount);
+            if (cxpAcc)  cxpAcc.balance  = Math.max(0,(cxpAcc.balance||0)  - amount);
+        }
+        data.journalEntries?.push(
+            { date: payment.date, ref: `PAY-${mov.number}`, desc: `Pago ${mov.number}`, debit: mov.type==='receivable'?amount:null, credit: mov.type==='receivable'?null:amount },
+            { date: payment.date, ref: `PAY-${mov.number}`, desc: `Pago ${mov.number}`, debit: mov.type==='receivable'?null:amount, credit: mov.type==='receivable'?amount:null }
+        );
+        // Registrar en payments[] global para compatibilidad
+        data.payments = data.payments || [];
+        data.payments.push({
+            id: payment.id, type: mov.type==='receivable'?'cobro':'pago',
+            movementId: mov.id, invoiceId: mov.id, reference: mov.number,
+            amount, date: payment.date, method: payment.method,
+            customerId: mov.type==='receivable'?mov.entityId:null,
+            supplierId: mov.type==='payable'?mov.entityId:null,
+            status: 'activo', ref: payment.ref,
+        });
+        logAudit('payment','accountMovement', movId, { amount, method: payment.method });
+        closeModal();
+        renderAll();
+        await _persistAndNotify(
+            `${mov.type==='receivable'?'Cobro':'Pago'} de ${dcFmt(amount, mov.currency||defCurr)} registrado`,
+            'Pago guardado localmente — verifica conexión'
+        );
+    }
+
+    // ── migrateToAccountMovements() ───────────────────────────────────────────
+    // Migra registros legacy de invoices (CxC) y purchases (CxP) con source=manual
+    // que NO tienen un accountMovement equivalente todavía.
+    // Se llama UNA SOLA VEZ al cargar la app; si ya existe la migración no hace nada.
+    function migrateToAccountMovements() {
+        ensureAM();
+        const existingNums = new Set(data.accountMovements.map(m=>m.legacyId||m.number));
+        let migrated = 0;
+        const defCurr = data?.settings?.defaultCurrency||'VES';
+
+        // Migrar invoices → accountMovements CxC
+        (data.invoices||[])
+            .filter(inv => inv.status!=='Anulada' && inv.source==='manual'
+                        && !existingNums.has(inv.id) && !existingNums.has(inv.number))
+            .forEach(inv => {
+                const seq = data.accountMovements.filter(m=>m.type==='receivable').length + 1;
+                const movement = {
+                    id:          generateId(),
+                    type:        'receivable',
+                    entityId:    inv.customerId,
+                    legacyId:    inv.id,
+                    number:      inv.number || `CXC-MIGR-${seq}`,
+                    date:        inv.date || inv.createdAt?.slice(0,10) || new Date().toISOString().slice(0,10),
+                    dueDate:     inv.dueDate || '',
+                    concept:     inv.description || inv.number || 'Cuenta por cobrar (migrada)',
+                    description: '',
+                    reference:   inv.number || '',
+                    invoiceId:   inv.id,
+                    amount:      Number(inv.total) || 0,
+                    currency:    inv.currency || defCurr,
+                    paid:        Number(inv.paid) || 0,
+                    status:      'Pendiente',
+                    notes:       inv.notes || '',
+                    source:      'migrated',
+                    createdAt:   inv.createdAt || new Date().toISOString(),
+                    updatedAt:   new Date().toISOString(),
+                    payments:    [],
+                };
+                movement.status = calcMovStatus(movement);
+                data.accountMovements.push(movement);
+                migrated++;
+            });
+
+        // Migrar purchases → accountMovements CxP
+        (data.purchases||[])
+            .filter(pur => pur.status!=='Anulada' && pur.source==='manual'
+                        && !existingNums.has(pur.id) && !existingNums.has(pur.number))
+            .forEach(pur => {
+                const seq = data.accountMovements.filter(m=>m.type==='payable').length + 1;
+                const movement = {
+                    id:          generateId(),
+                    type:        'payable',
+                    entityId:    pur.supplierId,
+                    legacyId:    pur.id,
+                    number:      pur.number || `CXP-MIGR-${seq}`,
+                    date:        pur.date || pur.createdAt?.slice(0,10) || new Date().toISOString().slice(0,10),
+                    dueDate:     pur.dueDate || '',
+                    concept:     pur.description || pur.number || 'Cuenta por pagar (migrada)',
+                    description: '',
+                    reference:   pur.number || '',
+                    invoiceId:   null,
+                    amount:      Number(pur.total) || 0,
+                    currency:    pur.currency || defCurr,
+                    paid:        Number(pur.paid) || 0,
+                    status:      'Pendiente',
+                    notes:       pur.notes || '',
+                    source:      'migrated',
+                    createdAt:   pur.createdAt || new Date().toISOString(),
+                    updatedAt:   new Date().toISOString(),
+                    payments:    [],
+                };
+                movement.status = calcMovStatus(movement);
+                data.accountMovements.push(movement);
+                migrated++;
+            });
+
+        if (migrated > 0) {
+            console.log(`[CxC/CxP] Migrados ${migrated} registros legacy → accountMovements`);
+        }
+    }
+
+    // Función auxiliar: escapar HTML en strings para prevenir XSS
+    function escHtml(str) {
+        return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // Mantener las funciones legacy intactas para compatibilidad
+    // openNewReceivable, saveNewReceivable, openNewPayable, saveNewPayable,
+    // viewPayments, openPaymentModal, registerPayment (ya existían — NO se tocan)
+
+    // Ver pagos registrados de una factura/compra (sistema legacy)
     function viewPayments(type, id) {
-        // Buscar la factura/compra por ID para obtener su número
         const record = type === 'receivable'
             ? data.invoices.find(i => i.id === id)
             : data.purchases.find(p => p.id === id);
         const refNumber = record?.number;
-
-        const payments = data.payments.filter(p => {
+        const payments = (data.payments || []).filter(p => {
             const matchType = p.type === (type === 'receivable' ? 'cobro' : 'pago');
-            // Comparar por invoiceId (nuevo) o por número de referencia (legado)
             const matchRef  = p.invoiceId === id || (refNumber && p.reference === refNumber);
-            return matchType && matchRef;
+            return matchType && matchRef && p.status !== 'anulado';
         });
-
-        if (payments.length === 0) {
-            showToast('📋', 'No hay pagos registrados');
-            return;
-        }
+        if (payments.length === 0) { showToast('📋', 'No hay pagos registrados'); return; }
         let msg = 'Pagos registrados:\n\n';
         payments.forEach(p => {
-            msg += `📅 ${new Date(p.date).toLocaleString()}\n💵 ${formatCurrency(p.amount)} · ${p.method}${p.ref ? ' · Ref: ' + p.ref : ''}\n\n`;
+            msg += `📅 ${new Date(p.date || p.createdAt).toLocaleString()}\n💵 ${formatCurrency(p.amount)} · ${p.method}${p.ref ? ' · Ref: ' + p.ref : ''}\n\n`;
         });
         alert(msg);
     }
 
-    /* ─── Pagos (registro y edición) ─── */
     function openPaymentModal(target, invoiceId) {
         modalContext.extra = { target, invoiceId };
         openModal('payment');
     }
 
     async function registerPayment() {
-        const amount = parseFloat(document.getElementById('f_paymentAmount').value) || 0;
-        const method = document.getElementById('f_paymentMethod').value;
-        const ref = document.getElementById('f_paymentRef').value.trim();
-        const target = modalContext.extra?.target || 'receivable';
+        const amount    = parseFloat(document.getElementById('f_paymentAmount').value) || 0;
+        const method    = document.getElementById('f_paymentMethod').value;
+        const ref       = document.getElementById('f_paymentRef').value.trim();
+        const target    = modalContext.extra?.target || 'receivable';
         const invoiceId = modalContext.extra?.invoiceId;
+        if (amount <= 0) { showToast('⚠️', 'El monto debe ser mayor a cero'); return; }
 
-        if (amount <= 0) {
-            showToast('⚠️', 'El monto debe ser mayor a cero');
-            return;
-        }
-        let invoice;
-        let paymentType;
+        let invoice, paymentType;
+        const defCurr = data?.settings?.defaultCurrency || 'VES';
         if (target === 'receivable') {
             invoice = data.invoices.find(i => i.id === invoiceId);
             if (!invoice) { showToast('⚠️', 'Factura no encontrada'); return; }
@@ -10325,17 +11202,14 @@
             const customer = data.customers.find(c => c.id === invoice.customerId);
             if (customer) customer.balance = (customer.balance || 0) - amount;
             paymentType = 'cobro';
-            // Asiento contable
-            const cashAccount = data.chartOfAccounts.find(a => a.code === '1-01-001');
-            const receivableAccount = data.chartOfAccounts.find(a => a.code === '1-02');
-            if (cashAccount && receivableAccount) {
-                cashAccount.balance = (cashAccount.balance || 0) + amount;
-                receivableAccount.balance = (receivableAccount.balance || 0) - amount;
-                data.journalEntries.push({ date: new Date().toISOString().slice(0, 10), ref: `PAY-${invoice.number}`,
-                    desc: `Cobro de factura ${invoice.number}`, debit: amount, credit: null });
-                data.journalEntries.push({ date: new Date().toISOString().slice(0, 10), ref: `PAY-${invoice.number}`,
-                    desc: `Cobro de factura ${invoice.number}`, debit: null, credit: amount });
-            }
+            const cashAcc = data.chartOfAccounts.find(a => a.code === '1-01-001');
+            const cxcAcc  = data.chartOfAccounts.find(a => a.code === '1-02');
+            if (cashAcc) cashAcc.balance = (cashAcc.balance || 0) + amount;
+            if (cxcAcc)  cxcAcc.balance  = Math.max(0,(cxcAcc.balance || 0) - amount);
+            data.journalEntries?.push(
+                { date: new Date().toISOString().slice(0,10), ref: `PAY-${invoice.number}`, desc: `Cobro factura ${invoice.number}`, debit: amount, credit: null },
+                { date: new Date().toISOString().slice(0,10), ref: `PAY-${invoice.number}`, desc: `Cobro factura ${invoice.number}`, debit: null,   credit: amount }
+            );
         } else if (target === 'payable') {
             invoice = data.purchases.find(i => i.id === invoiceId);
             if (!invoice) { showToast('⚠️', 'Compra no encontrada'); return; }
@@ -10343,32 +11217,24 @@
             const supplier = data.suppliers.find(s => s.id === invoice.supplierId);
             if (supplier) supplier.balance = (supplier.balance || 0) - amount;
             paymentType = 'pago';
-            const payableAccount = data.chartOfAccounts.find(a => a.code === '2-01');
-            const cashAccount = data.chartOfAccounts.find(a => a.code === '1-01-001');
-            if (payableAccount && cashAccount) {
-                payableAccount.balance = (payableAccount.balance || 0) - amount;
-                cashAccount.balance = (cashAccount.balance || 0) - amount;
-                data.journalEntries.push({ date: new Date().toISOString().slice(0, 10), ref: `PAY-${invoice.number}`,
-                    desc: `Pago a proveedor ${invoice.number}`, debit: amount, credit: null });
-                data.journalEntries.push({ date: new Date().toISOString().slice(0, 10), ref: `PAY-${invoice.number}`,
-                    desc: `Pago a proveedor ${invoice.number}`, debit: null, credit: amount });
-            }
+            const cxpAcc  = data.chartOfAccounts.find(a => a.code === '2-01');
+            const cashAcc = data.chartOfAccounts.find(a => a.code === '1-01-001');
+            if (cxpAcc)  cxpAcc.balance  = Math.max(0,(cxpAcc.balance  || 0) - amount);
+            if (cashAcc) cashAcc.balance  = Math.max(0,(cashAcc.balance || 0) - amount);
+            data.journalEntries?.push(
+                { date: new Date().toISOString().slice(0,10), ref: `PAY-${invoice.number}`, desc: `Pago proveedor ${invoice.number}`, debit: amount, credit: null },
+                { date: new Date().toISOString().slice(0,10), ref: `PAY-${invoice.number}`, desc: `Pago proveedor ${invoice.number}`, debit: null,   credit: amount }
+            );
         }
-        // Registrar pago
+        data.payments = data.payments || [];
         data.payments.push({
-            id: generateId(),
-            type: paymentType,
-            invoiceId: invoiceId,
-            reference: invoice.number,
-            amount,
-            date: new Date().toISOString(),
-            method,
-            customerId: target === 'receivable' ? invoice.customerId : null,
-            supplierId: target === 'payable' ? invoice.supplierId : null,
-            status: 'activo',
-            ref: ref,
+            id: generateId(), type: paymentType, invoiceId,
+            reference: invoice.number, amount, date: new Date().toISOString(),
+            method, customerId: target==='receivable' ? invoice.customerId : null,
+            supplierId: target==='payable' ? invoice.supplierId : null,
+            status: 'activo', ref,
         });
-        logAudit('create', 'payment', data.payments[data.payments.length - 1].id, { amount, method, target });
+        logAudit('create','payment', data.payments[data.payments.length-1].id, { amount, method, target });
         closeModal();
         renderAll();
         await _persistAndNotify(
@@ -10379,37 +11245,32 @@
 
     async function savePaymentEdit(paymentId) {
         const amount = parseFloat(document.getElementById('f_paymentAmountEdit').value) || 0;
-        const date = document.getElementById('f_paymentDateEdit').value;
+        const date   = document.getElementById('f_paymentDateEdit').value;
         const method = document.getElementById('f_paymentMethodEdit').value;
-        const ref = document.getElementById('f_paymentRefEdit').value.trim();
+        const ref    = document.getElementById('f_paymentRefEdit').value.trim();
         const payment = data.payments.find(p => p.id === paymentId);
         if (!payment) { showToast('⚠️', 'Pago no encontrado'); return; }
         if (amount <= 0) { showToast('⚠️', 'Monto inválido'); return; }
         const oldAmount = payment.amount;
-        // Ajustar diferencias en cuentas
         const diff = amount - oldAmount;
         if (diff !== 0) {
             if (payment.type === 'cobro') {
-                const cashAccount = data.chartOfAccounts.find(a => a.code === '1-01-001');
-                const receivableAccount = data.chartOfAccounts.find(a => a.code === '1-02');
-                if (cashAccount && receivableAccount) {
-                    cashAccount.balance = (cashAccount.balance || 0) + diff;
-                    receivableAccount.balance = (receivableAccount.balance || 0) - diff;
-                }
-                const invoice = data.invoices.find(i => i.number === payment.reference);
+                const cashAcc = data.chartOfAccounts.find(a => a.code === '1-01-001');
+                const cxcAcc  = data.chartOfAccounts.find(a => a.code === '1-02');
+                if (cashAcc) cashAcc.balance = (cashAcc.balance || 0) + diff;
+                if (cxcAcc)  cxcAcc.balance  = (cxcAcc.balance  || 0) - diff;
+                const invoice = data.invoices.find(i => i.number === payment.reference || i.id === payment.invoiceId);
                 if (invoice) {
                     invoice.paid = (invoice.paid || 0) + diff;
                     const customer = data.customers.find(c => c.id === invoice.customerId);
                     if (customer) customer.balance = (customer.balance || 0) - diff;
                 }
             } else if (payment.type === 'pago') {
-                const payableAccount = data.chartOfAccounts.find(a => a.code === '2-01');
-                const cashAccount = data.chartOfAccounts.find(a => a.code === '1-01-001');
-                if (payableAccount && cashAccount) {
-                    payableAccount.balance = (payableAccount.balance || 0) - diff;
-                    cashAccount.balance = (cashAccount.balance || 0) - diff;
-                }
-                const purchase = data.purchases.find(i => i.number === payment.reference);
+                const cxpAcc  = data.chartOfAccounts.find(a => a.code === '2-01');
+                const cashAcc = data.chartOfAccounts.find(a => a.code === '1-01-001');
+                if (cxpAcc)  cxpAcc.balance  = (cxpAcc.balance  || 0) - diff;
+                if (cashAcc) cashAcc.balance  = (cashAcc.balance || 0) - diff;
+                const purchase = data.purchases.find(i => i.number === payment.reference || i.id === payment.invoiceId);
                 if (purchase) {
                     purchase.paid = (purchase.paid || 0) + diff;
                     const supplier = data.suppliers.find(s => s.id === purchase.supplierId);
@@ -10417,58 +11278,50 @@
                 }
             }
         }
-        payment.amount = amount;
-        payment.date = date || payment.date;
-        payment.method = method;
-        payment.ref = ref;
+        payment.amount    = amount;
+        payment.date      = date || payment.date;
+        payment.method    = method;
+        payment.ref       = ref;
         payment.updatedAt = new Date().toISOString();
-        logAudit('update', 'payment', paymentId, { oldAmount, newAmount: amount });
+        logAudit('update','payment', paymentId, { oldAmount, newAmount: amount });
         closeModal();
         renderAll();
-        await _persistAndNotify(
-            `Pago actualizado: ${formatCurrency(amount)}`,
-            'Pago guardado localmente — verifica conexión'
-        );
+        await _persistAndNotify(`Pago actualizado: ${formatCurrency(amount)}`,'Pago guardado localmente — verifica conexión');
     }
 
     async function voidPayment(paymentId) {
         if (!confirm('¿Anular este pago?')) return;
         const payment = data.payments.find(p => p.id === paymentId);
         if (!payment) { showToast('⚠️', 'Pago no encontrado'); return; }
-        // Revertir efectos
         const amount = payment.amount;
         if (payment.type === 'cobro') {
-            const cashAccount = data.chartOfAccounts.find(a => a.code === '1-01-001');
-            const receivableAccount = data.chartOfAccounts.find(a => a.code === '1-02');
-            if (cashAccount && receivableAccount) {
-                cashAccount.balance = (cashAccount.balance || 0) - amount;
-                receivableAccount.balance = (receivableAccount.balance || 0) + amount;
-            }
-            const invoice = data.invoices.find(i => i.number === payment.reference);
+            const cashAcc = data.chartOfAccounts.find(a => a.code === '1-01-001');
+            const cxcAcc  = data.chartOfAccounts.find(a => a.code === '1-02');
+            if (cashAcc) cashAcc.balance = Math.max(0,(cashAcc.balance || 0) - amount);
+            if (cxcAcc)  cxcAcc.balance  = (cxcAcc.balance  || 0) + amount;
+            const invoice = data.invoices.find(i => i.number === payment.reference || i.id === payment.invoiceId);
             if (invoice) {
-                invoice.paid = (invoice.paid || 0) - amount;
+                invoice.paid = Math.max(0,(invoice.paid || 0) - amount);
                 const customer = data.customers.find(c => c.id === invoice.customerId);
                 if (customer) customer.balance = (customer.balance || 0) + amount;
             }
         } else if (payment.type === 'pago') {
-            const payableAccount = data.chartOfAccounts.find(a => a.code === '2-01');
-            const cashAccount = data.chartOfAccounts.find(a => a.code === '1-01-001');
-            if (payableAccount && cashAccount) {
-                payableAccount.balance = (payableAccount.balance || 0) + amount;
-                cashAccount.balance = (cashAccount.balance || 0) + amount;
-            }
-            const purchase = data.purchases.find(i => i.number === payment.reference);
+            const cxpAcc  = data.chartOfAccounts.find(a => a.code === '2-01');
+            const cashAcc = data.chartOfAccounts.find(a => a.code === '1-01-001');
+            if (cxpAcc)  cxpAcc.balance  = (cxpAcc.balance  || 0) + amount;
+            if (cashAcc) cashAcc.balance  = (cashAcc.balance || 0) + amount;
+            const purchase = data.purchases.find(i => i.number === payment.reference || i.id === payment.invoiceId);
             if (purchase) {
-                purchase.paid = (purchase.paid || 0) - amount;
+                purchase.paid = Math.max(0,(purchase.paid || 0) - amount);
                 const supplier = data.suppliers.find(s => s.id === purchase.supplierId);
                 if (supplier) supplier.balance = (supplier.balance || 0) + amount;
             }
         }
         payment.status = 'anulado';
-        logAudit('void', 'payment', paymentId, { reason: 'Anulado' });
+        logAudit('void','payment', paymentId, { reason: 'Anulado' });
         closeModal();
         renderAll();
-        await _persistAndNotify('Pago anulado', 'Cambio guardado localmente');
+        await _persistAndNotify('Pago anulado','Cambio guardado localmente');
     }
 
     /* ─── Contabilidad ─── */
@@ -12693,6 +13546,8 @@
             }
         } catch { window._displayCurrency = 'VES'; }
     })();
+    // Migrar registros legacy de CxC/CxP al nuevo sistema consolidado (solo una vez)
+    try { migrateToAccountMovements(); } catch(e) { console.warn('[Migration] CxC/CxP:', e); }
     renderAll();
     generateAlerts();
     showToast('🚀', 'FIX PRO MAX — Sistema listo');

@@ -221,6 +221,8 @@ const CompanyDBSchema = new mongoose.Schema({
     auditLog:           { type: [mongoose.Schema.Types.Mixed], default: [] },
     payments:           { type: [mongoose.Schema.Types.Mixed], default: [] },
     quotes:             { type: [mongoose.Schema.Types.Mixed], default: [] },
+    // Cuentas consolidadas por cliente/proveedor — movimientos individuales
+    accountMovements:   { type: [mongoose.Schema.Types.Mixed], default: [] },
     settings:           { type: mongoose.Schema.Types.Mixed, default: {
         companyName: '', rif: '', country: 'Venezuela',
         currency: 'USD', defaultCurrency: 'USD',
