@@ -4957,6 +4957,7 @@
                 <button class="tab" data-acc="journal">Libro Diario</button>
                 <button class="tab" data-acc="balance">Balance</button>
                 <button class="tab" data-acc="income">Estado de Resultados</button>
+                <button class="tab" data-acc="esf">📊 Est. Situación Financiera</button>
             </div>
             <div id="accChart" class="card p-0 overflow-hidden">
                 <div class="table-wrap border-0">
@@ -4986,6 +4987,12 @@
             <div id="accIncome" class="hidden card">
                 <div id="incomeStatement" style="font-size:14px;">
                     <!-- Renderizado por JS -->
+                </div>
+            </div>
+            <!-- ── ESTADO DE SITUACIÓN FINANCIERA ── -->
+            <div id="accEsf" class="hidden card" style="padding:0;">
+                <div id="esfContent" style="font-size:13px;">
+                    <!-- Renderizado por renderESF() -->
                 </div>
             </div>
         </div>
@@ -11889,6 +11896,258 @@
         `;
     }
 
+    // ══════════════════════════════════════════════════════════════════════════
+    // ESTADO DE SITUACIÓN FINANCIERA (Balance General / ESF)
+    // Calcula dinámicamente desde los datos reales del sistema:
+    //   ACTIVOS = Caja + Bancos + CxC + Inventario + Otros Activos
+    //   PASIVOS = CxP + Impuestos por Pagar + Otros Pasivos
+    //   PATRIMONIO = Capital + Utilidad del Ejercicio
+    //   Ecuación: ACTIVOS = PASIVOS + PATRIMONIO
+    // ══════════════════════════════════════════════════════════════════════════
+    function renderESF() {
+        const container = document.getElementById('esfContent');
+        if (!container) return;
+
+        const defCurr = data?.settings?.defaultCurrency || 'VES';
+        const disp    = window._displayCurrency || defCurr;
+        const today   = new Date().toLocaleDateString('es-VE', { year:'numeric', month:'long', day:'numeric' });
+        const company = data?.settings?.companyName || 'Mi Empresa';
+
+        // ── Calcular valores desde datos reales ──────────────────────────────
+
+        // ACTIVO CIRCULANTE
+        // Caja: saldo contable de cuenta 1-01-001
+        const cajaSaldo = (data.chartOfAccounts?.find(a => a.code === '1-01-001')?.balance) || 0;
+        // Bancos: saldo contable de cuenta 1-01-002
+        const bancosSaldo = (data.chartOfAccounts?.find(a => a.code === '1-01-002')?.balance) || 0;
+        // Cuentas por Cobrar: suma de facturas pendientes (invoices) + accountMovements receivable
+        const cxcFacturas = (data.invoices || [])
+            .filter(i => i.status !== 'Anulada')
+            .reduce((s, i) => s + dc(Math.max(0, (i.total||0) - (i.paid||0)), i.currency||defCurr), 0);
+        const cxcMovs = (data.accountMovements || [])
+            .filter(m => m.type === 'receivable' && m.status !== 'anulado')
+            .reduce((s, m) => s + dc(Math.max(0, (m.amount||0) - (m.paid||0)), m.currency||defCurr), 0);
+        const cxcTotal = cxcFacturas + cxcMovs;
+        // Inventario: valor al costo de todos los productos activos
+        const inventarioValor = (data.products || [])
+            .filter(p => p.status !== 'anulado')
+            .reduce((s, p) => s + dc((p.cost||0) * (p.stock||0), p.currency||defCurr), 0);
+
+        const activoCirculante = dc(cajaSaldo, defCurr) + dc(bancosSaldo, defCurr) + cxcTotal + inventarioValor;
+
+        // ACTIVO NO CIRCULANTE (desde balanceSheet existente si hay datos)
+        const bsActivos = (data.balanceSheet?.assets || [])
+            .filter(a => (a.type||'').toLowerCase().includes('no circulante') || (a.name||'').toLowerCase().includes('fijo'))
+            .reduce((s, a) => s + dc(a.amount||0, defCurr), 0);
+
+        const totalActivo = activoCirculante + bsActivos;
+
+        // PASIVO CIRCULANTE
+        // Cuentas por Pagar: purchases pendientes + accountMovements payable
+        const cxpCompras = (data.purchases || [])
+            .filter(p => p.status !== 'Anulada')
+            .reduce((s, p) => s + dc(Math.max(0, (p.total||0) - (p.paid||0)), p.currency||defCurr), 0);
+        const cxpMovs = (data.accountMovements || [])
+            .filter(m => m.type === 'payable' && m.status !== 'anulado')
+            .reduce((s, m) => s + dc(Math.max(0, (m.amount||0) - (m.paid||0)), m.currency||defCurr), 0);
+        const cxpTotal = cxpCompras + cxpMovs;
+        // Impuestos por pagar (cuenta 2-02)
+        const impuestosSaldo = dc(data.chartOfAccounts?.find(a => a.code === '2-02')?.balance || 0, defCurr);
+
+        const pasivoCirculante = cxpTotal + impuestosSaldo;
+
+        // PASIVO NO CIRCULANTE (desde balanceSheet si hay datos)
+        const bsPasivos = (data.balanceSheet?.liabilities || [])
+            .filter(a => (a.type||'').toLowerCase().includes('no circulante') || (a.name||'').toLowerCase().includes('largo'))
+            .reduce((s, a) => s + dc(a.amount||0, defCurr), 0);
+
+        const totalPasivo = pasivoCirculante + bsPasivos;
+
+        // PATRIMONIO
+        // Capital: cuenta 3-01
+        const capitalSaldo = dc(data.chartOfAccounts?.find(a => a.code === '3-01')?.balance || 0, defCurr);
+        // Utilidad del ejercicio: ingresos - costos - gastos
+        const totalVentas  = (data.sales || [])
+            .filter(s => s.status !== 'Anulada')
+            .reduce((s, sale) => s + dc(sale.total||0, sale.currency||defCurr), 0);
+        const totalCostos  = (data.sales || [])
+            .filter(s => s.status !== 'Anulada')
+            .reduce((s, sale) => s + (sale.items||[]).reduce((a, it) => {
+                const p = (data.products||[]).find(x => x.id === it.productId);
+                return a + dc((p?.cost||0) * (it.qty||0), p?.currency||defCurr);
+            }, 0), 0);
+        const totalGastos  = (data.expenses || [])
+            .filter(e => e.status !== 'anulado')
+            .reduce((s, e) => s + dc(e.amount||0, e.currency||defCurr), 0);
+        const utilidadEjercicio = totalVentas - totalCostos - totalGastos;
+        const totalPatrimonio   = capitalSaldo + utilidadEjercicio;
+
+        const totalPasivoPatrimonio = totalPasivo + totalPatrimonio;
+
+        // Diferencia (debe ser 0 si los libros cuadran)
+        const diferencia = totalActivo - totalPasivoPatrimonio;
+
+        // ── Helpers de formato ───────────────────────────────────────────────
+        const fmt = (v) => dcFmt(v, disp);
+        const fmtN = (v) => {
+            const s = dcFmt(Math.abs(v), disp);
+            return v < 0 ? `(${s})` : s;
+        };
+
+        // ── Colores según signo ──────────────────────────────────────────────
+        const colPos = 'color:var(--success)';
+        const colNeg = 'color:var(--danger)';
+        const colNeu = 'color:var(--text)';
+        const utilColor = utilidadEjercicio >= 0 ? colPos : colNeg;
+        const difColor  = Math.abs(diferencia) < 0.01 ? colPos : colNeg;
+
+        // ── Tarjetas de resumen ──────────────────────────────────────────────
+        const summaryCards = `
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;padding:20px 20px 0;">
+            <div class="card stat" style="padding:14px;text-align:center;">
+                <div style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Total Activos</div>
+                <div style="font-size:20px;font-weight:800;color:var(--primary);">${fmt(totalActivo)}</div>
+            </div>
+            <div class="card stat" style="padding:14px;text-align:center;">
+                <div style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Total Pasivos</div>
+                <div style="font-size:20px;font-weight:800;color:var(--danger);">${fmt(totalPasivo)}</div>
+            </div>
+            <div class="card stat" style="padding:14px;text-align:center;">
+                <div style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Patrimonio</div>
+                <div style="font-size:20px;font-weight:800;${totalPatrimonio>=0?colPos:colNeg};">${fmtN(totalPatrimonio)}</div>
+            </div>
+            <div class="card stat" style="padding:14px;text-align:center;border:2px solid ${Math.abs(diferencia)<0.01?'var(--success)':'var(--danger)'};">
+                <div style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Ecuación contable</div>
+                <div style="font-size:14px;font-weight:700;${difColor};">${Math.abs(diferencia) < 0.01 ? '✅ Cuadra' : '⚠️ Dif: '+fmtN(diferencia)}</div>
+            </div>
+        </div>`;
+
+        // ── Helper para filas ────────────────────────────────────────────────
+        const row = (label, value, bold=false, indent=0, color='') =>
+            `<tr>
+                <td style="padding:7px ${10+indent*20}px 7px ${10+indent*20}px;${bold?'font-weight:700;':''}">${label}</td>
+                <td style="padding:7px 16px;text-align:right;${bold?'font-weight:700;':''}${color?color+';':''}">${fmtN(value)}</td>
+            </tr>`;
+        const subtotal = (label, value, color='') =>
+            `<tr style="background:var(--bg-2);">
+                <td style="padding:8px 10px;font-weight:700;border-top:1px solid var(--border);">${label}</td>
+                <td style="padding:8px 16px;text-align:right;font-weight:700;border-top:1px solid var(--border);${color?color+';':''}">${fmtN(value)}</td>
+            </tr>`;
+        const section = (title, icon) =>
+            `<tr style="background:var(--primary);">
+                <td colspan="2" style="padding:10px 14px;color:#fff;font-weight:700;font-size:13px;letter-spacing:.4px;">${icon} ${title}</td>
+            </tr>`;
+        const subsection = (title) =>
+            `<tr style="background:var(--bg-2);">
+                <td colspan="2" style="padding:7px 12px;font-weight:600;font-size:12px;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px;">${title}</td>
+            </tr>`;
+
+        // ── Tabla principal ──────────────────────────────────────────────────
+        const tableHtml = `
+        <div style="padding:16px 20px 4px;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:8px;">
+            <div>
+                <div style="font-size:18px;font-weight:800;color:var(--text);">${company}</div>
+                <div style="font-size:13px;font-weight:600;color:var(--text-2);margin-top:2px;">Estado de Situación Financiera</div>
+                <div style="font-size:12px;color:var(--text-3);">Al ${today} · Moneda: ${disp}</div>
+            </div>
+            <button class="btn btn-sm" onclick="printESF()" style="display:flex;align-items:center;gap:6px;">
+                🖨️ Imprimir / PDF
+            </button>
+        </div>
+
+        <div style="padding:0 20px 20px;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:12px;">
+
+            ${section('ACTIVO', '🏦')}
+            ${subsection('Activo Circulante')}
+            ${row('Caja y Efectivo',            dc(cajaSaldo,   defCurr), false, 1)}
+            ${row('Bancos',                     dc(bancosSaldo, defCurr), false, 1)}
+            ${row('Cuentas por Cobrar (neto)',  cxcTotal,                 false, 1)}
+            ${row('Inventario (al costo)',       inventarioValor,          false, 1)}
+            ${subtotal('Total Activo Circulante', activoCirculante, colPos)}
+            ${bsActivos > 0 ? subsection('Activo No Circulante') + row('Activos Fijos y Otros', bsActivos, false, 1) + subtotal('Total Activo No Circulante', bsActivos) : ''}
+            ${subtotal('TOTAL ACTIVO', totalActivo, `${colPos};font-size:14px;`)}
+
+            <tr><td colspan="2" style="padding:6px;"></td></tr>
+
+            ${section('PASIVO', '📋')}
+            ${subsection('Pasivo Circulante')}
+            ${row('Cuentas por Pagar',          cxpTotal,        false, 1)}
+            ${row('Impuestos por Pagar',        impuestosSaldo,  false, 1)}
+            ${subtotal('Total Pasivo Circulante', pasivoCirculante, colNeg)}
+            ${bsPasivos > 0 ? subsection('Pasivo No Circulante') + row('Pasivos a Largo Plazo', bsPasivos, false, 1) + subtotal('Total Pasivo No Circulante', bsPasivos) : ''}
+            ${subtotal('TOTAL PASIVO', totalPasivo, `${colNeg};font-size:14px;`)}
+
+            <tr><td colspan="2" style="padding:6px;"></td></tr>
+
+            ${section('PATRIMONIO', '💰')}
+            ${row('Capital Social / Aportaciones', capitalSaldo,        false, 1)}
+            ${row('Utilidad del Ejercicio',         utilidadEjercicio,   false, 1, utilColor)}
+            ${subtotal('TOTAL PATRIMONIO', totalPatrimonio, `${totalPatrimonio>=0?colPos:colNeg};font-size:14px;`)}
+
+            <tr><td colspan="2" style="padding:6px;"></td></tr>
+
+            <tr style="background:var(--primary);color:#fff;">
+                <td style="padding:12px 14px;font-weight:800;font-size:14px;">TOTAL PASIVO + PATRIMONIO</td>
+                <td style="padding:12px 16px;text-align:right;font-weight:800;font-size:14px;">${fmtN(totalPasivoPatrimonio)}</td>
+            </tr>
+            <tr style="background:${Math.abs(diferencia)<0.01?'rgba(34,197,94,.08)':'rgba(239,68,68,.08)'};">
+                <td style="padding:8px 14px;font-size:12px;${difColor};">
+                    ${Math.abs(diferencia) < 0.01
+                        ? '✅ Los libros cuadran — A = P + Pat'
+                        : '⚠️ Diferencia detectada — revisa los asientos contables'}
+                </td>
+                <td style="padding:8px 16px;text-align:right;font-size:12px;${difColor};font-weight:600;">
+                    ${Math.abs(diferencia) < 0.01 ? '' : fmtN(diferencia)}
+                </td>
+            </tr>
+        </table>
+
+        <div style="margin-top:16px;padding:12px;background:var(--bg-2);border-radius:8px;font-size:11px;color:var(--text-3);line-height:1.6;">
+            <strong>Notas:</strong> Los valores se calculan dinámicamente desde los datos registrados en el sistema.
+            Caja y Bancos provienen del Plan de Cuentas (1-01-001, 1-01-002).
+            Las Cuentas por Cobrar y por Pagar incluyen registros de facturas/compras y del módulo consolidado.
+            El Inventario refleja el costo total del stock activo.
+            La Utilidad del Ejercicio = Ventas − Costo de Ventas − Gastos Operativos.
+        </div>
+        </div>`;
+
+        container.innerHTML = summaryCards + tableHtml;
+    }
+
+    // ── printESF() — abre el modal de impresión con el ESF formateado ────────
+    function printESF() {
+        const defCurr = data?.settings?.defaultCurrency || 'VES';
+        const disp    = window._displayCurrency || defCurr;
+        const today   = new Date().toLocaleDateString('es-VE', { year:'numeric', month:'long', day:'numeric' });
+        const company = data?.settings?.companyName || 'Mi Empresa';
+        const rif     = data?.settings?.rif ? `RIF: ${data.settings.rif}` : '';
+
+        // Reutilizar el contenido ya calculado por renderESF()
+        const esfBody = document.getElementById('esfContent')?.innerHTML || '';
+
+        const html = `
+        <div style="font-family:'Inter',sans-serif;color:#0f172a;max-width:760px;margin:auto;padding:8px;">
+            <div style="text-align:center;margin-bottom:20px;border-bottom:2px solid #4f46e5;padding-bottom:14px;">
+                <div style="font-size:22px;font-weight:800;color:#4f46e5;">${company}</div>
+                ${rif ? `<div style="font-size:12px;color:#64748b;">${rif}</div>` : ''}
+                <div style="font-size:16px;font-weight:700;margin-top:6px;">Estado de Situación Financiera</div>
+                <div style="font-size:12px;color:#64748b;">Al ${today} · Expresado en ${disp}</div>
+            </div>
+            ${esfBody}
+            <div style="margin-top:24px;text-align:center;font-size:11px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:14px;">
+                Este documento fue generado por FIX PRO MAX el ${new Date().toLocaleString()}
+            </div>
+        </div>`;
+
+        const pc = document.getElementById('printContent');
+        const po = document.getElementById('printModalOverlay');
+        if (pc && po) {
+            pc.innerHTML = html;
+            po.style.display = 'flex';
+        }
+    }
+
     /* ─── Reportes — panel visual + descarga CSV ─── */
     function generateReport(type) {
         const res = document.getElementById('reportResult');
@@ -13798,9 +14057,11 @@
                 el.classList.add('hidden');
             });
             const map = { chart: 'accChart', journal: 'accJournal', balance: 'accBalance',
-                income: 'accIncome' };
+                income: 'accIncome', esf: 'accEsf' };
             const el = document.getElementById(map[target]);
             if (el) el.classList.remove('hidden');
+            // Renderizar ESF dinámicamente al activar ese tab
+            if (target === 'esf') renderESF();
         });
     });
 
@@ -14024,6 +14285,8 @@
         renderPayables();
         renderReceivables();
         renderAccounting();
+        // ESF se re-renderiza automáticamente si el tab está activo
+        if (document.querySelector('#accTabs .tab[data-acc="esf"]')?.classList.contains('active')) renderESF();
         renderAlerts();
         renderPOS();
         renderFinance();
