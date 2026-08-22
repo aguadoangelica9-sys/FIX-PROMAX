@@ -2342,7 +2342,7 @@
         }
         #printModalOverlay > div {
             width: 100%;
-            max-width: 720px;
+            max-width: 800px;
             margin: auto;
         }
 
@@ -8834,7 +8834,7 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Inter', system-ui, -apple-system, sans-serif;
-           background: #fff; color: #0f172a; padding: 32px; max-width: 720px; margin: 0 auto; }
+           background: #fff; color: #0f172a; padding: 32px; max-width: 800px; margin: 0 auto; }
     @media print {
       body { padding: 16px; }
       @page { size: A4; margin: 12mm; }
@@ -9596,24 +9596,31 @@
         const settings = data.settings || {};
         const today = new Date().toISOString().slice(0, 10);
 
-        const itemsHtml = (qt.items || []).map(it => {
+        const itemsHtml = (qt.items || []).map((it, idx) => {
             const base = it.qty * it.price;
             const dAmt = base * (it.discount||0) / 100;
             const tAmt = (base - dAmt) * (it.tax||0) / 100;
             const sub  = base - dAmt + tAmt;
-            return `<tr style="border-bottom:1px solid #e2e8f0;">
-                <td style="padding:10px;">${it.productName || it.productId || 'Item'}</td>
-                <td style="padding:10px;text-align:right;">${it.qty}</td>
-                <td style="padding:10px;text-align:right;">${formatCurrency(it.price)}</td>
-                <td style="padding:10px;text-align:right;">${it.discount||0}%</td>
-                <td style="padding:10px;text-align:right;">${it.tax||0}%</td>
-                <td style="padding:10px;text-align:right;font-weight:600;">${formatCurrency(sub)}</td>
+            // Buscar la descripción del producto en data.products si no viene en el item
+            const prod = data.products.find(p => p.id === it.productId);
+            const prodDesc = it.description || prod?.description || '';
+            const rowBg = idx % 2 === 0 ? '#fff' : '#f8fafc';
+            return `<tr style="border-bottom:1px solid #e2e8f0;background:${rowBg};vertical-align:top;">
+                <td style="padding:10px 12px;word-break:break-word;white-space:normal;min-width:180px;max-width:260px;">
+                    <span style="font-weight:600;color:#0f172a;">${it.productName || it.productId || 'Item'}</span>
+                    ${prodDesc ? `<div style="font-size:11px;color:#64748b;margin-top:3px;word-break:break-word;">${prodDesc}</div>` : ''}
+                </td>
+                <td style="padding:10px 8px;text-align:center;white-space:nowrap;">${it.qty}</td>
+                <td style="padding:10px 8px;text-align:right;white-space:nowrap;">${formatCurrency(it.price)}</td>
+                <td style="padding:10px 8px;text-align:center;white-space:nowrap;">${it.discount||0}%</td>
+                <td style="padding:10px 8px;text-align:center;white-space:nowrap;">${it.tax||0}%</td>
+                <td style="padding:10px 8px;text-align:right;font-weight:700;white-space:nowrap;color:#4f46e5;">${formatCurrency(sub)}</td>
             </tr>`;
         }).join('');
 
         const isExpired = qt.expiryDate && qt.expiryDate < today;
         const html = `
-        <div style="font-family:'Inter',sans-serif;color:#0f172a;max-width:680px;margin:auto;">
+        <div style="font-family:'Inter',sans-serif;color:#0f172a;max-width:760px;margin:auto;">
           <!-- Marca de agua si ya no es válida -->
           ${qt.quoteStatus==='Convertida' ? '<div style="text-align:center;background:#dcfce7;color:#16a34a;padding:8px;border-radius:6px;font-weight:700;margin-bottom:16px;">✅ CONVERTIDA EN VENTA</div>' : ''}
           ${isExpired && qt.quoteStatus!=='Convertida' ? '<div style="text-align:center;background:#fee2e2;color:#dc2626;padding:8px;border-radius:6px;font-weight:700;margin-bottom:16px;">⚠️ COTIZACIÓN VENCIDA</div>' : ''}
@@ -9637,15 +9644,15 @@
             ${cust?.email ? `<div style="font-size:12px;color:#64748b;">${cust.email}</div>` : ''}
           </div>
 
-          <table style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:13px;">
+          <table style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:13px;table-layout:fixed;">
             <thead>
               <tr style="background:#4f46e5;color:#fff;">
-                <th style="padding:10px;text-align:left;">Descripción</th>
-                <th style="padding:10px;text-align:right;">Cant.</th>
-                <th style="padding:10px;text-align:right;">Precio</th>
-                <th style="padding:10px;text-align:right;">Desc.</th>
-                <th style="padding:10px;text-align:right;">IVA</th>
-                <th style="padding:10px;text-align:right;">Subtotal</th>
+                <th style="padding:10px 12px;text-align:left;width:auto;">Descripción</th>
+                <th style="padding:10px 8px;text-align:center;width:50px;">Cant.</th>
+                <th style="padding:10px 8px;text-align:right;width:80px;">Precio</th>
+                <th style="padding:10px 8px;text-align:center;width:52px;">Desc.</th>
+                <th style="padding:10px 8px;text-align:center;width:52px;">IVA</th>
+                <th style="padding:10px 8px;text-align:right;width:85px;">Subtotal</th>
               </tr>
             </thead>
             <tbody>${itemsHtml || '<tr><td colspan="6" style="padding:16px;text-align:center;color:#94a3b8;">Sin items</td></tr>'}</tbody>
