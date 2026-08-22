@@ -218,30 +218,50 @@
     window.addEventListener('offline', _updateOfflineBanner);
 
     /* ══════════════════════════════════════════════════════════
-       POS MÓVIL — tabs Productos / Carrito
+       POS MÓVIL v2 — tabs + FAB carrito
        ══════════════════════════════════════════════════════════ */
     function _initPOSTabs() {
-        // Asegurarse que exista la barra de tabs (ya puede estar en el DOM del ERP)
         const posModule = document.getElementById('module-pos');
         if (!posModule) return;
 
+        // Crear barra de tabs si no existe
         let tabBar = document.getElementById('posMobileTabs');
         if (!tabBar) {
             tabBar = document.createElement('div');
             tabBar.id = 'posMobileTabs';
             tabBar.innerHTML = `
-                <button class="pos-mobile-tab active" id="posTabProducts" onclick="showPOSPanel('products')">
+                <button class="pos-mobile-tab active" id="posTabProducts"
+                    onclick="showPOSPanel('products')">
                     📦 Productos
                 </button>
-                <button class="pos-mobile-tab" id="posTabCart" onclick="showPOSPanel('cart')">
-                    🛒 Carrito <span id="posTabCartCount" style="font-size:11px;"></span>
+                <button class="pos-mobile-tab" id="posTabCart"
+                    onclick="showPOSPanel('cart')">
+                    🛒 Carrito
+                    <span id="posTabCartCount"
+                        style="background:var(--primary);color:#fff;border-radius:10px;
+                               padding:1px 7px;font-size:11px;margin-left:4px;display:none;"></span>
                 </button>
             `;
             posModule.prepend(tabBar);
         }
 
-        // Estado inicial: mostrar productos
         showPOSPanel('products');
+
+        // Observar cambios en #cartCount para actualizar el FAB y el badge
+        const cartCountEl = document.getElementById('cartCount');
+        if (cartCountEl && !cartCountEl._mobObserved) {
+            cartCountEl._mobObserved = true;
+            const obs = new MutationObserver(() => _updateCartFab());
+            obs.observe(cartCountEl, { childList: true, subtree: true, characterData: true });
+        }
+
+        // También observar el total
+        const cartTotalEl = document.getElementById('cartTotal');
+        if (cartTotalEl && !cartTotalEl._mobObserved) {
+            cartTotalEl._mobObserved = true;
+            const obs = new MutationObserver(() => _updateCartFab());
+            obs.observe(cartTotalEl, { childList: true, subtree: true, characterData: true });
+        }
     }
 
     window.showPOSPanel = function(panel) {
@@ -251,31 +271,63 @@
 
         const productsPanel = posGrid.querySelector('div:first-child');
         const cartPanel     = posGrid.querySelector('.pos-cart');
-
-        const tabProducts = document.getElementById('posTabProducts');
-        const tabCart     = document.getElementById('posTabCart');
+        const tabProducts   = document.getElementById('posTabProducts');
+        const tabCart       = document.getElementById('posTabCart');
+        const fab           = document.getElementById('mobCartFab');
 
         if (panel === 'products') {
-            if (productsPanel) { productsPanel.style.display = 'block'; productsPanel.classList.add('mob-active'); }
-            if (cartPanel)     { cartPanel.style.display = 'none'; cartPanel.classList.remove('mob-active'); }
+            if (productsPanel) productsPanel.style.display = 'block';
+            if (cartPanel)     cartPanel.style.display     = 'none';
             if (tabProducts)   tabProducts.classList.add('active');
             if (tabCart)       tabCart.classList.remove('active');
+            // Mostrar FAB si hay items
+            _updateCartFab();
         } else {
-            if (productsPanel) { productsPanel.style.display = 'none'; productsPanel.classList.remove('mob-active'); }
-            if (cartPanel)     { cartPanel.style.display = 'flex'; cartPanel.classList.add('mob-active'); }
+            if (productsPanel) productsPanel.style.display = 'none';
+            if (cartPanel)     cartPanel.style.display     = 'flex';
             if (tabProducts)   tabProducts.classList.remove('active');
             if (tabCart)       tabCart.classList.add('active');
+            // Ocultar FAB cuando estamos viendo el carrito
+            if (fab) fab.classList.remove('visible');
         }
     };
 
-    // Al agregar al carrito en móvil: mostrar badge en el tab
-    function _updatePOSCartTab() {
-        const countEl = document.getElementById('cartCount');
-        const tabCount = document.getElementById('posTabCartCount');
-        if (!countEl || !tabCount) return;
-        const n = parseInt(countEl.textContent) || 0;
-        tabCount.textContent = n > 0 ? `(${n})` : '';
+    /* Actualiza el FAB flotante del carrito */
+    function _updateCartFab() {
+        if (!isMobile()) return;
+
+        const fab       = document.getElementById('mobCartFab');
+        const countEl   = document.getElementById('cartCount');
+        const totalEl   = document.getElementById('cartTotal');
+        const fabCount  = document.getElementById('mobCartFabCount');
+        const fabTotal  = document.getElementById('mobCartFabTotal');
+        const tabCount  = document.getElementById('posTabCartCount');
+        if (!fab) return;
+
+        const rawCount  = countEl ? countEl.textContent.trim() : '0';
+        const n         = parseInt(rawCount) || 0;
+        const total     = totalEl ? totalEl.textContent.trim() : '$0.00';
+
+        // Actualizar texto del FAB
+        if (fabCount) fabCount.textContent = n + (n === 1 ? ' item' : ' items');
+        if (fabTotal) fabTotal.textContent  = total;
+
+        // Actualizar badge en el tab
+        if (tabCount) {
+            tabCount.textContent     = n > 0 ? n : '';
+            tabCount.style.display   = n > 0 ? 'inline' : 'none';
+        }
+
+        // Mostrar FAB solo en panel de productos y si hay items
+        const cartPanel   = document.querySelector('#module-pos .pos-cart');
+        const cartVisible = cartPanel && cartPanel.style.display !== 'none';
+        if (n > 0 && !cartVisible) {
+            fab.classList.add('visible');
+        } else {
+            fab.classList.remove('visible');
+        }
     }
+    window._updateCartFab = _updateCartFab;
 
     /* ══════════════════════════════════════════════════════════
        INVENTARIO / PRODUCTOS MÓVIL — render de cards

@@ -803,9 +803,22 @@
 }
 
 /* ================================================================
-   POS MÓVIL — experiencia de punto de venta táctil
+   POS MÓVIL v2 — Diagramación limpia sin encabezado
+   Layout: Barra búsqueda + grid productos / Panel carrito
    ================================================================ */
 @media (max-width: 768px) {
+
+    /* ── Ocultar el encabezado original del POS (título + barra de barras) ── */
+    #module-pos > div:first-child {
+        display: none !important;
+    }
+
+    /* ── El módulo arranca sin padding top extra ── */
+    #module-pos {
+        padding-top: 0 !important;
+    }
+
+    /* ── Grid: columna única ── */
     #module-pos .pos-grid {
         display: flex !important;
         flex-direction: column !important;
@@ -813,159 +826,427 @@
         gap: 0 !important;
     }
 
-    /* Tabs POS sticky */
+    /* ══ TABS DE NAVEGACIÓN PRODUCTOS / CARRITO ══ */
     #posMobileTabs {
+        display: flex !important;
         position: sticky !important;
         top: calc(var(--mob-header-h) + var(--mob-safe-top)) !important;
-        z-index: 200 !important;
+        z-index: 300 !important;
         background: var(--surface) !important;
-        border-bottom: 2px solid var(--border) !important;
-        display: flex !important;
-        margin: -16px -14px 12px -14px !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
+        margin: 0 -14px 0 -14px !important;
+        border-bottom: 1px solid var(--border) !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
     }
 
     .pos-mobile-tab {
         flex: 1;
-        padding: 14px 8px;
-        border: none; background: transparent;
+        padding: 0;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        border: none;
+        background: transparent;
         font-family: inherit;
-        font-size: 13px; font-weight: 600;
+        font-size: 13px;
+        font-weight: 600;
         color: var(--text-3);
         cursor: pointer;
         border-bottom: 3px solid transparent;
         transition: all 0.2s ease;
         -webkit-tap-highlight-color: transparent;
         touch-action: manipulation;
-        letter-spacing: 0.1px;
     }
+
     .pos-mobile-tab.active {
         color: var(--primary);
         border-bottom-color: var(--primary);
         background: var(--primary-light);
     }
 
-    /* Grid de productos 2 col */
+    /* ── Barra búsqueda sticky debajo de los tabs ── */
+    #module-pos .pos-grid > div:first-child > div:first-child {
+        position: sticky !important;
+        top: calc(var(--mob-header-h) + var(--mob-safe-top) + 48px) !important;
+        z-index: 200 !important;
+        background: var(--bg) !important;
+        padding: 10px 14px 8px !important;
+        margin: 0 -14px !important;
+        border-bottom: 1px solid var(--border) !important;
+    }
+
+    /* Quitar botón "+ Producto" de la barra de búsqueda en móvil */
+    #module-pos .pos-grid > div:first-child > div:first-child .btn-primary {
+        display: none !important;
+    }
+
+    /* Hacer el input de búsqueda full-width */
+    #posSearch {
+        width: 100% !important;
+        flex: 1 !important;
+        font-size: 15px !important;
+        padding: 11px 14px 11px 40px !important;
+        border-radius: var(--mob-radius-sm) !important;
+        border: 1.5px solid var(--border) !important;
+        background: var(--surface) !important;
+    }
+
+    /* Icono lupa en el input */
+    #module-pos .pos-grid > div:first-child > div:first-child {
+        position: sticky !important;
+        top: calc(var(--mob-header-h) + var(--mob-safe-top) + 48px) !important;
+        z-index: 200 !important;
+        background: var(--bg) !important;
+        padding: 10px 14px 8px !important;
+        margin: 0 -14px !important;
+        border-bottom: 1px solid var(--border) !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+    }
+
+    /* ══ GRID DE PRODUCTOS — 2 columnas grandes ══ */
     .pos-products {
+        display: grid !important;
         grid-template-columns: repeat(2, 1fr) !important;
         gap: 10px !important;
         overflow-y: visible !important;
         max-height: none !important;
+        padding: 12px 0 80px !important;
     }
 
-    /* Cards de producto táctiles */
+    /* Card de producto */
     .pos-product {
-        padding: 14px 10px !important;
-        border-radius: var(--mob-radius-sm) !important;
-        min-height: 100px !important;
-        transition: all 0.18s ease !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        padding: 14px 12px 12px !important;
+        border-radius: 14px !important;
+        min-height: 110px !important;
+        cursor: pointer !important;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease !important;
         position: relative !important;
         overflow: hidden !important;
+        background: var(--surface) !important;
+        border: 1px solid var(--border) !important;
+        box-shadow: 0 1px 6px rgba(0,0,0,0.05) !important;
+        text-align: left !important;
     }
 
     .pos-product:active {
-        transform: scale(0.96) !important;
-        border-color: var(--primary) !important;
+        transform: scale(0.95) !important;
         background: var(--primary-light) !important;
+        border-color: var(--primary) !important;
+        box-shadow: 0 2px 12px rgba(79,70,229,0.18) !important;
     }
 
-    .pos-product::after {
-        content: '＋';
-        position: absolute;
-        bottom: 6px; right: 8px;
-        font-size: 18px;
-        color: var(--primary);
-        opacity: 0.5;
-        font-weight: 700;
+    /* Emoji de categoría / imagen en la card */
+    .pos-product .pos-product-emoji {
+        font-size: 28px;
+        margin-bottom: 6px;
         line-height: 1;
     }
 
     .pos-product .name {
         font-size: 13px !important;
-        font-weight: 600 !important;
+        font-weight: 700 !important;
         line-height: 1.3 !important;
+        color: var(--text) !important;
         display: -webkit-box !important;
         -webkit-line-clamp: 2 !important;
         -webkit-box-orient: vertical !important;
         overflow: hidden !important;
         white-space: normal !important;
         text-overflow: unset !important;
+        margin-bottom: 4px !important;
     }
 
     .pos-product .price {
-        font-size: 16px !important;
+        font-size: 15px !important;
         font-weight: 800 !important;
+        color: var(--primary) !important;
         letter-spacing: -0.3px !important;
+        margin: 2px 0 !important;
     }
 
     .pos-product .stock {
-        font-size: 11px !important;
+        font-size: 10px !important;
+        color: var(--text-3) !important;
+        font-weight: 500 !important;
     }
 
-    /* Carrito */
+    /* Botón + en la esquina inferior derecha */
+    .pos-product::after {
+        content: '＋';
+        position: absolute !important;
+        bottom: 8px !important;
+        right: 10px !important;
+        font-size: 20px !important;
+        font-weight: 700 !important;
+        color: var(--primary) !important;
+        opacity: 0.4 !important;
+        line-height: 1 !important;
+        transition: opacity 0.15s !important;
+    }
+    .pos-product:active::after { opacity: 0.8 !important; }
+
+    /* ══ BADGE FLOTANTE DEL CARRITO ══
+       Botón FAB que muestra el total del carrito y lo abre */
+    #mobCartFab {
+        position: fixed !important;
+        bottom: calc(var(--mob-bottom-nav-h) + var(--mob-safe-bottom) + 14px) !important;
+        left: 14px !important;
+        right: 14px !important;
+        height: 54px !important;
+        background: var(--mob-gradient-primary) !important;
+        color: #fff !important;
+        border: none !important;
+        border-radius: var(--mob-radius-sm) !important;
+        box-shadow: 0 6px 24px rgba(79,70,229,0.4) !important;
+        display: none !important; /* visible solo cuando hay items */
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding: 0 20px !important;
+        font-family: inherit !important;
+        font-size: 15px !important;
+        font-weight: 700 !important;
+        cursor: pointer !important;
+        z-index: 250 !important;
+        -webkit-tap-highlight-color: transparent !important;
+        touch-action: manipulation !important;
+        transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1) !important;
+    }
+    #mobCartFab.visible {
+        display: flex !important;
+    }
+    #mobCartFab:active {
+        transform: scale(0.97) !important;
+    }
+    #mobCartFabLeft {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    #mobCartFabCount {
+        background: rgba(255,255,255,0.25);
+        border-radius: 20px;
+        padding: 2px 10px;
+        font-size: 13px;
+        font-weight: 700;
+    }
+    #mobCartFabTotal {
+        font-size: 17px;
+        font-weight: 800;
+        letter-spacing: -0.3px;
+    }
+
+    /* ══ PANEL DE CARRITO ══ */
     .pos-cart {
+        background: var(--surface) !important;
         border-radius: 0 !important;
         border: none !important;
         box-shadow: none !important;
-        background: var(--surface) !important;
         padding: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 0 !important;
     }
 
+    /* Cabecera del carrito */
+    .pos-cart > div:first-child {
+        padding: 14px 14px 12px !important;
+        background: var(--surface) !important;
+        border-bottom: 1px solid var(--border) !important;
+        font-size: 15px !important;
+        font-weight: 700 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+    }
+
+    /* Lista de items */
     .pos-cart .cart-items {
         max-height: none !important;
         overflow-y: visible !important;
+        border-top: none !important;
+        border-bottom: none !important;
+        margin: 0 !important;
+        padding: 8px 0 !important;
     }
 
     .pos-cart .cart-item {
-        padding: 12px 8px !important;
+        display: flex !important;
+        align-items: center !important;
         gap: 10px !important;
-        border-radius: var(--mob-radius-sm) !important;
-        margin-bottom: 4px !important;
-        background: var(--surface-2) !important;
-        border: none !important;
+        padding: 10px 14px !important;
+        border-bottom: 1px solid var(--border) !important;
+        border-radius: 0 !important;
+        margin-bottom: 0 !important;
+        background: transparent !important;
+        border-left: none !important;
+        border-right: none !important;
+        border-top: none !important;
+    }
+
+    .pos-cart .cart-item:last-child {
+        border-bottom: none !important;
+    }
+
+    /* Nombre del producto en el item */
+    .pos-cart .cart-item > span:first-child {
+        flex: 1 !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        color: var(--text) !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+    }
+
+    /* Botones de cantidad */
+    .pos-cart .cart-item .qty {
+        display: flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        flex-shrink: 0 !important;
     }
 
     .pos-cart .cart-item .qty button {
-        width: 36px !important;
-        height: 36px !important;
-        font-size: 18px !important;
+        width: 34px !important;
+        height: 34px !important;
+        font-size: 17px !important;
         border-radius: 50% !important;
+        background: var(--surface-2) !important;
+        border: 1px solid var(--border) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        transition: all 0.15s !important;
+        -webkit-tap-highlight-color: transparent !important;
+    }
+    .pos-cart .cart-item .qty button:active {
+        background: var(--primary-light) !important;
+        border-color: var(--primary) !important;
+        transform: scale(0.9) !important;
     }
 
-    /* Panel de pago */
+    /* Precio del item */
+    .pos-cart .cart-item .item-price {
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        color: var(--text) !important;
+        flex-shrink: 0 !important;
+        min-width: 60px !important;
+        text-align: right !important;
+    }
+
+    /* Botón eliminar */
+    .pos-cart .cart-item .remove {
+        color: var(--text-3) !important;
+        font-size: 16px !important;
+        width: 30px !important;
+        height: 30px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        border-radius: 50% !important;
+        flex-shrink: 0 !important;
+    }
+    .pos-cart .cart-item .remove:active {
+        background: #fee2e2 !important;
+        color: var(--danger) !important;
+    }
+
+    /* ── Totales ── */
+    .pos-cart .cart-total {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 14px 14px 10px !important;
+        margin: 0 !important;
+        font-size: 20px !important;
+        font-weight: 700 !important;
+        border-top: 2px solid var(--border) !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+    }
+
+    /* Subtotales e IVA */
+    #module-pos .pos-cart > div:nth-child(4) {
+        padding: 4px 14px 10px !important;
+        font-size: 12px !important;
+        color: var(--text-2) !important;
+        border-bottom: 1px solid var(--border) !important;
+    }
+
+    /* ── Sección de pago ── */
     .pos-cart .payment-row {
+        display: flex !important;
         flex-direction: column !important;
         gap: 8px !important;
+        padding: 12px 14px !important;
+        background: var(--surface-2) !important;
     }
+
     .pos-cart .payment-row select,
     .pos-cart .payment-row input {
         width: 100% !important;
-        border-radius: var(--mob-radius-sm) !important;
+        border-radius: var(--mob-radius-xs) !important;
+        min-height: 44px !important;
+        font-size: 15px !important;
+        padding: 10px 12px !important;
+        border: 1px solid var(--border) !important;
+        background: var(--surface) !important;
+        color: var(--text) !important;
+        font-family: inherit !important;
     }
 
-    /* Total */
-    .pos-cart .cart-total {
-        font-size: 22px !important;
-        padding: 14px 8px 10px !important;
-        border-radius: var(--mob-radius-sm) !important;
+    /* Cambio / Vuelto */
+    #module-pos .pos-cart > div:nth-last-child(2) {
+        padding: 8px 14px !important;
+        font-size: 13px !important;
         background: var(--surface-2) !important;
-        margin: 8px 0 !important;
+    }
+
+    /* ── Botón Completar Venta ── */
+    #module-pos .btn-success.w-full {
+        margin: 12px 14px !important;
+        width: calc(100% - 28px) !important;
+        height: 52px !important;
+        font-size: 16px !important;
+        font-weight: 700 !important;
+        border-radius: var(--mob-radius-sm) !important;
+        letter-spacing: 0.2px !important;
+        box-shadow: 0 4px 16px rgba(16,185,129,0.35) !important;
+    }
+
+    /* ── Cliente seleccionado en POS ── */
+    #posSelectedCustomer {
+        margin: 6px 14px 0 !important;
+        font-size: 12px !important;
+        padding: 6px 10px !important;
+        background: var(--primary-light) !important;
+        border-radius: var(--mob-radius-xs) !important;
+        color: var(--primary) !important;
+        font-weight: 600 !important;
     }
 }
 
-/* POS en landscape — volver al layout lado a lado */
+/* ── POS landscape: layout lado a lado ── */
 @media (max-width: 900px) and (orientation: landscape) {
+    #module-pos > div:first-child { display: none !important; }
     #module-pos .pos-grid {
         display: grid !important;
         grid-template-columns: 1fr 300px !important;
         height: calc(100svh - var(--mob-header-h) - var(--mob-bottom-nav-h)) !important;
-        gap: 12px !important;
+        gap: 0 !important;
     }
-    #module-pos .pos-grid > div:first-child,
-    #module-pos .pos-cart {
-        display: block !important; display: flex !important;
-    }
+    #module-pos .pos-grid > div:first-child { display: block !important; }
+    .pos-cart { display: flex !important; height: 100% !important; }
     #posMobileTabs { display: none !important; }
+    #mobCartFab { display: none !important; }
+    .pos-products { padding-bottom: 8px !important; }
 }
 
 /* ================================================================

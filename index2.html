@@ -4340,6 +4340,15 @@
                     <button class="btn btn-success w-full mt-2" onclick="saveSafe(this, completeSale)">✅ Completar Venta</button>
                 </div>
             </div>
+
+            <!-- ── FAB flotante del carrito (solo móvil) ── -->
+            <button id="mobCartFab" class="mob-only" onclick="showPOSPanel('cart')" aria-label="Ver carrito">
+                <span id="mobCartFabLeft">
+                    <span>🛒</span>
+                    <span id="mobCartFabCount">0</span>
+                </span>
+                <span id="mobCartFabTotal">$0.00</span>
+            </button>
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════
