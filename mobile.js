@@ -423,14 +423,66 @@
         if (!isMobile()) return;
         if (typeof window.visualViewport === 'undefined') return;
 
+        // El bottom nav del ERP usa clase .mobile-bottom-nav (no un ID fijo)
+        function _getBottomNav() {
+            return document.querySelector('.mobile-bottom-nav');
+        }
+
+        // El main scrollable
+        function _getMain() {
+            return document.getElementById('mainContent');
+        }
+
+        let _lastViewportHeight = window.visualViewport.height;
+
         window.visualViewport.addEventListener('resize', () => {
-            const nav = document.getElementById('mobileBottomNav');
-            if (!nav) return;
-            const keyboardOpen = window.visualViewport.height < window.screen.height * 0.75;
-            // Ocultar bottom nav cuando el teclado está abierto
-            nav.style.transform = keyboardOpen ? 'translateY(100%)' : '';
-            nav.style.transition = 'transform 0.2s ease';
+            const vvh     = window.visualViewport.height;
+            const nav     = _getBottomNav();
+            const main    = _getMain();
+
+            // Detectar teclado comparando con el viewport anterior, más robusto que screen.height
+            const keyboardOpen = vvh < _lastViewportHeight * 0.85 ||
+                                  vvh < window.innerHeight * 0.75;
+
+            if (nav) {
+                nav.style.transform  = keyboardOpen ? 'translateY(110%)' : '';
+                nav.style.transition = 'transform 0.2s ease';
+            }
+
+            // Ajustar padding del main para que el contenido quede visible
+            if (main) {
+                if (keyboardOpen) {
+                    // Con teclado: reducir padding inferior al mínimo
+                    main.style.paddingBottom = '8px';
+                    // Scroll al elemento enfocado para que quede visible
+                    setTimeout(() => {
+                        const focused = document.activeElement;
+                        if (focused && focused !== document.body) {
+                            focused.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }, 150);
+                } else {
+                    // Sin teclado: restaurar padding
+                    main.style.paddingBottom = '';
+                    _lastViewportHeight = vvh;
+                }
+            }
+
+            if (!keyboardOpen) _lastViewportHeight = vvh;
         });
+
+        // También escuchar blur en inputs para restaurar el nav
+        document.addEventListener('focusout', () => {
+            setTimeout(() => {
+                const nav = _getBottomNav();
+                if (nav) {
+                    nav.style.transform  = '';
+                    nav.style.transition = 'transform 0.2s ease';
+                }
+                const main = _getMain();
+                if (main) main.style.paddingBottom = '';
+            }, 150);
+        }, { passive: true });
     }
 
     /* ══════════════════════════════════════════════════════════

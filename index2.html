@@ -5321,7 +5321,7 @@
                     <button class="btn btn-primary" onclick="exportBackup()">📤 Exportar respaldo</button>
                     <button class="btn btn-secondary" onclick="document.getElementById('restoreInput').click()">📥 Restaurar respaldo</button>
                     <input type="file" id="restoreInput" accept=".json" style="display:none" onchange="importBackup(event)" />
-                    <button class="btn btn-danger" onclick="if(confirm('¿Eliminar todos los datos?')) resetAll()">🗑️ Resetear datos</button>
+                    <button class="btn btn-danger" onclick="resetAll()">🗑️ Resetear datos</button>
                 </div>
             </div>
             <!-- ── MONEDAS Y TASAS DE CAMBIO ── -->
@@ -13871,31 +13871,59 @@
     }
 
     async function resetAll() {
-        if (confirm('¿Eliminar todos los datos?')) {
-            // Reset en backend si está disponible
-            try {
-                const r = await fetch(`${API_BASE}/api/reset`, {
-                    method: 'POST',
-                    signal: AbortSignal.timeout(5000),
-                });
-                if (r.ok) {
-                    const json = await r.json();
-                    if (json.ok) {
-                        // Recargar datos frescos del backend
-                        const freshR = await fetch(`${API_BASE}/api/db`, { signal: AbortSignal.timeout(5000) });
-                        if (freshR.ok) {
-                            const freshJson = await freshR.json();
-                            if (freshJson.ok && freshJson.data) data = freshJson.data;
+        if (!confirm('¿Eliminar todos los datos? Esta acción no se puede deshacer.')) return;
+
+        const token = localStorage.getItem('fixpromax_token');
+        const authHeaders = token
+            ? { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }
+            : { 'Content-Type': 'application/json' };
+
+        let resetOk = false;
+        try {
+            const r = await fetch(`${API_BASE}/api/reset`, {
+                method:  'POST',
+                headers: authHeaders,
+                signal:  AbortSignal.timeout(8000),
+            });
+            if (r.ok) {
+                const json = await r.json();
+                if (json.ok) {
+                    resetOk = true;
+                    // Recargar datos frescos del backend con token
+                    const freshR = await fetch(`${API_BASE}/api/db`, {
+                        headers: token ? { 'Authorization': 'Bearer ' + token } : {},
+                        signal:  AbortSignal.timeout(8000),
+                    });
+                    if (freshR.ok) {
+                        const freshJson = await freshR.json();
+                        if (freshJson.ok && freshJson.data) {
+                            window._setAppData(freshJson.data);
                         }
                     }
+                } else {
+                    // Backend respondió ok:false (ej. 403 sin permisos)
+                    showToast('❌', json.error || 'No tienes permiso para resetear los datos');
+                    return;
                 }
-            } catch {
+            } else if (r.status === 401) {
+                showToast('❌', 'Sesión expirada. Inicia sesión nuevamente.');
+                return;
+            } else if (r.status === 403) {
+                const json = await r.json().catch(() => ({}));
+                showToast('❌', json.error || 'Solo el propietario puede resetear los datos');
+                return;
+            } else {
+                // Fallo del servidor — reset local como fallback
                 data = defaultData();
             }
-            persist();
-            renderAll();
-            showToast('🗑️', 'Datos reseteados');
+        } catch {
+            // Sin conexión — reset local
+            data = defaultData();
         }
+
+        await persist();
+        renderAll();
+        showToast('🗑️', resetOk ? 'Datos reseteados correctamente' : 'Datos reseteados (modo local)');
     }
 
     /* ─── AI Copilot ─── */

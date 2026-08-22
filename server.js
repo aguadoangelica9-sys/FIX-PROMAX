@@ -3867,6 +3867,24 @@ app.get('/api/admin/stats', requireAdmin, async (req, res) => {
         return days > 0 && days <= 7;
     });
 
+    // Calcular ingresos de forma sincrona ANTES de ok() (evita serializar Promise)
+    const payments   = await readPayments();
+    const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+    const weekStart  = new Date(now - 7  * 86400000);
+    const monthStart = new Date(now - 30 * 86400000);
+    let revDay=0, revWeek=0, revMonth=0, revTotal=0, revFailed=0, revPending=0;
+    payments.forEach(p => {
+        const t = new Date(p.ts).getTime();
+        if (p.status === 'completed') {
+            const amt = Number(p.amount) || 0;
+            revTotal += amt;
+            if (t >= todayStart) revDay   += amt;
+            if (t >= weekStart)  revWeek  += amt;
+            if (t >= monthStart) revMonth += amt;
+        } else if (p.status === 'failed')  revFailed++;
+        else if  (p.status === 'pending')  revPending++;
+    });
+
     ok(res, {
         users: {
             total:     users.length,
@@ -3901,36 +3919,15 @@ app.get('/api/admin/stats', requireAdmin, async (req, res) => {
             resolved:   tickets.filter(t => t.status === 'resolved').length,
             closed:     tickets.filter(t => t.status === 'closed').length,
         },
-        // ❌”€❌”€ Ingresos desglosados por período ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
-        revenue: (async function() {
-            const payments = await readPayments();
-            const todayStart = new Date(); todayStart.setHours(0,0,0,0);
-            const weekStart  = new Date(now - 7  * 86400000);
-            const monthStart = new Date(now - 30 * 86400000);
-            const yearStart  = new Date(now - 365* 86400000);
-            let day=0, week7=0, month30=0, year1=0, total=0, failed=0, pending=0;
-            payments.forEach(p => {
-                const t = new Date(p.ts).getTime();
-                if (p.status === 'completed') {
-                    const amt = Number(p.amount) || 0;
-                    total  += amt;
-                    if (t >= todayStart) day    += amt;
-                    if (t >= weekStart)  week7  += amt;
-                    if (t >= monthStart) month30 += amt;
-                    if (t >= yearStart)  year1  += amt;
-                } else if (p.status === 'failed')  failed++;
-                else if (p.status === 'pending')    pending++;
-            });
-            return {
-                today:  +day.toFixed(2),
-                week:   +week7.toFixed(2),
-                month:  +month30.toFixed(2),
-                year:   +year1.toFixed(2),
-                total:  +total.toFixed(2),
-                failedPayments:   failed,
-                pendingPayments:  pending,
-            };
-        })(),
+        // revenue calculado de forma sincrona (sin Promise) para serializar correctamente
+        revenue: {
+            today:           +revDay.toFixed(2),
+            week:            +revWeek.toFixed(2),
+            month:           +revMonth.toFixed(2),
+            total:           +revTotal.toFixed(2),
+            failedPayments:  revFailed,
+            pendingPayments: revPending,
+        },
     });
 });
 
@@ -5203,6 +5200,385 @@ app.post('/api/run-migration', async (req, res) => {
         }
     });
 });
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENDPOINTS ADMIN FALTANTES — implementados para completar el panel de admin
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ─── TASAS DE CAMBIO (admin) ──────────────────────────────────────────────────
+
+// GET /api/admin/exchange-rates — tasas actuales + historial global
+app.get('/api/admin/exchange-rates', requireAdmin, async (req, res) => {
+    try {
+        // Leer tasas desde la BD global (__global__) que es donde el cron las guarda
+        let globalDB = null;
+        try { globalDB = await DB.readCompanyDB('__global__'); } catch {}
+
+        // Fallback: leer desde primera empresa activa si la global está vacía
+        let history = [];
+        if (globalDB && Array.isArray(globalDB.exchangeRates) && globalDB.exchangeRates.length > 0) {
+            history = globalDB.exchangeRates;
+        } else {
+            // Intentar leer desde cualquier empresa que tenga tasas
+            const users = await readUsers();
+            const owners = users.filter(u => u.teamRole === 'owner' && u.companyId);
+            for (const owner of owners.slice(0, 3)) {
+                try {
+                    const cdb = await DB.readCompanyDB(owner.companyId);
+                    if (cdb && Array.isArray(cdb.exchangeRates) && cdb.exchangeRates.length > 0) {
+                        history = cdb.exchangeRates;
+                        break;
+                    }
+                } catch {}
+            }
+        }
+
+        // Ordenar: más recientes primero
+        history = [...history].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        const currentUSD = history.find(r => r.fromCurrency === 'USD' && r.toCurrency === 'VES' && r.isActive)
+                        || history.filter(r => r.fromCurrency === 'USD' && r.toCurrency === 'VES').sort((a,b) => new Date(b.createdAt)-new Date(a.createdAt))[0]
+                        || null;
+        const currentEUR = history.find(r => r.fromCurrency === 'EUR' && r.toCurrency === 'VES' && r.isActive)
+                        || history.filter(r => r.fromCurrency === 'EUR' && r.toCurrency === 'VES').sort((a,b) => new Date(b.createdAt)-new Date(a.createdAt))[0]
+                        || null;
+
+        const svcStatus = ExchangeRateService.getStatus();
+
+        ok(res, {
+            currentUSD: currentUSD ? { rate: currentUSD.rate, source: currentUSD.source || 'Manual', date: currentUSD.date } : null,
+            currentEUR: currentEUR ? { rate: currentEUR.rate, source: currentEUR.source || 'Manual', date: currentEUR.date } : null,
+            history: history.slice(0, 100),
+            serviceStatus: svcStatus,
+        });
+    } catch (e) {
+        err(res, 'Error cargando tasas: ' + e.message, 500);
+    }
+});
+
+// POST /api/admin/exchange-rates — guardar tasa manual y propagar a todas las empresas
+app.post('/api/admin/exchange-rates', requireAdmin, async (req, res) => {
+    const { fromCurrency, toCurrency, rate, notes } = req.body;
+    const rateVal = parseFloat(rate);
+    if (!rateVal || rateVal <= 0) return err(res, 'La tasa debe ser un número positivo mayor a 0');
+    const from = (fromCurrency || 'USD').toUpperCase();
+    const to   = (toCurrency   || 'VES').toUpperCase();
+    if (from === to) return err(res, 'Las monedas de origen y destino deben ser diferentes');
+    if (!['USD', 'EUR'].includes(from)) return err(res, 'Moneda origen debe ser USD o EUR');
+
+    const now = new Date().toISOString();
+    const newRate = {
+        id:           generateId(),
+        fromCurrency: from,
+        toCurrency:   to,
+        rate:         rateVal,
+        date:         now.slice(0, 10),
+        createdAt:    now,
+        createdBy:    req.admin.email,
+        notes:        notes || 'Ingresada manualmente desde el panel admin',
+        source:       'Manual (Admin)',
+        updateType:   'manual',
+        isActive:     true,
+    };
+
+    // Propagar a TODAS las BDs de empresa
+    const users = await readUsers();
+    const owners = users.filter(u => u.teamRole === 'owner' && u.companyId);
+    let propagated = 0;
+    for (const owner of owners) {
+        try {
+            const cdb = await DB.readCompanyDB(owner.companyId);
+            if (!cdb) continue;
+            if (!Array.isArray(cdb.exchangeRates)) cdb.exchangeRates = [];
+            // Desactivar tasas anteriores del mismo par
+            cdb.exchangeRates.forEach(r => {
+                if (r.fromCurrency === from && r.toCurrency === to) r.isActive = false;
+            });
+            cdb.exchangeRates.push({ ...newRate, id: generateId() });
+            await DB.writeCompanyDB(owner.companyId, cdb);
+            propagated++;
+        } catch {}
+    }
+
+    // También guardar en BD global
+    try {
+        const gdb = await DB.readCompanyDB('__global__') || {};
+        if (!Array.isArray(gdb.exchangeRates)) gdb.exchangeRates = [];
+        gdb.exchangeRates.forEach(r => {
+            if (r.fromCurrency === from && r.toCurrency === to) r.isActive = false;
+        });
+        gdb.exchangeRates.push(newRate);
+        await DB.writeCompanyDB('__global__', gdb);
+    } catch {}
+
+    await logAdminAction(req.admin.id, req.admin.email, 'exchange_rate', null, null,
+        `${from}→${to}=Bs.${rateVal} propagada a ${propagated} empresas`);
+
+    // Emitir SSE
+    setImmediate(() => {
+        if (typeof broadcastSSE === 'function') {
+            broadcastSSE('exchange_rate_updated', { fromCurrency: from, toCurrency: to, rate: rateVal, updatedAt: now });
+        }
+    });
+
+    ok(res, { ...newRate, propagated });
+});
+
+// POST /api/admin/exchange-rates/fetch-bcv — forzar actualización desde BCV
+app.post('/api/admin/exchange-rates/fetch-bcv', requireAdmin, async (req, res) => {
+    try {
+        const result = await ExchangeRateService.fetchAndSaveAll(
+            _readGlobalDB,
+            _writeGlobalDB,
+            _readCompanyDB,
+            _writeCompanyDB,
+            _listCompanies,
+            req.admin.email,
+            'manual'
+        );
+        await logAdminAction(req.admin.id, req.admin.email, 'exchange_rate', null, null,
+            result.success
+                ? `BCV: USD=${result.USD} EUR=${result.EUR}`
+                : `BCV fetch falló: ${result.error || 'sin datos'}`);
+        ok(res, result);
+    } catch (e) {
+        err(res, 'Error al consultar BCV: ' + e.message, 500);
+    }
+});
+
+// ─── DATOS ERP POR EMPRESA (admin) ───────────────────────────────────────────
+
+// GET /api/admin/company/:companyId/summary — resumen financiero de la empresa
+app.get('/api/admin/company/:companyId/summary', requireAdmin, async (req, res) => {
+    try {
+        const cdb = await DB.readCompanyDB(req.params.companyId);
+        if (!cdb) return err(res, 'Empresa no encontrada', 404);
+
+        const now30 = Date.now() - 30 * 86400000;
+        const sales30   = (cdb.sales   || []).filter(s => new Date(s.createdAt||s.date||0).getTime() >= now30);
+        const expenses30 = (cdb.expenses || []).filter(e => new Date(e.createdAt||e.date||0).getTime() >= now30 && e.status !== 'anulado');
+
+        const monthlySales    = sales30.reduce((sum, s)    => sum + (Number(s.total)  || 0), 0);
+        const monthlyExpenses = expenses30.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+        const pendingInvoices = (cdb.invoices || [])
+            .filter(i => i.status === 'Pendiente' || i.status === 'Parcial')
+            .reduce((sum, i) => sum + Math.max(0, (Number(i.total)||0) - (Number(i.paid)||0)), 0);
+
+        ok(res, {
+            monthlySales:    +monthlySales.toFixed(2),
+            monthlyExpenses: +monthlyExpenses.toFixed(2),
+            monthlyProfit:   +(monthlySales - monthlyExpenses).toFixed(2),
+            products:        (cdb.products  || []).length,
+            salesCount:      (cdb.sales     || []).length,
+            pendingInvoices: +pendingInvoices.toFixed(2),
+            customers:       (cdb.customers || []).length,
+            totalSales:      (cdb.sales     || []).reduce((s, v) => s + (Number(v.total)||0), 0).toFixed(2),
+        });
+    } catch (e) {
+        err(res, 'Error cargando resumen: ' + e.message, 500);
+    }
+});
+
+// GET /api/admin/company/:companyId/sales — ventas recientes de la empresa
+app.get('/api/admin/company/:companyId/sales', requireAdmin, async (req, res) => {
+    try {
+        const cdb = await DB.readCompanyDB(req.params.companyId);
+        if (!cdb) return err(res, 'Empresa no encontrada', 404);
+        const limit = parseInt(req.query.limit) || 20;
+        const sales = [...(cdb.sales || [])]
+            .sort((a, b) => new Date(b.createdAt||b.date||0) - new Date(a.createdAt||a.date||0))
+            .slice(0, limit);
+        ok(res, sales);
+    } catch (e) {
+        err(res, 'Error cargando ventas: ' + e.message, 500);
+    }
+});
+
+// GET /api/admin/company/:companyId/expenses — gastos recientes de la empresa
+app.get('/api/admin/company/:companyId/expenses', requireAdmin, async (req, res) => {
+    try {
+        const cdb = await DB.readCompanyDB(req.params.companyId);
+        if (!cdb) return err(res, 'Empresa no encontrada', 404);
+        const limit = parseInt(req.query.limit) || 20;
+        const expenses = [...(cdb.expenses || [])]
+            .sort((a, b) => new Date(b.createdAt||b.date||0) - new Date(a.createdAt||a.date||0))
+            .slice(0, limit);
+        ok(res, expenses);
+    } catch (e) {
+        err(res, 'Error cargando gastos: ' + e.message, 500);
+    }
+});
+
+// GET /api/admin/company/:companyId/invoices — facturas de la empresa
+app.get('/api/admin/company/:companyId/invoices', requireAdmin, async (req, res) => {
+    try {
+        const cdb = await DB.readCompanyDB(req.params.companyId);
+        if (!cdb) return err(res, 'Empresa no encontrada', 404);
+        const limit = parseInt(req.query.limit) || 30;
+        const invoices = [...(cdb.invoices || [])]
+            .sort((a, b) => new Date(b.createdAt||b.date||0) - new Date(a.createdAt||a.date||0))
+            .slice(0, limit);
+        ok(res, invoices);
+    } catch (e) {
+        err(res, 'Error cargando facturas: ' + e.message, 500);
+    }
+});
+
+// ─── EMPLEADOS POR EMPRESA (admin) ────────────────────────────────────────────
+
+// GET /api/admin/company/:companyId/team — equipo de la empresa
+app.get('/api/admin/company/:companyId/team', requireAdmin, async (req, res) => {
+    try {
+        const users = await readUsers();
+        const { companyId } = req.params;
+        const team = users.filter(u => u.companyId === companyId).map(u => ({
+            id:          u.id,
+            name:        u.name,
+            email:       u.email,
+            teamRole:    u.teamRole || 'employee',
+            active:      u.active !== false,
+            createdAt:   u.createdAt,
+            lastLogin:   u.lastLogin || null,
+            permissions: u.permissions || null,
+        }));
+        ok(res, team);
+    } catch (e) {
+        err(res, 'Error cargando equipo: ' + e.message, 500);
+    }
+});
+
+// PUT /api/admin/employees/:empId/permissions — actualizar permisos de un empleado (desde panel admin)
+app.put('/api/admin/employees/:empId/permissions', requireAdmin, async (req, res) => {
+    try {
+        const users = await readUsers();
+        const idx   = users.findIndex(u => u.id === req.params.empId);
+        if (idx === -1) return err(res, 'Empleado no encontrado', 404);
+        if (users[idx].teamRole === 'owner') return err(res, 'No se pueden modificar los permisos del propietario', 400);
+        // req.body es el objeto de permisos por módulo
+        users[idx].permissions = { ...(users[idx].permissions || {}), ...req.body };
+        await writeUsers(users);
+        await logAdminAction(req.admin.id, req.admin.email, 'permission', users[idx].id, users[idx].email,
+            `Permisos actualizados desde panel admin`);
+        ok(res, { done: true, permissions: users[idx].permissions });
+    } catch (e) {
+        err(res, 'Error actualizando permisos: ' + e.message, 500);
+    }
+});
+
+// POST /api/admin/employees/:empId/status — suspender/reactivar empleado (desde panel admin)
+app.post('/api/admin/employees/:empId/status', requireAdmin, async (req, res) => {
+    try {
+        const { action, reason } = req.body;
+        if (!['suspend', 'reactivate'].includes(action)) return err(res, 'Acción inválida. Use: suspend | reactivate');
+
+        const users = await readUsers();
+        const idx   = users.findIndex(u => u.id === req.params.empId);
+        if (idx === -1) return err(res, 'Empleado no encontrado', 404);
+        if (users[idx].teamRole === 'owner') return err(res, 'No se puede suspender al propietario de la empresa', 400);
+
+        if (action === 'suspend') {
+            users[idx].active = false;
+            users[idx].suspendedAt     = new Date().toISOString();
+            users[idx].suspendReason   = reason || 'Suspendido por administrador';
+            // Cerrar todas sus sesiones activas
+            const sessions = await readSessions();
+            Object.keys(sessions).forEach(tok => {
+                const e = sessions[tok];
+                const uid = typeof e === 'object' ? e.userId : e;
+                if (uid === users[idx].id) delete sessions[tok];
+            });
+            await writeSessions(sessions);
+        } else {
+            users[idx].active = true;
+            delete users[idx].suspendedAt;
+            delete users[idx].suspendReason;
+        }
+
+        await writeUsers(users);
+        await logAdminAction(req.admin.id, req.admin.email,
+            action === 'suspend' ? 'suspend' : 'reactivate',
+            users[idx].id, users[idx].email,
+            reason || `${action} por admin desde panel`);
+
+        ok(res, { done: true, action, active: users[idx].active });
+    } catch (e) {
+        err(res, 'Error actualizando estado: ' + e.message, 500);
+    }
+});
+
+// ─── AUDITORÍA COMPLETA (admin) ───────────────────────────────────────────────
+
+// GET /api/admin/audit — log de auditoría con valores antes/después
+// Nota: el log de auditoría se construye desde el adminLog existente,
+// ya que es el mismo registro persistido por logAdminAction().
+app.get('/api/admin/audit', requireAdmin, async (req, res) => {
+    try {
+        const log   = await readAdminLog();
+        const limit = parseInt(req.query.limit) || 500;
+        ok(res, log.slice(0, limit).map(e => ({
+            id:          e.id,
+            ts:          e.ts,
+            adminEmail:  e.adminEmail || e.adminId || '—',
+            action:      e.action,
+            targetId:    e.targetId   || null,
+            targetEmail: e.targetEmail || null,
+            detail:      e.detail     || '—',
+        })));
+    } catch (e) {
+        err(res, 'Error cargando auditoría: ' + e.message, 500);
+    }
+});
+
+// ─── CONFIGURACIÓN GLOBAL (admin) ────────────────────────────────────────────
+
+// GET /api/admin/global-settings — leer configuración global del sistema
+app.get('/api/admin/global-settings', requireAdmin, async (req, res) => {
+    try {
+        const cfg = await getConfig();
+        ok(res, {
+            trialDays:         cfg.trialDays          ?? 3,
+            appName:           cfg.appName            ?? 'FIX PRO MAX',
+            supportEmail:      cfg.supportEmail       ?? '',
+            registrationOpen:  cfg.registrationOpen   !== false,
+            maintenanceMode:   cfg.maintenanceMode    === true,
+        });
+    } catch (e) {
+        err(res, 'Error cargando configuración: ' + e.message, 500);
+    }
+});
+
+// PUT /api/admin/global-settings — guardar configuración global del sistema
+app.put('/api/admin/global-settings', requireAdmin, async (req, res) => {
+    try {
+        const { trialDays, appName, supportEmail, registrationOpen, maintenanceMode } = req.body;
+        const cfg = await getConfig();
+
+        if (trialDays         !== undefined) cfg.trialDays        = Math.max(1, Math.min(30, parseInt(trialDays) || 3));
+        if (appName           !== undefined) cfg.appName          = String(appName).trim() || 'FIX PRO MAX';
+        if (supportEmail      !== undefined) cfg.supportEmail     = String(supportEmail).trim();
+        if (registrationOpen  !== undefined) cfg.registrationOpen = registrationOpen !== false;
+        if (maintenanceMode   !== undefined) cfg.maintenanceMode  = maintenanceMode === true;
+        cfg.updatedAt = new Date().toISOString();
+
+        await writeConfig(cfg);
+        await logAdminAction(req.admin.id, req.admin.email, 'global_settings', null, null,
+            `trialDays=${cfg.trialDays} registrationOpen=${cfg.registrationOpen} maintenance=${cfg.maintenanceMode}`);
+
+        ok(res, {
+            trialDays:        cfg.trialDays,
+            appName:          cfg.appName,
+            supportEmail:     cfg.supportEmail,
+            registrationOpen: cfg.registrationOpen,
+            maintenanceMode:  cfg.maintenanceMode,
+        });
+    } catch (e) {
+        err(res, 'Error guardando configuración: ' + e.message, 500);
+    }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FIN ENDPOINTS ADMIN FALTANTES
+// ══════════════════════════════════════════════════════════════════════════════
 
 // Iniciar servidor
 startServer(PORT);
