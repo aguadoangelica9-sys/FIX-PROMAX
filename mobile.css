@@ -1,4 +1,4 @@
-/* ================================================================
+﻿/* ================================================================
    FIX PRO MAX — MOBILE.CSS v2
    Diseño profesional tipo app nativa.
    No modifica ningún estilo de la versión PC.
@@ -802,97 +802,51 @@
     }
 }
 
+
 /* ================================================================
-   POS MÓVIL v2 — Diagramación limpia sin encabezado
-   Layout: Barra búsqueda + grid productos / Panel carrito
+   POS MOVIL v2 — tabs funcionales, productos completos visibles
    ================================================================ */
+
+/* Ocultar encabezado original del POS en movil */
 @media (max-width: 768px) {
-
-    /* ── Ocultar el encabezado original del POS (título + barra de barras) ── */
-    #module-pos > div:first-child {
-        display: none !important;
-    }
-
-    /* ── El módulo arranca sin padding top extra ── */
-    #module-pos {
-        padding-top: 0 !important;
-    }
-
-    /* ── Grid: columna única ── */
+    #module-pos > div:first-child { display: none !important; }
+    #module-pos { padding-top: 0 !important; overflow: visible !important; }
+    #module-pos.module-panel { min-height: unset !important; }
     #module-pos .pos-grid {
-        display: flex !important;
-        flex-direction: column !important;
+        display: block !important;
         height: auto !important;
-        gap: 0 !important;
+        min-height: unset !important;
     }
 
-    /* ══ TABS DE NAVEGACIÓN PRODUCTOS / CARRITO ══ */
+    /* ══ TABS ══ */
     #posMobileTabs {
         display: flex !important;
         position: sticky !important;
         top: calc(var(--mob-header-h) + var(--mob-safe-top)) !important;
         z-index: 300 !important;
         background: var(--surface) !important;
-        margin: 0 -14px 0 -14px !important;
-        border-bottom: 1px solid var(--border) !important;
+        margin: 0 -14px !important;
+        border-bottom: 2px solid var(--border) !important;
         box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
     }
-
     .pos-mobile-tab {
-        flex: 1;
-        padding: 0;
-        height: 48px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        border: none;
-        background: transparent;
-        font-family: inherit;
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--text-3);
-        cursor: pointer;
-        border-bottom: 3px solid transparent;
-        transition: all 0.2s ease;
-        -webkit-tap-highlight-color: transparent;
+        flex: 1; height: 48px;
+        display: flex; align-items: center; justify-content: center; gap: 6px;
+        border: none; background: transparent; font-family: inherit;
+        font-size: 14px; font-weight: 600; color: var(--text-3);
+        cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px;
+        transition: all 0.2s ease; -webkit-tap-highlight-color: transparent;
         touch-action: manipulation;
     }
+    .pos-mobile-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
 
-    .pos-mobile-tab.active {
-        color: var(--primary);
-        border-bottom-color: var(--primary);
-        background: var(--primary-light);
-    }
+    /* ══ PANEL PRODUCTOS — visible por default */
+    #module-pos .pos-grid > div:first-child { display: block; }
 
-    /* ── Barra búsqueda sticky debajo de los tabs ── */
-    #module-pos .pos-grid > div:first-child > div:first-child {
-        position: sticky !important;
-        top: calc(var(--mob-header-h) + var(--mob-safe-top) + 48px) !important;
-        z-index: 200 !important;
-        background: var(--bg) !important;
-        padding: 10px 14px 8px !important;
-        margin: 0 -14px !important;
-        border-bottom: 1px solid var(--border) !important;
-    }
+    /* ══ PANEL CARRITO — oculto por default, JS lo muestra */
+    #module-pos .pos-cart { display: none; }
 
-    /* Quitar botón "+ Producto" de la barra de búsqueda en móvil */
-    #module-pos .pos-grid > div:first-child > div:first-child .btn-primary {
-        display: none !important;
-    }
-
-    /* Hacer el input de búsqueda full-width */
-    #posSearch {
-        width: 100% !important;
-        flex: 1 !important;
-        font-size: 15px !important;
-        padding: 11px 14px 11px 40px !important;
-        border-radius: var(--mob-radius-sm) !important;
-        border: 1.5px solid var(--border) !important;
-        background: var(--surface) !important;
-    }
-
-    /* Icono lupa en el input */
+    /* Barra busqueda sticky */
     #module-pos .pos-grid > div:first-child > div:first-child {
         position: sticky !important;
         top: calc(var(--mob-header-h) + var(--mob-safe-top) + 48px) !important;
@@ -905,774 +859,105 @@
         align-items: center !important;
         gap: 8px !important;
     }
+    #module-pos .pos-grid > div:first-child > div:first-child .btn-primary { display: none !important; }
+    #posSearch {
+        flex: 1 !important; width: 100% !important;
+        font-size: 16px !important; padding: 11px 14px !important;
+        border-radius: var(--mob-radius-sm) !important;
+        border: 1.5px solid var(--border) !important;
+        background: var(--surface) !important; min-height: 46px !important;
+    }
 
-    /* ══ GRID DE PRODUCTOS — 2 columnas grandes ══ */
-    .pos-products {
+    /* ══ GRID PRODUCTOS — 2 columnas, sin overflow ni altura fija */
+    #module-pos .pos-products {
         display: grid !important;
         grid-template-columns: repeat(2, 1fr) !important;
         gap: 10px !important;
-        overflow-y: visible !important;
-        max-height: none !important;
         padding: 12px 0 80px !important;
+        overflow: visible !important;
+        max-height: none !important;
+        height: auto !important;
+        overflow-y: visible !important;
     }
-
-    /* Card de producto */
+    /* Card producto */
     .pos-product {
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: flex-start !important;
-        padding: 14px 12px 12px !important;
-        border-radius: 14px !important;
-        min-height: 110px !important;
-        cursor: pointer !important;
-        transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease !important;
-        position: relative !important;
-        overflow: hidden !important;
-        background: var(--surface) !important;
-        border: 1px solid var(--border) !important;
-        box-shadow: 0 1px 6px rgba(0,0,0,0.05) !important;
-        text-align: left !important;
+        display: flex !important; flex-direction: column !important; align-items: flex-start !important;
+        padding: 14px 12px 28px !important;
+        border-radius: 14px !important; min-height: 110px !important;
+        cursor: pointer !important; position: relative !important;
+        overflow: visible !important;
+        background: var(--surface) !important; border: 1px solid var(--border) !important;
+        box-shadow: 0 1px 6px rgba(0,0,0,0.05) !important; text-align: left !important;
+        transition: transform 0.15s ease, background 0.15s ease !important;
     }
-
-    .pos-product:active {
         transform: scale(0.95) !important;
-        background: var(--primary-light) !important;
-        border-color: var(--primary) !important;
-        box-shadow: 0 2px 12px rgba(79,70,229,0.18) !important;
+        background: var(--primary-light) !important; border-color: var(--primary) !important;
     }
-
-    /* Emoji de categoría / imagen en la card */
-    .pos-product .pos-product-emoji {
-        font-size: 28px;
-        margin-bottom: 6px;
-        line-height: 1;
-    }
-
     .pos-product .name {
-        font-size: 13px !important;
-        font-weight: 700 !important;
-        line-height: 1.3 !important;
+        font-size: 13px !important; font-weight: 700 !important; line-height: 1.3 !important;
         color: var(--text) !important;
-        display: -webkit-box !important;
-        -webkit-line-clamp: 2 !important;
-        -webkit-box-orient: vertical !important;
-        overflow: hidden !important;
-        white-space: normal !important;
-        text-overflow: unset !important;
-        margin-bottom: 4px !important;
+        display: -webkit-box !important; -webkit-line-clamp: 2 !important; -webkit-box-orient: vertical !important;
+        overflow: hidden !important; white-space: normal !important; margin-bottom: 4px !important;
     }
-
     .pos-product .price {
-        font-size: 15px !important;
-        font-weight: 800 !important;
-        color: var(--primary) !important;
-        letter-spacing: -0.3px !important;
-        margin: 2px 0 !important;
+        font-size: 15px !important; font-weight: 800 !important;
+        color: var(--primary) !important; letter-spacing: -0.3px !important; margin: 2px 0 !important;
     }
-
-    .pos-product .stock {
-        font-size: 10px !important;
-        color: var(--text-3) !important;
-        font-weight: 500 !important;
-    }
-
-    /* Botón + en la esquina inferior derecha */
+    .pos-product .stock { font-size: 10px !important; color: var(--text-3) !important; }
     .pos-product::after {
-        content: '＋';
-        position: absolute !important;
-        bottom: 8px !important;
-        right: 10px !important;
-        font-size: 20px !important;
-        font-weight: 700 !important;
-        color: var(--primary) !important;
-        opacity: 0.4 !important;
-        line-height: 1 !important;
-        transition: opacity 0.15s !important;
+        content: "+"; position: absolute !important;
+        bottom: 6px !important; right: 10px !important;
+        font-size: 20px !important; font-weight: 700 !important;
+        color: var(--primary) !important; opacity: 0.4 !important; line-height: 1 !important;
     }
-    .pos-product:active::after { opacity: 0.8 !important; }
 
-    /* ══ BADGE FLOTANTE DEL CARRITO ══
-       Botón FAB que muestra el total del carrito y lo abre */
+    /* ══ FAB CARRITO FLOTANTE */
     #mobCartFab {
         position: fixed !important;
         bottom: calc(var(--mob-bottom-nav-h) + var(--mob-safe-bottom) + 14px) !important;
-        left: 14px !important;
-        right: 14px !important;
-        height: 54px !important;
-        background: var(--mob-gradient-primary) !important;
-        color: #fff !important;
-        border: none !important;
-        border-radius: var(--mob-radius-sm) !important;
+        left: 14px !important; right: 14px !important; height: 54px !important;
+        background: var(--mob-gradient-primary) !important; color: #fff !important;
+        border: none !important; border-radius: var(--mob-radius-sm) !important;
         box-shadow: 0 6px 24px rgba(79,70,229,0.4) !important;
-        display: none !important; /* visible solo cuando hay items */
-        align-items: center !important;
-        justify-content: space-between !important;
-        padding: 0 20px !important;
-        font-family: inherit !important;
-        font-size: 15px !important;
-        font-weight: 700 !important;
-        cursor: pointer !important;
-        z-index: 250 !important;
+        display: none !important;
+        align-items: center !important; justify-content: space-between !important;
+        padding: 0 20px !important; font-family: inherit !important;
+        font-size: 15px !important; font-weight: 700 !important;
+        cursor: pointer !important; z-index: 250 !important;
         -webkit-tap-highlight-color: transparent !important;
         touch-action: manipulation !important;
         transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1) !important;
     }
-    #mobCartFab.visible {
-        display: flex !important;
-    }
-    #mobCartFab:active {
-        transform: scale(0.97) !important;
-    }
-    #mobCartFabLeft {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-    #mobCartFabCount {
-        background: rgba(255,255,255,0.25);
-        border-radius: 20px;
-        padding: 2px 10px;
-        font-size: 13px;
-        font-weight: 700;
-    }
-    #mobCartFabTotal {
-        font-size: 17px;
-        font-weight: 800;
-        letter-spacing: -0.3px;
-    }
+    #mobCartFab.visible { display: flex !important; }
+    #mobCartFab:active  { transform: scale(0.97) !important; }
+    #mobCartFabLeft { display: flex; align-items: center; gap: 10px; }
+    #mobCartFabCount { background: rgba(255,255,255,0.25); border-radius: 20px; padding: 2px 10px; font-size: 13px; font-weight: 700; }
+    #mobCartFabTotal { font-size: 17px; font-weight: 800; letter-spacing: -0.3px; }
 
-    /* ══ PANEL DE CARRITO ══ */
-    .pos-cart {
-        background: var(--surface) !important;
-        border-radius: 0 !important;
-        border: none !important;
-        box-shadow: none !important;
-        padding: 0 !important;
-        display: flex !important;
-        flex-direction: column !important;
-        gap: 0 !important;
+    /* ══ PANEL CARRITO (cuando esta visible) */
+    #module-pos .pos-cart.mob-cart-visible {
+        display: flex !important; flex-direction: column !important;
+        background: var(--surface) !important; border: none !important;
+        box-shadow: none !important; padding: 0 !important;
     }
-
-    /* Cabecera del carrito */
-    .pos-cart > div:first-child {
-        padding: 14px 14px 12px !important;
-        background: var(--surface) !important;
-        border-bottom: 1px solid var(--border) !important;
-        font-size: 15px !important;
-        font-weight: 700 !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: space-between !important;
-    }
-
-    /* Lista de items */
-    .pos-cart .cart-items {
-        max-height: none !important;
-        overflow-y: visible !important;
-        border-top: none !important;
-        border-bottom: none !important;
-        margin: 0 !important;
-        padding: 8px 0 !important;
-    }
-
-    .pos-cart .cart-item {
-        display: flex !important;
-        align-items: center !important;
-        gap: 10px !important;
-        padding: 10px 14px !important;
-        border-bottom: 1px solid var(--border) !important;
-        border-radius: 0 !important;
-        margin-bottom: 0 !important;
-        background: transparent !important;
-        border-left: none !important;
-        border-right: none !important;
-        border-top: none !important;
-    }
-
-    .pos-cart .cart-item:last-child {
-        border-bottom: none !important;
-    }
-
-    /* Nombre del producto en el item */
-    .pos-cart .cart-item > span:first-child {
-        flex: 1 !important;
-        font-size: 13px !important;
-        font-weight: 600 !important;
-        color: var(--text) !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        white-space: nowrap !important;
-    }
-
-    /* Botones de cantidad */
-    .pos-cart .cart-item .qty {
-        display: flex !important;
-        align-items: center !important;
-        gap: 6px !important;
-        flex-shrink: 0 !important;
-    }
-
-    .pos-cart .cart-item .qty button {
-        width: 34px !important;
-        height: 34px !important;
-        font-size: 17px !important;
-        border-radius: 50% !important;
-        background: var(--surface-2) !important;
-        border: 1px solid var(--border) !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        transition: all 0.15s !important;
-        -webkit-tap-highlight-color: transparent !important;
-    }
-    .pos-cart .cart-item .qty button:active {
-        background: var(--primary-light) !important;
-        border-color: var(--primary) !important;
-        transform: scale(0.9) !important;
-    }
-
-    /* Precio del item */
-    .pos-cart .cart-item .item-price {
-        font-size: 13px !important;
-        font-weight: 700 !important;
-        color: var(--text) !important;
-        flex-shrink: 0 !important;
-        min-width: 60px !important;
-        text-align: right !important;
-    }
-
-    /* Botón eliminar */
-    .pos-cart .cart-item .remove {
-        color: var(--text-3) !important;
-        font-size: 16px !important;
-        width: 30px !important;
-        height: 30px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        border-radius: 50% !important;
-        flex-shrink: 0 !important;
-    }
-    .pos-cart .cart-item .remove:active {
-        background: #fee2e2 !important;
-        color: var(--danger) !important;
-    }
-
-    /* ── Totales ── */
-    .pos-cart .cart-total {
-        display: flex !important;
-        justify-content: space-between !important;
-        align-items: center !important;
-        padding: 14px 14px 10px !important;
-        margin: 0 !important;
-        font-size: 20px !important;
-        font-weight: 700 !important;
-        border-top: 2px solid var(--border) !important;
-        border-radius: 0 !important;
-        background: transparent !important;
-    }
-
-    /* Subtotales e IVA */
-    #module-pos .pos-cart > div:nth-child(4) {
-        padding: 4px 14px 10px !important;
-        font-size: 12px !important;
-        color: var(--text-2) !important;
-        border-bottom: 1px solid var(--border) !important;
-    }
-
-    /* ── Sección de pago ── */
-    .pos-cart .payment-row {
-        display: flex !important;
-        flex-direction: column !important;
-        gap: 8px !important;
-        padding: 12px 14px !important;
-        background: var(--surface-2) !important;
-    }
-
-    .pos-cart .payment-row select,
-    .pos-cart .payment-row input {
-        width: 100% !important;
-        border-radius: var(--mob-radius-xs) !important;
-        min-height: 44px !important;
-        font-size: 15px !important;
-        padding: 10px 12px !important;
-        border: 1px solid var(--border) !important;
-        background: var(--surface) !important;
-        color: var(--text) !important;
-        font-family: inherit !important;
-    }
-
-    /* Cambio / Vuelto */
-    #module-pos .pos-cart > div:nth-last-child(2) {
-        padding: 8px 14px !important;
-        font-size: 13px !important;
-        background: var(--surface-2) !important;
-    }
-
-    /* ── Botón Completar Venta ── */
-    #module-pos .btn-success.w-full {
-        margin: 12px 14px !important;
-        width: calc(100% - 28px) !important;
-        height: 52px !important;
-        font-size: 16px !important;
-        font-weight: 700 !important;
-        border-radius: var(--mob-radius-sm) !important;
-        letter-spacing: 0.2px !important;
-        box-shadow: 0 4px 16px rgba(16,185,129,0.35) !important;
-    }
-
-    /* ── Cliente seleccionado en POS ── */
-    #posSelectedCustomer {
-        margin: 6px 14px 0 !important;
-        font-size: 12px !important;
-        padding: 6px 10px !important;
-        background: var(--primary-light) !important;
-        border-radius: var(--mob-radius-xs) !important;
-        color: var(--primary) !important;
-        font-weight: 600 !important;
-    }
+    .pos-cart .cart-items { overflow-y: visible !important; max-height: none !important; border: none !important; margin: 0 !important; padding: 4px 0 !important; }
+    .pos-cart .cart-item { padding: 10px 14px !important; gap: 10px !important; border-radius: 0 !important; margin-bottom: 0 !important; background: transparent !important; border-bottom: 1px solid var(--border) !important; border-left: none !important; border-right: none !important; border-top: none !important; }
+    .pos-cart .cart-item:last-child { border-bottom: none !important; }
+    .pos-cart .cart-item .qty button { width: 34px !important; height: 34px !important; font-size: 17px !important; border-radius: 50% !important; }
+    .pos-cart .cart-total { font-size: 20px !important; padding: 14px 14px 10px !important; margin: 0 !important; border-top: 2px solid var(--border) !important; border-radius: 0 !important; background: transparent !important; }
+    .pos-cart .payment-row { flex-direction: column !important; gap: 8px !important; padding: 12px 14px !important; background: var(--surface-2) !important; }
+    .pos-cart .payment-row select, .pos-cart .payment-row input { width: 100% !important; border-radius: var(--mob-radius-xs) !important; min-height: 44px !important; font-size: 15px !important; }
+    #module-pos .btn-success.w-full { margin: 12px 14px !important; width: calc(100% - 28px) !important; height: 52px !important; font-size: 16px !important; font-weight: 700 !important; border-radius: var(--mob-radius-sm) !important; box-shadow: 0 4px 16px rgba(16,185,129,0.35) !important; }
 }
 
-/* ── POS landscape: layout lado a lado ── */
+/* POS landscape */
 @media (max-width: 900px) and (orientation: landscape) {
     #module-pos > div:first-child { display: none !important; }
-    #module-pos .pos-grid {
-        display: grid !important;
-        grid-template-columns: 1fr 300px !important;
-        height: calc(100svh - var(--mob-header-h) - var(--mob-bottom-nav-h)) !important;
-        gap: 0 !important;
-    }
+    #module-pos .pos-grid { display: grid !important; grid-template-columns: 1fr 300px !important; gap: 0 !important; }
     #module-pos .pos-grid > div:first-child { display: block !important; }
-    .pos-cart { display: flex !important; height: 100% !important; }
+    #module-pos .pos-cart { display: flex !important; height: 100% !important; }
     #posMobileTabs { display: none !important; }
-    #mobCartFab { display: none !important; }
-    .pos-products { padding-bottom: 8px !important; }
+    #mobCartFab    { display: none !important; }
+    .pos-products  { padding-bottom: 8px !important; }
 }
 
-/* ================================================================
-   INVENTARIO / PRODUCTOS MÓVIL — cards con imagen
-   ================================================================ */
-@media (max-width: 768px) {
-    /* Barra de búsqueda sticky */
-    .mob-search-bar {
-        position: sticky;
-        top: calc(var(--mob-header-h) + var(--mob-safe-top));
-        z-index: 100;
-        background: var(--bg);
-        padding: 10px 0 8px;
-        border-bottom: 1px solid var(--border);
-        margin: -16px -14px 12px;
-        padding-left: 14px;
-        padding-right: 14px;
-    }
-
-    /* FAB flotante */
-    .mob-fab {
-        position: fixed;
-        bottom: calc(var(--mob-bottom-nav-h) + var(--mob-safe-bottom) + 16px);
-        right: 18px;
-        width: 56px; height: 56px;
-        border-radius: 50%;
-        background: var(--mob-gradient-primary);
-        color: #fff;
-        border: none;
-        box-shadow: var(--mob-shadow-float);
-        font-size: 28px;
-        cursor: pointer;
-        display: flex; align-items: center; justify-content: center;
-        z-index: 300;
-        -webkit-tap-highlight-color: transparent;
-        touch-action: manipulation;
-        transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s;
-    }
-    .mob-fab:active {
-        transform: scale(0.9);
-        box-shadow: 0 4px 16px rgba(79,70,229,0.3);
-    }
-}
-
-/* Card de producto/inventario */
-.mob-product-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--mob-radius-sm);
-    padding: 12px 14px;
-    display: flex; align-items: center; gap: 12px;
-    margin-bottom: 8px;
-    box-shadow: var(--mob-shadow-card);
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-    transition: all 0.18s ease;
-}
-.mob-product-card:active {
-    background: var(--surface-hover);
-    transform: scale(0.99);
-}
-
-.mob-product-img {
-    width: 48px; height: 48px;
-    border-radius: var(--mob-radius-xs);
-    background: var(--surface-2);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 24px; flex-shrink: 0; overflow: hidden;
-}
-.mob-product-img img { width: 100%; height: 100%; object-fit: cover; }
-
-.mob-product-info { flex: 1; min-width: 0; }
-.mob-product-name {
-    font-size: 14px; font-weight: 600; color: var(--text);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.mob-product-sub { font-size: 12px; color: var(--text-3); margin-top: 2px; }
-
-.mob-product-price {
-    font-size: 15px; font-weight: 800;
-    color: var(--primary); text-align: right; flex-shrink: 0;
-    letter-spacing: -0.3px;
-}
-.mob-product-stock { font-size: 11px; text-align: right; margin-top: 2px; }
-
-/* ================================================================
-   CLIENTES / PROVEEDORES MÓVIL
-   ================================================================ */
-.mob-contact-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--mob-radius-sm);
-    padding: 13px 14px;
-    display: flex; align-items: center; gap: 12px;
-    margin-bottom: 8px;
-    box-shadow: var(--mob-shadow-card);
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-    transition: all 0.18s ease;
-}
-.mob-contact-card:active {
-    background: var(--surface-hover);
-    transform: scale(0.99);
-}
-
-.mob-contact-avatar {
-    width: 44px; height: 44px; border-radius: 50%;
-    background: var(--mob-gradient-primary);
-    color: #fff;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px; font-weight: 700; flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(79,70,229,0.25);
-}
-
-.mob-contact-info { flex: 1; min-width: 0; }
-.mob-contact-name {
-    font-size: 14px; font-weight: 600; color: var(--text);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.mob-contact-sub {
-    font-size: 12px; color: var(--text-3); margin-top: 2px;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-
-.mob-contact-balance { text-align: right; flex-shrink: 0; }
-.mob-contact-amount { font-size: 14px; font-weight: 700; color: var(--text); }
-.mob-contact-amount.debt  { color: var(--danger); }
-.mob-contact-amount.ok    { color: var(--success); }
-
-/* ================================================================
-   FACTURAS / VENTAS MÓVIL — cards de documento
-   ================================================================ */
-.mob-invoice-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--mob-radius-sm);
-    padding: 14px;
-    margin-bottom: 8px;
-    box-shadow: var(--mob-shadow-card);
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-    transition: all 0.18s ease;
-    position: relative;
-    overflow: hidden;
-}
-.mob-invoice-card:active {
-    background: var(--surface-hover);
-    transform: scale(0.99);
-}
-/* Borde coloreado izquierdo según estado */
-.mob-invoice-card::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 3px;
-    background: var(--border);
-    border-radius: 3px 0 0 3px;
-}
-.mob-invoice-card.paid::before    { background: var(--success); }
-.mob-invoice-card.pending::before { background: var(--warning); }
-.mob-invoice-card.overdue::before { background: var(--danger); }
-
-.mob-invoice-row {
-    display: flex; justify-content: space-between;
-    align-items: flex-start; gap: 8px;
-}
-.mob-invoice-number { font-size: 12px; font-weight: 700; color: var(--text); }
-.mob-invoice-total  { font-size: 16px; font-weight: 800; color: var(--text); text-align: right; flex-shrink: 0; letter-spacing: -0.3px; }
-.mob-invoice-customer { font-size: 13px; color: var(--text-2); margin-top: 3px; }
-.mob-invoice-date { font-size: 11px; color: var(--text-3); margin-top: 2px; }
-
-/* ================================================================
-   CHIPS DE ACCIÓN RÁPIDA
-   ================================================================ */
-.mob-quick-actions {
-    display: flex; gap: 8px;
-    padding: 10px 14px 4px;
-    overflow-x: auto; -webkit-overflow-scrolling: touch;
-    scrollbar-width: none; flex-wrap: nowrap;
-    margin: 0 -14px;
-    padding-left: 14px; padding-right: 14px;
-}
-.mob-quick-actions::-webkit-scrollbar { display: none; }
-
-.mob-action-chip {
-    display: flex; align-items: center; gap: 6px;
-    padding: 9px 16px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    font-size: 12px; font-weight: 600; color: var(--text-2);
-    cursor: pointer; white-space: nowrap;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-    transition: all 0.15s ease;
-    flex-shrink: 0; font-family: inherit;
-    box-shadow: var(--mob-shadow-card);
-}
-.mob-action-chip:active { transform: scale(0.95); }
-.mob-action-chip.primary {
-    background: var(--primary-light);
-    color: var(--primary);
-    border-color: transparent;
-}
-.mob-action-chip.danger {
-    background: #fee2e2;
-    color: var(--danger);
-    border-color: transparent;
-}
-.dark .mob-action-chip.danger { background: #7f1d1d; }
-
-/* ================================================================
-   KPI CARDS DE REPORTES
-   ================================================================ */
-.mob-kpi-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--mob-radius-sm);
-    padding: 16px;
-    box-shadow: var(--mob-shadow-card);
-    position: relative;
-    overflow: hidden;
-}
-.mob-kpi-card::after {
-    content: '';
-    position: absolute;
-    top: 0; right: 0;
-    width: 60px; height: 60px;
-    border-radius: 0 0 0 60px;
-    background: var(--primary-light);
-    opacity: 0.5;
-}
-.mob-kpi-label {
-    font-size: 11px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.6px;
-    color: var(--text-3); margin-bottom: 6px;
-}
-.mob-kpi-value {
-    font-size: 22px; font-weight: 900;
-    color: var(--text); letter-spacing: -0.8px; line-height: 1.1;
-}
-.mob-kpi-sub { font-size: 12px; color: var(--text-2); margin-top: 4px; }
-.mob-kpi-change { font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 3px; margin-top: 4px; }
-.mob-kpi-change.up { color: var(--success); }
-.mob-kpi-change.down { color: var(--danger); }
-
-/* ================================================================
-   ESTADOS: LOADING / EMPTY / ERROR
-   ================================================================ */
-.mob-state {
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    padding: 48px 24px; text-align: center; gap: 12px;
-}
-.mob-state-icon { font-size: 52px; line-height: 1; }
-.mob-state-title { font-size: 17px; font-weight: 700; color: var(--text); }
-.mob-state-sub { font-size: 13px; color: var(--text-2); line-height: 1.5; max-width: 260px; }
-
-.mob-spinner {
-    width: 36px; height: 36px;
-    border: 3px solid var(--border);
-    border-top-color: var(--primary);
-    border-radius: 50%;
-    animation: mobSpin 0.7s linear infinite;
-}
-@keyframes mobSpin { to { transform: rotate(360deg); } }
-
-/* ================================================================
-   BOTTOM SHEET — acciones contextuales
-   ================================================================ */
-.mob-bottom-sheet-overlay {
-    position: fixed; inset: 0;
-    background: rgba(15,23,42,0.55);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    z-index: 800;
-    opacity: 0; pointer-events: none;
-    transition: opacity 0.28s ease;
-}
-.mob-bottom-sheet-overlay.open { opacity: 1; pointer-events: all; }
-
-.mob-bottom-sheet {
-    position: fixed; bottom: 0; left: 0; right: 0;
-    background: var(--surface);
-    border-radius: var(--mob-radius) var(--mob-radius) 0 0;
-    padding: 8px 0 calc(var(--mob-safe-bottom) + 20px);
-    z-index: 810;
-    transform: translateY(110%);
-    transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
-    max-height: 75vh; overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    box-shadow: 0 -8px 40px rgba(0,0,0,0.15);
-}
-.mob-bottom-sheet.open { transform: translateY(0); }
-
-.mob-bottom-sheet-handle {
-    width: 36px; height: 4px;
-    background: var(--border); border-radius: 2px;
-    margin: 4px auto 12px;
-}
-.mob-bottom-sheet-title {
-    font-size: 14px; font-weight: 700; color: var(--text);
-    padding: 0 20px 12px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 4px;
-}
-.mob-sheet-item {
-    display: flex; align-items: center; gap: 14px;
-    padding: 15px 20px;
-    cursor: pointer; font-size: 15px; font-weight: 500;
-    color: var(--text); font-family: inherit;
-    border: none; background: transparent;
-    width: 100%; text-align: left;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-    transition: background 0.15s ease;
-}
-.mob-sheet-item:active { background: var(--surface-hover); }
-.mob-sheet-item.danger { color: var(--danger); }
-.mob-sheet-item .mob-sheet-icon {
-    width: 38px; height: 38px;
-    border-radius: var(--mob-radius-xs);
-    background: var(--surface-2);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px; flex-shrink: 0;
-}
-.mob-sheet-item.danger .mob-sheet-icon { background: #fee2e2; }
-.dark .mob-sheet-item.danger .mob-sheet-icon { background: #7f1d1d; }
-
-/* ================================================================
-   MODO OSCURO — ajustes específicos móvil
-   ================================================================ */
-.dark #mobileHeader {
-    background: linear-gradient(135deg, #3730a3 0%, #4c1d95 100%);
-}
-
-.dark .mob-product-card,
-.dark .mob-contact-card,
-.dark .mob-invoice-card,
-.dark .mob-kpi-card {
-    background: var(--surface);
-    border-color: var(--border);
-}
-
-.dark .mob-contact-avatar {
-    background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
-}
-
-/* ================================================================
-   ACCESIBILIDAD — focus visible
-   ================================================================ */
-.mob-icon-btn:focus-visible,
-.mob-drawer-item:focus-visible,
-.mob-fab:focus-visible,
-.mob-sheet-item:focus-visible,
-.mobile-bottom-nav .nav-btn:focus-visible {
-    outline: 3px solid var(--primary);
-    outline-offset: 2px;
-}
-
-/* ================================================================
-   OVERRIDES CRÍTICOS — mayor especificidad, al final del cascade
-   ================================================================ */
-@media (max-width: 768px) {
-    /* appMain: block, NO flex */
-    #appMain,
-    #appMain.visible {
-        display: block !important;
-        width: 100% !important;
-        min-height: 100dvh !important;
-    }
-
-    /* Body: block */
-    html body { display: block !important; overflow-x: hidden !important; }
-
-    /* .main ocupa el ancho completo */
-    #appMain.visible > .main,
-    #appMain > .main {
-        flex: unset !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        padding: 0 !important;
-        max-height: none !important;
-        overflow-y: auto !important;
-        height: auto !important;
-        box-sizing: border-box !important;
-        padding-top: calc(var(--mob-header-h) + var(--mob-safe-top)) !important;
-        padding-bottom: calc(var(--mob-bottom-nav-h) + var(--mob-safe-bottom) + 4px) !important;
-    }
-
-    /* Sidebar, topbar y overlay: ocultos */
-    #appMain > .sidebar, #appMain > aside.sidebar, .sidebar { display: none !important; }
-    .sidebar-overlay { display: none !important; }
-    .main > .topbar, .topbar { display: none !important; }
-
-    /* Header móvil visible */
-    #mobileHeader { display: flex !important; }
-
-    /* Bottom nav ERP visible y mejorada */
-    .mobile-bottom-nav { display: flex !important; }
-
-    /* Toasts arriba */
-    #toastContainer {
-        bottom: auto !important;
-        top: calc(var(--mob-header-h) + var(--mob-safe-top) + 8px) !important;
-        left: 12px !important; right: 12px !important;
-    }
-
-    /* Módulos con padding correcto */
-    .module-panel {
-        padding: 16px 14px 12px !important;
-        box-sizing: border-box !important;
-        width: 100% !important;
-    }
-
-    /* Ocultar banner offline del ERP */
-    #offlineBanner { display: none !important; }
-}
-
-/* PC: restaurar layout completo */
-@media (min-width: 769px) {
-    #appMain, #appMain.visible { display: flex !important; }
-    #mobileHeader, #mobileDrawer, #mobileDrawerOverlay,
-    #mobileOfflineBanner, #mobSyncBar,
-    #mobSheet, #mobSheetOverlay, .mob-fab { display: none !important; }
-}

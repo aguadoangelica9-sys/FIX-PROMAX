@@ -276,18 +276,26 @@
         const fab           = document.getElementById('mobCartFab');
 
         if (panel === 'products') {
-            if (productsPanel) productsPanel.style.display = 'block';
-            if (cartPanel)     cartPanel.style.display     = 'none';
-            if (tabProducts)   tabProducts.classList.add('active');
-            if (tabCart)       tabCart.classList.remove('active');
-            // Mostrar FAB si hay items
+            // Mostrar productos, ocultar carrito — con clases (resiste !important del CSS)
+            if (productsPanel) {
+                productsPanel.style.setProperty('display', 'block', 'important');
+            }
+            if (cartPanel) {
+                cartPanel.style.setProperty('display', 'none', 'important');
+            }
+            if (tabProducts) tabProducts.classList.add('active');
+            if (tabCart)     tabCart.classList.remove('active');
             _updateCartFab();
         } else {
-            if (productsPanel) productsPanel.style.display = 'none';
-            if (cartPanel)     cartPanel.style.display     = 'flex';
-            if (tabProducts)   tabProducts.classList.remove('active');
-            if (tabCart)       tabCart.classList.add('active');
-            // Ocultar FAB cuando estamos viendo el carrito
+            // Mostrar carrito, ocultar productos
+            if (productsPanel) {
+                productsPanel.style.setProperty('display', 'none', 'important');
+            }
+            if (cartPanel) {
+                cartPanel.style.setProperty('display', 'flex', 'important');
+            }
+            if (tabProducts) tabProducts.classList.remove('active');
+            if (tabCart)     tabCart.classList.add('active');
             if (fab) fab.classList.remove('visible');
         }
     };
