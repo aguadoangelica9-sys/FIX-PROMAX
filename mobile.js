@@ -68,7 +68,7 @@
         'basic-dashboard': '🏠 Inicio',
         'basic-reports':   '📊 Ganancias',
         'dashboard':       '📊 Dashboard',
-        'pos':             '🛒 POS — Vender',
+        'pos':             '🛒 POS',
         'sales':           '📋 Ventas',
         'invoices':        '🧾 Facturación',
         'products':        '📦 Productos',
