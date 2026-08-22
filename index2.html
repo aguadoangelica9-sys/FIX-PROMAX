@@ -3465,6 +3465,19 @@
     }
 
     /* ── Inventario: stats grid ── */
+    /* Cards clickeables de stock bajo / agotados */
+    #inventoryStats .card.stat[onclick] {
+        transition: transform .15s, box-shadow .15s, border-color .15s;
+        border: 1.5px solid transparent;
+    }
+    #inventoryStats .card.stat[onclick]:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0,0,0,.18);
+        border-color: var(--primary);
+    }
+    #inventoryStats .card.stat[onclick]:active {
+        transform: translateY(0);
+    }
     @media (max-width: 768px) {
         #inventoryStats {
             grid-template-columns: 1fr 1fr !important;
@@ -11872,12 +11885,45 @@
 
         const container = document.getElementById('inventoryStats');
         if (container) {
+            // Cards de Stock bajo y Agotados son clickeables — aplican filtro y hacen scroll a la tabla
+            const lowClick  = lowStock  > 0
+                ? 'style="cursor:pointer;" onclick="filterInventoryBy(\'low\')"  title="Ver productos con stock bajo"'
+                : '';
+            const outClick  = outOfStock > 0
+                ? 'style="cursor:pointer;" onclick="filterInventoryBy(\'out\')"  title="Ver productos agotados"'
+                : '';
+
             container.innerHTML =
                 '<div class="card stat"><div class="icon-box blue">&#x1F4E6;</div><div class="content"><div class="value">' + totalProducts + '</div><div class="label">Productos</div></div></div>'
               + '<div class="card stat"><div class="icon-box green">&#x1F4B0;</div><div class="content"><div class="value">' + dcFmt(totalValue,disp) + '</div><div class="label">Inventario (costo · ' + disp + ')</div></div></div>'
               + '<div class="card stat"><div class="icon-box blue">&#x1F4C8;</div><div class="content"><div class="value">' + dcFmt(totalRetail,disp) + '</div><div class="label">Inventario (venta · ' + disp + ')</div></div></div>'
-              + '<div class="card stat"><div class="icon-box red">&#x26A0;&#xFE0F;</div><div class="content"><div class="value">' + lowStock + '</div><div class="label">Stock bajo</div></div></div>'
-              + '<div class="card stat"><div class="icon-box yellow">&#x1F6AB;</div><div class="content"><div class="value">' + outOfStock + '</div><div class="label">Agotados</div></div></div>';
+              + '<div class="card stat" ' + lowClick + '><div class="icon-box red">&#x26A0;&#xFE0F;</div><div class="content"><div class="value">' + lowStock + '</div><div class="label">Stock bajo' + (lowStock > 0 ? ' <span style="font-size:10px;opacity:.7;">🔍 ver</span>' : '') + '</div></div></div>'
+              + '<div class="card stat" ' + outClick + '><div class="icon-box yellow">&#x1F6AB;</div><div class="content"><div class="value">' + outOfStock + '</div><div class="label">Agotados' + (outOfStock > 0 ? ' <span style="font-size:10px;opacity:.7;">🔍 ver</span>' : '') + '</div></div></div>';
+        }
+    }
+
+    // Aplica filtro de stock y hace scroll hasta la tabla de inventario
+    function filterInventoryBy(filterValue) {
+        // Establecer el valor en el select de filtro
+        const sel = document.getElementById('filterStock');
+        if (sel) {
+            // Si ya estaba activo ese filtro, lo quita (toggle)
+            sel.value = sel.value === filterValue ? '' : filterValue;
+        }
+        // Re-renderizar la tabla con el nuevo filtro
+        renderInventoryTable();
+        // Hacer scroll suave hasta la tabla de inventario
+        const target = document.getElementById('invProductTable') || document.getElementById('inventoryStats');
+        if (target) {
+            setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+        }
+        // Mostrar toast informativo
+        const labels = { low: 'Stock bajo', out: 'Agotados' };
+        const sel2 = document.getElementById('filterStock');
+        if (sel2 && sel2.value === filterValue) {
+            showToast('🔍', `Filtrando: ${labels[filterValue] || filterValue}`);
+        } else {
+            showToast('✅', 'Filtro eliminado — mostrando todos');
         }
     }
 
