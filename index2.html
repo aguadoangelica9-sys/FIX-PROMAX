@@ -10310,6 +10310,7 @@
                 <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
                     <button class="btn btn-sm btn-primary" onclick="openAccountDetail('payable','${suppId}')">📋 Ver cuenta</button>
                     <button class="btn btn-sm btn-success" onclick="openNewAccountMovement('payable','${suppId}')">➕ Nuevo movimiento</button>
+                    <button class="btn btn-sm" style="color:var(--danger);border-color:var(--danger);" onclick="deleteAccountAll('payable','${suppId}','${escHtml(name)}')">🗑️ Eliminar cuenta</button>
                 </div>
             </div>`);
         });
@@ -10373,6 +10374,7 @@
                 <td style="white-space:nowrap;">
                     ${saldo>0?`<button class="btn btn-sm btn-success" onclick="openPaymentModal('payable','${p.id}')">💰 Pagar</button>`:''}
                     ${p.paid>0?`<button class="btn btn-sm" onclick="viewPayments('payable','${p.id}')">📋</button>`:''}
+                    <button class="btn btn-sm" style="color:var(--danger);" onclick="deleteLegacyRecord('purchase','${p.id}','${p.number||p.id}')" title="Eliminar">🗑️</button>
                 </td></tr>`);
         });
         if (rows.length===0) {
@@ -10474,6 +10476,7 @@
                 <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
                     <button class="btn btn-sm btn-primary" onclick="openAccountDetail('receivable','${custId}')">📋 Ver cuenta</button>
                     <button class="btn btn-sm btn-success" onclick="openNewAccountMovement('receivable','${custId}')">➕ Nuevo movimiento</button>
+                    <button class="btn btn-sm" style="color:var(--danger);border-color:var(--danger);" onclick="deleteAccountAll('receivable','${custId}','${escHtml(name)}')">🗑️ Eliminar cuenta</button>
                 </div>
             </div>`);
         });
@@ -10539,6 +10542,7 @@
                 <td style="white-space:nowrap;">
                     ${saldo>0?`<button class="btn btn-sm btn-success" onclick="openPaymentModal('receivable','${i.id}')">💰 Cobrar</button>`:''}
                     ${i.paid>0?`<button class="btn btn-sm" onclick="viewPayments('receivable','${i.id}')">📋</button>`:''}
+                    <button class="btn btn-sm" style="color:var(--danger);" onclick="deleteLegacyRecord('invoice','${i.id}','${i.number||i.id}')" title="Eliminar">🗑️</button>
                 </td></tr>`);
         });
         if (rows.length===0) {
@@ -10621,6 +10625,7 @@
                 <td style="white-space:nowrap;">
                     ${saldo>0?`<button class="btn btn-sm btn-success" onclick="openPaymentModal('${type}','${item.id}')">💰</button>`:''}
                     ${item.paid>0?`<button class="btn btn-sm" onclick="viewPayments('${type}','${item.id}')">📋</button>`:''}
+                    <button class="btn btn-sm" style="color:var(--danger);" onclick="deleteLegacyRecord('${isRec?'invoice':'purchase'}','${item.id}','${item.number||item.id}')" title="Eliminar">🗑️</button>
                 </td></tr>`);
         });
 
@@ -10646,6 +10651,7 @@
             </div>
             <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
                 <button class="btn btn-primary btn-sm" onclick="openNewAccountMovement('${type}','${entityId}')">➕ Nuevo movimiento</button>
+                <button class="btn btn-sm" style="color:var(--danger);border-color:var(--danger);" onclick="deleteAccountAll('${type}','${entityId}','${escHtml(entityName)}')">🗑️ Eliminar cuenta completa</button>
                 <button class="btn btn-sm" onclick="closeModal()">✕ Cerrar</button>
             </div>
             ${movRows.length > 0 ? `
@@ -10938,6 +10944,118 @@
         closeModal();
         renderAll();
         await _persistAndNotify(`Movimiento ${mov.number} eliminado`,'Cambio guardado localmente');
+    }
+
+    // ── deleteAccountAll(type, entityId, entityName) ──────────────────────────
+    // Elimina TODOS los movimientos de accountMovements + todos los registros
+    // legacy (invoices/purchases) que pertenecen a ese cliente o proveedor.
+    // Pide confirmación con detalle de cuántos movimientos se borrarán.
+    async function deleteAccountAll(type, entityId, entityName) {
+        ensureAM();
+        const isRec = type === 'receivable';
+        const movs  = data.accountMovements.filter(m => m.type === type && m.entityId === entityId);
+        const legacyItems = isRec
+            ? (data.invoices||[]).filter(i => i.customerId === entityId && i.status !== 'Anulada')
+            : (data.purchases||[]).filter(p => p.supplierId === entityId && p.status !== 'Anulada');
+        const total = movs.length + legacyItems.length;
+
+        if (total === 0) {
+            showToast('ℹ️', 'Esta cuenta no tiene movimientos registrados.');
+            return;
+        }
+
+        const label = isRec ? 'Cuenta por Cobrar' : 'Cuenta por Pagar';
+        if (!confirm(
+            `⚠️ ¿Eliminar TODA la cuenta de "${entityName}"?\n\n` +
+            `Se eliminarán ${total} movimiento${total!==1?'s':''} en total.\n\n` +
+            `Esta acción NO se puede deshacer.`
+        )) return;
+
+        const defCurr = data?.settings?.defaultCurrency || 'VES';
+
+        // Revertir asientos contables de todos los movimientos nuevos
+        movs.forEach(m => {
+            const amt = Number(m.amount) || 0;
+            if (isRec) {
+                const acc = data.chartOfAccounts?.find(a=>a.code==='1-02');
+                if (acc) acc.balance = Math.max(0, (acc.balance||0) - amt);
+            } else {
+                const acc = data.chartOfAccounts?.find(a=>a.code==='2-01');
+                if (acc) acc.balance = Math.max(0, (acc.balance||0) - amt);
+            }
+        });
+
+        // Revertir asientos de legacy
+        legacyItems.forEach(item => {
+            const amt = Number(item.total) || 0;
+            if (isRec) {
+                const acc = data.chartOfAccounts?.find(a=>a.code==='1-02');
+                if (acc) acc.balance = Math.max(0, (acc.balance||0) - amt);
+            } else {
+                const acc = data.chartOfAccounts?.find(a=>a.code==='2-01');
+                if (acc) acc.balance = Math.max(0, (acc.balance||0) - amt);
+            }
+        });
+
+        // Eliminar de accountMovements
+        data.accountMovements = data.accountMovements.filter(
+            m => !(m.type === type && m.entityId === entityId)
+        );
+
+        // Anular registros legacy (no borrar físicamente — marcar Anulada para mantener historial)
+        if (isRec) {
+            data.invoices = (data.invoices||[]).map(i =>
+                i.customerId === entityId ? { ...i, status: 'Anulada', updatedAt: new Date().toISOString() } : i
+            );
+        } else {
+            data.purchases = (data.purchases||[]).map(p =>
+                p.supplierId === entityId ? { ...p, status: 'Anulada', updatedAt: new Date().toISOString() } : p
+            );
+        }
+
+        logAudit('delete', 'accountAll', entityId, { type, entityName, totalDeleted: total });
+        closeModal();
+        renderAll();
+        await _persistAndNotify(
+            `Cuenta de "${entityName}" eliminada (${total} movimiento${total!==1?'s':''})`,
+            'Cambio guardado localmente — verifica conexión'
+        );
+    }
+
+    // ── deleteLegacyRecord(recordType, id, label) ─────────────────────────────
+    // Elimina (anula) un registro legacy individual: invoice o purchase.
+    async function deleteLegacyRecord(recordType, id, label) {
+        if (!confirm(`¿Eliminar el registro "${label}"?\n\nEsta acción no se puede deshacer.`)) return;
+
+        const defCurr = data?.settings?.defaultCurrency || 'VES';
+
+        if (recordType === 'invoice') {
+            const inv = (data.invoices||[]).find(i => i.id === id);
+            if (!inv) { showToast('⚠️', 'Registro no encontrado'); return; }
+            // Revertir asiento CxC
+            const amt = Number(inv.total) || 0;
+            const acc = data.chartOfAccounts?.find(a=>a.code==='1-02');
+            if (acc) acc.balance = Math.max(0, (acc.balance||0) - amt);
+            // Anular (mantiene historial)
+            inv.status    = 'Anulada';
+            inv.updatedAt = new Date().toISOString();
+            logAudit('delete','invoice', id, { number: inv.number });
+        } else if (recordType === 'purchase') {
+            const pur = (data.purchases||[]).find(p => p.id === id);
+            if (!pur) { showToast('⚠️', 'Registro no encontrado'); return; }
+            // Revertir asiento CxP
+            const amt = Number(pur.total) || 0;
+            const acc = data.chartOfAccounts?.find(a=>a.code==='2-01');
+            if (acc) acc.balance = Math.max(0, (acc.balance||0) - amt);
+            // Anular
+            pur.status    = 'Anulada';
+            pur.updatedAt = new Date().toISOString();
+            logAudit('delete','purchase', id, { number: pur.number });
+        }
+
+        closeModal();
+        renderAll();
+        await _persistAndNotify(`Registro "${label}" eliminado`, 'Cambio guardado localmente');
     }
 
     // ── openMovementPayment(movId) ────────────────────────────────────────────
