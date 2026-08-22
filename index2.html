@@ -4279,8 +4279,8 @@
                 </div>
             </div>
             <div class="pos-grid">
-                <div>
-                    <div style="display:flex;gap:10px;margin-bottom:14px;">
+                <div id="posProductsPanel">
+                    <div id="posSearchBar" style="display:flex;gap:10px;margin-bottom:14px;">
                         <input type="text" placeholder="Buscar producto..." id="posSearch" style="flex:1;padding:10px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit;font-size:14px;outline:none;transition:all var(--transition);" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'" oninput="filterPOS()" />
                         <button class="btn btn-primary btn-sm" onclick="openModal('product')">+ Producto</button>
                     </div>
@@ -4288,7 +4288,7 @@
                         <!-- Renderizado por JS -->
                     </div>
                 </div>
-                <div class="pos-cart">
+                <div id="posCartPanel" class="pos-cart">
                     <div style="font-weight:600;display:flex;justify-content:space-between;font-size:15px;">
                         <span>🧾 Carrito</span>
                         <span id="cartCount">0 items</span>

@@ -218,9 +218,11 @@
     window.addEventListener('offline', _updateOfflineBanner);
 
     /* ══════════════════════════════════════════════════════════
-       POS MÓVIL v2 — tabs + FAB carrito
+       POS MÓVIL — versión definitiva con IDs explícitos
+       #posProductsPanel / #posCartPanel / #posSearchBar
        ══════════════════════════════════════════════════════════ */
     function _initPOSTabs() {
+        if (!isMobile()) return;
         const posModule = document.getElementById('module-pos');
         if (!posModule) return;
 
@@ -231,73 +233,75 @@
             tabBar.id = 'posMobileTabs';
             tabBar.innerHTML = `
                 <button class="pos-mobile-tab active" id="posTabProducts"
-                    onclick="showPOSPanel('products')">
+                    onclick="showPOSPanel('products')"
+                    aria-label="Ver productos">
                     📦 Productos
                 </button>
                 <button class="pos-mobile-tab" id="posTabCart"
-                    onclick="showPOSPanel('cart')">
+                    onclick="showPOSPanel('cart')"
+                    aria-label="Ver carrito">
                     🛒 Carrito
                     <span id="posTabCartCount"
                         style="background:var(--primary);color:#fff;border-radius:10px;
                                padding:1px 7px;font-size:11px;margin-left:4px;display:none;"></span>
                 </button>
             `;
-            posModule.prepend(tabBar);
+            // Insertar DESPUÉS del div encabezado (primer hijo), antes del pos-grid
+            const posGrid = posModule.querySelector('.pos-grid');
+            if (posGrid) {
+                posModule.insertBefore(tabBar, posGrid);
+            } else {
+                posModule.prepend(tabBar);
+            }
         }
 
-        showPOSPanel('products');
+        // Mostrar productos por defecto
+        _setPOSPanel('products');
 
-        // Observar cambios en #cartCount para actualizar el FAB y el badge
+        // Observar cambios en #cartCount y #cartTotal para actualizar el FAB
         const cartCountEl = document.getElementById('cartCount');
         if (cartCountEl && !cartCountEl._mobObserved) {
             cartCountEl._mobObserved = true;
-            const obs = new MutationObserver(() => _updateCartFab());
-            obs.observe(cartCountEl, { childList: true, subtree: true, characterData: true });
+            new MutationObserver(() => _updateCartFab())
+                .observe(cartCountEl, { childList: true, subtree: true, characterData: true });
         }
-
-        // También observar el total
         const cartTotalEl = document.getElementById('cartTotal');
         if (cartTotalEl && !cartTotalEl._mobObserved) {
             cartTotalEl._mobObserved = true;
-            const obs = new MutationObserver(() => _updateCartFab());
-            obs.observe(cartTotalEl, { childList: true, subtree: true, characterData: true });
+            new MutationObserver(() => _updateCartFab())
+                .observe(cartTotalEl, { childList: true, subtree: true, characterData: true });
         }
     }
 
-    window.showPOSPanel = function(panel) {
-        if (!isMobile()) return;
-        const posGrid = document.querySelector('#module-pos .pos-grid');
-        if (!posGrid) return;
+    /* Cambia entre el panel de productos y el panel del carrito */
+    function _setPOSPanel(panel) {
+        const productsEl = document.getElementById('posProductsPanel');
+        const cartEl     = document.getElementById('posCartPanel');
+        const tabProd    = document.getElementById('posTabProducts');
+        const tabCart    = document.getElementById('posTabCart');
+        const fab        = document.getElementById('mobCartFab');
 
-        const productsPanel = posGrid.querySelector('div:first-child');
-        const cartPanel     = posGrid.querySelector('.pos-cart');
-        const tabProducts   = document.getElementById('posTabProducts');
-        const tabCart       = document.getElementById('posTabCart');
-        const fab           = document.getElementById('mobCartFab');
+        if (!productsEl && !cartEl) return;   // IDs no existen, no hacer nada
 
         if (panel === 'products') {
-            // Mostrar productos, ocultar carrito — con clases (resiste !important del CSS)
-            if (productsPanel) {
-                productsPanel.style.setProperty('display', 'block', 'important');
-            }
-            if (cartPanel) {
-                cartPanel.style.setProperty('display', 'none', 'important');
-            }
-            if (tabProducts) tabProducts.classList.add('active');
-            if (tabCart)     tabCart.classList.remove('active');
+            if (productsEl) productsEl.style.cssText = 'display:block !important';
+            if (cartEl)     cartEl.style.cssText     = 'display:none !important';
+            if (tabProd)    tabProd.classList.add('active');
+            if (tabCart)    tabCart.classList.remove('active');
             _updateCartFab();
         } else {
-            // Mostrar carrito, ocultar productos
-            if (productsPanel) {
-                productsPanel.style.setProperty('display', 'none', 'important');
-            }
-            if (cartPanel) {
-                cartPanel.style.setProperty('display', 'flex', 'important');
-            }
-            if (tabProducts) tabProducts.classList.remove('active');
-            if (tabCart)     tabCart.classList.add('active');
-            if (fab) fab.classList.remove('visible');
+            if (productsEl) productsEl.style.cssText = 'display:none !important';
+            if (cartEl)     cartEl.style.cssText     = 'display:flex !important; flex-direction:column !important';
+            if (tabProd)    tabProd.classList.remove('active');
+            if (tabCart)    tabCart.classList.add('active');
+            if (fab)        fab.classList.remove('visible');
         }
+    }
+
+    // Exponer globalmente — lo llaman los botones onclick de los tabs
+    window.showPOSPanel = function(panel) {
+        if (!isMobile()) return;
+        _setPOSPanel(panel);
     };
 
     /* Actualiza el FAB flotante del carrito */
@@ -312,28 +316,20 @@
         const tabCount  = document.getElementById('posTabCartCount');
         if (!fab) return;
 
-        const rawCount  = countEl ? countEl.textContent.trim() : '0';
-        const n         = parseInt(rawCount) || 0;
-        const total     = totalEl ? totalEl.textContent.trim() : '$0.00';
+        const n     = parseInt(countEl ? countEl.textContent : '0') || 0;
+        const total = totalEl ? totalEl.textContent.trim() : '$0.00';
 
-        // Actualizar texto del FAB
         if (fabCount) fabCount.textContent = n + (n === 1 ? ' item' : ' items');
         if (fabTotal) fabTotal.textContent  = total;
-
-        // Actualizar badge en el tab
         if (tabCount) {
-            tabCount.textContent     = n > 0 ? n : '';
-            tabCount.style.display   = n > 0 ? 'inline' : 'none';
+            tabCount.textContent   = n > 0 ? n : '';
+            tabCount.style.display = n > 0 ? 'inline' : 'none';
         }
 
-        // Mostrar FAB solo en panel de productos y si hay items
-        const cartPanel   = document.querySelector('#module-pos .pos-cart');
-        const cartVisible = cartPanel && cartPanel.style.display !== 'none';
-        if (n > 0 && !cartVisible) {
-            fab.classList.add('visible');
-        } else {
-            fab.classList.remove('visible');
-        }
+        // Mostrar FAB solo cuando estamos en el panel de productos y hay items
+        const cartEl    = document.getElementById('posCartPanel');
+        const cartShown = cartEl && cartEl.style.display !== 'none' && cartEl.style.display !== '';
+        fab.classList.toggle('visible', n > 0 && !cartShown);
     }
     window._updateCartFab = _updateCartFab;
 
