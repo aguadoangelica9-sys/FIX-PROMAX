@@ -4896,24 +4896,51 @@
         <!-- ═══════════════════════════════════════════════════════════
         MÓDULO DEVOLUCIONES
         ═══════════════════════════════════════════════════════════ -->
+        <!-- ═══════════════════════════════════════════════════════════
+        DEVOLUCIONES
+        ═══════════════════════════════════════════════════════════ -->
         <div class="module-panel" id="module-returns">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
                 <h2 style="font-size:20px;font-weight:700;">↩️ Devoluciones</h2>
+                <button class="btn btn-primary btn-sm" onclick="openNewReturnModal()" style="display:flex;align-items:center;gap:6px;">
+                    <span style="font-size:16px;">+</span> Nueva devolución
+                </button>
             </div>
-            <div style="margin-bottom:14px;">
+            <!-- Stats encabezado -->
+            <div class="grid-4" id="returnsStats" style="margin-bottom:16px;"></div>
+            <!-- Búsqueda -->
+            <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
                 <input type="text" id="returnsSearch"
-                    placeholder="🔍 Producto, cliente, motivo..."
+                    placeholder="🔍 Producto, cliente, motivo, # venta, # factura..."
                     oninput="renderReturns()"
-                    style="width:100%;max-width:400px;padding:9px 14px;border-radius:8px;
+                    style="flex:1;min-width:220px;padding:9px 14px;border-radius:8px;
                            border:1.5px solid var(--border);background:var(--bg);color:var(--text);
                            font-family:inherit;font-size:14px;outline:none;"
                     onfocus="this.style.borderColor='var(--primary)'"
                     onblur="this.style.borderColor='var(--border)'" />
+                <select id="returnsFilter" onchange="renderReturns()"
+                    style="padding:9px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;outline:none;cursor:pointer;">
+                    <option value="">Todos los estados</option>
+                    <option value="activo">Activas</option>
+                    <option value="anulado">Anuladas</option>
+                </select>
             </div>
             <div class="card p-0 overflow-hidden">
                 <div class="table-wrap border-0">
                     <table>
-                        <thead><tr><th># Devolución</th><th>Venta original</th><th>Cliente</th><th>Producto</th><th>Cantidad</th><th>Motivo</th><th>Fecha</th><th>Acciones</th></tr></thead>
+                        <thead><tr>
+                            <th>N° Dev.</th>
+                            <th>Origen</th>
+                            <th># Documento</th>
+                            <th>Cliente</th>
+                            <th>Producto</th>
+                            <th style="text-align:center;">Cant.</th>
+                            <th style="text-align:right;">Monto</th>
+                            <th>Motivo</th>
+                            <th>Fecha</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr></thead>
                         <tbody id="returnsTableBody"></tbody>
                     </table>
                 </div>
@@ -8417,7 +8444,7 @@
                 <td style="white-space:nowrap;">
                     <button class="btn btn-sm" onclick="printSaleReceipt('${s.id}')" title="Ver/Imprimir">🖨️</button>
                     ${s.status !== 'Anulada' ? `<button class="btn btn-sm btn-danger" onclick="voidSale('${s.id}')">Anular</button>` : ''}
-                    <button class="btn btn-sm" onclick="openReturnModal('${s.id}')" title="Devolución">↩️</button>
+                    <button class="btn btn-sm" onclick="openReturnModal('${s.id}', null)" title="Devolución">↩️</button>
                 </td>
             </tr>`).join('');
     }
@@ -8541,6 +8568,7 @@
                     <button class="btn btn-sm" onclick="printInvoiceDoc('${i.id}')" title="Imprimir/PDF">🖨️</button>
                     <button class="btn btn-sm btn-danger" onclick="deleteInvoice('${i.id}')" title="Anular">🗑️</button>
                     ${i.total - i.paid > 0 ? `<button class="btn btn-sm btn-success" onclick="openPaymentModal('receivable','${i.id}')" title="Registrar pago">💰</button>` : ''}
+                    <button class="btn btn-sm" onclick="openReturnModal(null,'${i.id}')" title="Devolver factura">↩️</button>
                 </td>
             </tr>`).join('');
     }
@@ -9828,140 +9856,496 @@
     }
 
     /* ─── Devoluciones ─── */
-    function openReturnModal(saleId) {
-        modalContext.extra = { saleId };
-        openModal('return');
+
+    // ── openNewReturnModal() ─────────────────────────────────────────────────
+    // Punto de entrada principal desde el módulo Devoluciones.
+    // Permite elegir origen: Venta o Factura.
+    function openNewReturnModal() {
+        openReturnModal(null, null);
+    }
+
+    // openReturnModal(saleId, invoiceId)
+    // Llamado también desde el módulo de Ventas (con saleId) o Facturas (con invoiceId).
+    function openReturnModal(saleId, invoiceId) {
+        const title   = document.getElementById('modalTitle');
+        const body    = document.getElementById('modalBody');
+        const overlay = document.getElementById('modalOverlay');
+        const defCurr = data?.settings?.defaultCurrency || 'VES';
+
+        // Construir opciones de ventas (solo las no anuladas)
+        const saleOpts = (data.sales || [])
+            .filter(s => s.status !== 'Anulada')
+            .map(s => {
+                const cust = getCustomerName(s.customerId);
+                return `<option value="${s.id}" ${s.id===saleId?'selected':''}>${s.invoice} — ${cust} — ${formatCurrency(s.total, s.currency)}</option>`;
+            }).join('');
+
+        // Construir opciones de facturas (solo pendientes/parciales)
+        const invOpts = (data.invoices || [])
+            .filter(i => i.status !== 'Anulada')
+            .map(i => {
+                const cust = getCustomerName(i.customerId);
+                return `<option value="${i.id}" ${i.id===invoiceId?'selected':''}>${i.number} — ${cust} — ${formatCurrency(i.total, i.currency)}</option>`;
+            }).join('');
+
+        title.textContent = '↩️ Registrar Devolución';
+        body.innerHTML = `
+            <div class="form-group">
+                <label>Tipo de origen *</label>
+                <select id="ret_origin" onchange="onReturnOriginChange()">
+                    <option value="sale"    ${!invoiceId?'selected':''}>Venta</option>
+                    <option value="invoice" ${invoiceId ?'selected':''}>Factura</option>
+                    <option value="manual">Manual (sin documento)</option>
+                </select>
+            </div>
+
+            <!-- Selector de venta -->
+            <div class="form-group" id="ret_saleGroup" ${invoiceId?'style="display:none"':''}>
+                <label>Venta original *</label>
+                <select id="ret_saleId" onchange="onReturnSaleChange()">
+                    <option value="">— Seleccionar venta —</option>
+                    ${saleOpts}
+                </select>
+            </div>
+
+            <!-- Selector de factura -->
+            <div class="form-group" id="ret_invoiceGroup" style="display:${invoiceId?'block':'none'}">
+                <label>Factura *</label>
+                <select id="ret_invoiceId" onchange="onReturnInvoiceChange()">
+                    <option value="">— Seleccionar factura —</option>
+                    ${invOpts}
+                </select>
+            </div>
+
+            <!-- Selector de producto (se llena dinámicamente) -->
+            <div class="form-group" id="ret_productGroup">
+                <label>Producto *</label>
+                <select id="ret_productId" onchange="onReturnProductChange()">
+                    <option value="">— Selecciona un documento primero —</option>
+                </select>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group">
+                    <label>Cantidad *</label>
+                    <input type="number" id="ret_qty" value="1" min="1" inputmode="numeric" />
+                    <small id="ret_qtyHint" style="color:var(--text-3);font-size:11px;"></small>
+                </div>
+                <div class="form-group">
+                    <label>Monto reembolso</label>
+                    <input type="number" id="ret_amount" step="0.01" placeholder="0.00 (auto)" inputmode="decimal" />
+                    <small style="color:var(--text-3);font-size:11px;">Se calcula automáticamente</small>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Motivo de devolución *</label>
+                <select id="ret_reason">
+                    <option value="Producto defectuoso">Producto defectuoso</option>
+                    <option value="Producto incorrecto">Producto incorrecto</option>
+                    <option value="No cumple expectativas">No cumple expectativas</option>
+                    <option value="Error en el pedido">Error en el pedido</option>
+                    <option value="Producto dañado en envío">Producto dañado en envío</option>
+                    <option value="Garantía">Garantía</option>
+                    <option value="Cambio de producto">Cambio de producto</option>
+                    <option value="Otro">Otro</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Descripción / Notas</label>
+                <textarea id="ret_notes" rows="2" placeholder="Descripción adicional del motivo..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Fecha</label>
+                <input type="date" id="ret_date" value="${new Date().toISOString().slice(0,10)}" />
+            </div>
+            <div class="form-actions">
+                <button class="btn" onclick="closeModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveSafe(this, saveReturn)">↩️ Registrar devolución</button>
+            </div>`;
+
+        overlay.classList.add('open');
+
+        // Pre-cargar productos si viene con saleId o invoiceId
+        if (saleId)    { setTimeout(onReturnSaleChange,    80); }
+        if (invoiceId) { setTimeout(onReturnInvoiceChange, 80); }
+    }
+
+    function onReturnOriginChange() {
+        const origin = document.getElementById('ret_origin')?.value;
+        const sg = document.getElementById('ret_saleGroup');
+        const ig = document.getElementById('ret_invoiceGroup');
+        const pg = document.getElementById('ret_productGroup');
+        if (origin === 'sale')    { sg.style.display='block'; ig.style.display='none'; pg.style.display='block'; onReturnSaleChange(); }
+        if (origin === 'invoice') { sg.style.display='none';  ig.style.display='block'; pg.style.display='block'; onReturnInvoiceChange(); }
+        if (origin === 'manual')  {
+            sg.style.display='none'; ig.style.display='none';
+            // Mostrar selector de todos los productos
+            const opts = (data.products||[]).filter(p=>p.status!=='anulado')
+                .map(p=>`<option value="${p.id}">${p.name} (Stock: ${p.stock})</option>`).join('');
+            document.getElementById('ret_productId').innerHTML = '<option value="">— Seleccionar producto —</option>' + opts;
+            document.getElementById('ret_qtyHint').textContent = '';
+        }
+    }
+
+    function onReturnSaleChange() {
+        const saleId = document.getElementById('ret_saleId')?.value;
+        const sale   = (data.sales||[]).find(s => s.id === saleId);
+        const sel    = document.getElementById('ret_productId');
+        if (!sale || !sale.items?.length) {
+            sel.innerHTML = '<option value="">— Selecciona una venta —</option>';
+            return;
+        }
+        sel.innerHTML = '<option value="">— Seleccionar producto —</option>' +
+            sale.items.map(item => {
+                const prod = (data.products||[]).find(p => p.id === item.productId);
+                const devs  = _totalReturnedForItem(saleId, item.productId);
+                const disp  = item.qty - devs;
+                return `<option value="${item.productId}" data-max="${disp}" data-price="${item.price}">${prod?.name||item.productId} — Vendido: ${item.qty}, Ya devuelto: ${devs}, Disponible: ${disp}</option>`;
+            }).join('');
+        onReturnProductChange();
+    }
+
+    function onReturnInvoiceChange() {
+        const invId  = document.getElementById('ret_invoiceId')?.value;
+        const inv    = (data.invoices||[]).find(i => i.id === invId);
+        const sel    = document.getElementById('ret_productId');
+        if (!inv) { sel.innerHTML = '<option value="">— Selecciona una factura —</option>'; return; }
+        // Las facturas pueden tener items o ser de un solo concepto
+        if (inv.items?.length) {
+            sel.innerHTML = '<option value="">— Seleccionar producto —</option>' +
+                inv.items.map(item => {
+                    const prod = (data.products||[]).find(p => p.id === item.productId);
+                    return `<option value="${item.productId}" data-max="${item.qty}" data-price="${item.price}">${prod?.name||item.productId} — Cant: ${item.qty}</option>`;
+                }).join('');
+        } else {
+            // Factura sin items (manual): mostrar como item genérico
+            sel.innerHTML = `<option value="__invoice__" data-max="1" data-price="${inv.total}">${inv.number} — ${inv.description||'Concepto de factura'}</option>`;
+        }
+        onReturnProductChange();
+    }
+
+    function onReturnProductChange() {
+        const sel     = document.getElementById('ret_productId');
+        const opt     = sel?.options[sel.selectedIndex];
+        const maxQty  = parseInt(opt?.getAttribute('data-max')||'0') || 0;
+        const price   = parseFloat(opt?.getAttribute('data-price')||'0') || 0;
+        const hint    = document.getElementById('ret_qtyHint');
+        const qtyInp  = document.getElementById('ret_qty');
+        const amtInp  = document.getElementById('ret_amount');
+        if (maxQty > 0) {
+            if (hint) hint.textContent = `Máximo disponible para devolver: ${maxQty}`;
+            if (qtyInp) { qtyInp.max = maxQty; if (parseInt(qtyInp.value)>maxQty) qtyInp.value=maxQty; }
+        }
+        // Calcular monto automáticamente
+        if (amtInp && price > 0) {
+            const qty = parseInt(qtyInp?.value||'1') || 1;
+            amtInp.value = (price * qty).toFixed(2);
+        }
+    }
+
+    // Suma la cantidad ya devuelta de un producto en una venta (evita excesos)
+    function _totalReturnedForItem(saleId, productId) {
+        return (data.returns||[])
+            .filter(r => r.saleId === saleId && r.productId === productId && r.status !== 'anulado')
+            .reduce((s, r) => s + (Number(r.quantity)||0), 0);
     }
 
     async function saveReturn() {
-        const saleId = document.getElementById('f_returnSale').value;
-        const productId = document.getElementById('f_returnProduct').value;
-        const qty = parseInt(document.getElementById('f_returnQty').value) || 1;
-        const reason = document.getElementById('f_returnReason').value.trim();
-        if (!saleId || !productId || qty <= 0) {
-            showToast('⚠️', 'Completa todos los campos');
-            return;
+        const origin    = document.getElementById('ret_origin')?.value || 'sale';
+        const saleId    = document.getElementById('ret_saleId')?.value    || null;
+        const invoiceId = document.getElementById('ret_invoiceId')?.value || null;
+        const productId = document.getElementById('ret_productId')?.value || '';
+        const qty       = parseInt(document.getElementById('ret_qty')?.value)   || 0;
+        const reason    = document.getElementById('ret_reason')?.value          || 'Otro';
+        const notes     = (document.getElementById('ret_notes')?.value||'').trim();
+        const date      = document.getElementById('ret_date')?.value || new Date().toISOString().slice(0,10);
+        const amtInp    = parseFloat(document.getElementById('ret_amount')?.value) || 0;
+        const defCurr   = data?.settings?.defaultCurrency || 'VES';
+
+        // Validaciones
+        if (origin === 'sale' && !saleId)    { showToast('⚠️','Selecciona una venta'); return; }
+        if (origin === 'invoice' && !invoiceId) { showToast('⚠️','Selecciona una factura'); return; }
+        if (!productId)  { showToast('⚠️','Selecciona un producto'); return; }
+        if (qty <= 0)    { showToast('⚠️','La cantidad debe ser mayor a cero'); return; }
+
+        let sale = null, invoice = null, product = null;
+        let price = 0, currency = defCurr, custName = '', docRef = '';
+
+        if (origin === 'sale') {
+            sale = (data.sales||[]).find(s => s.id === saleId);
+            if (!sale) { showToast('⚠️','Venta no encontrada'); return; }
+            const saleItem = (sale.items||[]).find(i => i.productId === productId);
+            if (!saleItem) { showToast('⚠️','Producto no encontrado en la venta'); return; }
+            // Validar que no exceda lo devolvible
+            const yaDevuelto = _totalReturnedForItem(saleId, productId);
+            const disponible = saleItem.qty - yaDevuelto;
+            if (qty > disponible) {
+                showToast('⚠️', `Solo puedes devolver ${disponible} unidades (ya devuelto: ${yaDevuelto})`);
+                return;
+            }
+            price    = amtInp > 0 ? amtInp / qty : saleItem.price;
+            currency = sale.currency || defCurr;
+            custName = getCustomerName(sale.customerId);
+            docRef   = sale.invoice;
+            product  = (data.products||[]).find(p => p.id === productId);
+
+        } else if (origin === 'invoice') {
+            invoice = (data.invoices||[]).find(i => i.id === invoiceId);
+            if (!invoice) { showToast('⚠️','Factura no encontrada'); return; }
+            const invItem = (invoice.items||[]).find(i => i.productId === productId);
+            price    = amtInp > 0 ? amtInp / qty : (invItem?.price || invoice.total);
+            currency = invoice.currency || defCurr;
+            custName = getCustomerName(invoice.customerId);
+            docRef   = invoice.number;
+            product  = (data.products||[]).find(p => p.id === productId);
+
+        } else {
+            // Manual
+            product  = (data.products||[]).find(p => p.id === productId);
+            if (!product) { showToast('⚠️','Producto no encontrado'); return; }
+            price    = amtInp > 0 ? amtInp / qty : (product.price||0);
+            currency = defCurr;
+            custName = 'Sin cliente';
+            docRef   = 'Manual';
         }
-        const sale = data.sales.find(s => s.id === saleId);
-        if (!sale) { showToast('⚠️', 'Venta no encontrada'); return; }
-        const product = data.products.find(p => p.id === productId);
-        if (!product) { showToast('⚠️', 'Producto no encontrado'); return; }
-        // Verificar cantidad devuelta no exceda la vendida
-        const saleItem = sale.items.find(i => i.productId === productId);
-        if (!saleItem || qty > saleItem.qty) {
-            showToast('⚠️', 'Cantidad excede lo vendido');
-            return;
-        }
-        // Registrar devolución
+
+        if (!product && productId !== '__invoice__') { showToast('⚠️','Producto no encontrado'); return; }
+
+        const totalAmount = amtInp > 0 ? amtInp : price * qty;
+
+        // Generar número de devolución
+        const retNum = `DEV-${String((data.returns||[]).length + 1).padStart(4,'0')}`;
+
         const returnRecord = {
-            id: generateId(),
-            saleId,
-            productId,
-            productName: product.name,
-            customerName: getCustomerName(sale.customerId),
-            quantity: qty,
-            reason: reason || 'Sin motivo',
-            date: new Date().toISOString(),
-            status: 'activo',
+            id:           generateId(),
+            returnNumber: retNum,
+            origin,
+            saleId:       saleId    || null,
+            invoiceId:    invoiceId || null,
+            docRef,
+            productId:    productId !== '__invoice__' ? productId : null,
+            productName:  product?.name || docRef,
+            customerName: custName,
+            quantity:     qty,
+            price,
+            amount:       totalAmount,
+            currency,
+            reason,
+            notes,
+            date,
+            status:       'activo',
+            createdAt:    new Date().toISOString(),
         };
+
+        if (!Array.isArray(data.returns)) data.returns = [];
         data.returns.push(returnRecord);
-        // Ajustar stock
-        product.stock += qty;
-        data.inventoryMovements.push({
-            id: generateId(),
-            productId: product.id,
-            productName: product.name,
-            type: 'Entrada',
-            quantity: qty,
-            warehouseId: product.warehouseId,
-            date: new Date().toISOString(),
-            user: 'admin',
-            reason: 'Devolución',
-            notes: `Devolución de venta ${sale.invoice} - ${reason}`,
-            previousStock: product.stock - qty,
-            newStock: product.stock
-        });
-        // Ajustar contabilidad (revertir ingreso y costo)
-        const revenueAccount = data.chartOfAccounts.find(a => a.code === '4-01');
-        const costAccount = data.chartOfAccounts.find(a => a.code === '5-01');
-        const inventoryAccount = data.chartOfAccounts.find(a => a.code === '1-03');
-        const cashAccount = data.chartOfAccounts.find(a => a.code === '1-01-001');
-        const price = saleItem.price;
-        const cost = product.cost || price * 0.6;
-        if (revenueAccount && costAccount && inventoryAccount && cashAccount) {
-            revenueAccount.balance = (revenueAccount.balance || 0) - (price * qty);
-            costAccount.balance = (costAccount.balance || 0) - (cost * qty);
-            inventoryAccount.balance = (inventoryAccount.balance || 0) + (cost * qty);
-            cashAccount.balance = (cashAccount.balance || 0) - (price * qty);
-            data.journalEntries.push({ date: new Date().toISOString().slice(0, 10), ref: `RET-${returnRecord.id.slice(0,6)}`,
-                desc: `Devolución venta ${sale.invoice}`, debit: price * qty, credit: null });
-            data.journalEntries.push({ date: new Date().toISOString().slice(0, 10), ref: `RET-${returnRecord.id.slice(0,6)}`,
-                desc: `Devolución venta ${sale.invoice}`, debit: null, credit: cost * qty });
+
+        // Reponer stock (solo si el producto es real)
+        if (product) {
+            const prevStock  = product.stock;
+            product.stock   += qty;
+            product.updatedAt = new Date().toISOString();
+            if (!Array.isArray(data.inventoryMovements)) data.inventoryMovements = [];
+            data.inventoryMovements.push({
+                id: generateId(),
+                productId:     product.id,
+                productName:   product.name,
+                type:          'Entrada',
+                quantity:      qty,
+                warehouseId:   product.warehouseId,
+                date:          date,
+                user:          'sistema',
+                reason:        'Devolución',
+                reference:     retNum,
+                notes:         `${reason}${notes?' — '+notes:''}`,
+                previousStock: prevStock,
+                newStock:      product.stock,
+            });
         }
-        logAudit('create', 'return', returnRecord.id, returnRecord);
+
+        // Marcar estado en la venta original si corresponde
+        if (sale) {
+            if (!sale.returns) sale.returns = [];
+            sale.returns.push({ returnId: returnRecord.id, productId, qty, amount: totalAmount, date });
+            // Marcar venta como con devolución
+            if (!sale.hasReturn) sale.hasReturn = true;
+        }
+        if (invoice) {
+            if (!invoice.returns) invoice.returns = [];
+            invoice.returns.push({ returnId: returnRecord.id, amount: totalAmount, date });
+            if (!invoice.hasReturn) invoice.hasReturn = true;
+        }
+
+        // Asientos contables
+        const revenueAcc   = data.chartOfAccounts?.find(a => a.code === '4-01');
+        const costAcc      = data.chartOfAccounts?.find(a => a.code === '5-01');
+        const inventoryAcc = data.chartOfAccounts?.find(a => a.code === '1-03');
+        const cashAcc      = data.chartOfAccounts?.find(a => a.code === '1-01-001');
+        const cost = product ? (product.cost || price * 0.6) : price * 0.6;
+
+        if (revenueAcc)   revenueAcc.balance   = (revenueAcc.balance||0)   - totalAmount;
+        if (costAcc)      costAcc.balance       = (costAcc.balance||0)      - (cost * qty);
+        if (inventoryAcc) inventoryAcc.balance  = (inventoryAcc.balance||0) + (cost * qty);
+        if (cashAcc)      cashAcc.balance       = (cashAcc.balance||0)      - totalAmount;
+
+        if (!Array.isArray(data.journalEntries)) data.journalEntries = [];
+        data.journalEntries.push(
+            { date, ref: retNum, desc: `Devolución ${retNum} — ${returnRecord.productName}`, debit: totalAmount, credit: null },
+            { date, ref: retNum, desc: `Devolución ${retNum} — ${returnRecord.productName}`, debit: null, credit: cost * qty }
+        );
+
+        logAudit('create','return', returnRecord.id, { retNum, qty, reason, docRef });
         closeModal();
         renderAll();
         await _persistAndNotify(
-            `Devolución de ${qty} ${product.name} registrada`,
+            `Devolución ${retNum} registrada — ${qty} ${returnRecord.productName}`,
             'Devolución guardada localmente — verifica conexión'
         );
     }
 
     function renderReturns() {
-        const tbody = document.getElementById('returnsTableBody');
-        const q = (document.getElementById('returnsSearch')?.value || '').toLowerCase().trim();
-        const list = data.returns.filter(r => {
-            if (r.status === 'anulado') return false;
+        const defCurr  = data?.settings?.defaultCurrency || 'VES';
+        const disp     = window._displayCurrency || defCurr;
+        const q        = (document.getElementById('returnsSearch')?.value || '').toLowerCase().trim();
+        const stFilter = document.getElementById('returnsFilter')?.value || '';
+
+        const all     = data.returns || [];
+        const active  = all.filter(r => r.status !== 'anulado');
+        const annulled= all.filter(r => r.status === 'anulado');
+        const totalAmt = active.reduce((s,r) => s + dc(r.amount||0, r.currency||defCurr), 0);
+        const totalQty = active.reduce((s,r) => s + (Number(r.quantity)||0), 0);
+
+        // Stats encabezado
+        const statsEl = document.getElementById('returnsStats');
+        if (statsEl) {
+            statsEl.innerHTML =
+                `<div class="card stat"><div class="icon-box blue">↩️</div><div class="content"><div class="value">${active.length}</div><div class="label">Devoluciones activas</div></div></div>`
+              + `<div class="card stat"><div class="icon-box red">💰</div><div class="content"><div class="value">${dcFmt(totalAmt,disp)}</div><div class="label">Monto total (${disp})</div></div></div>`
+              + `<div class="card stat"><div class="icon-box yellow">📦</div><div class="content"><div class="value">${totalQty}</div><div class="label">Unidades devueltas</div></div></div>`
+              + `<div class="card stat"><div class="icon-box green">🗂️</div><div class="content"><div class="value">${annulled.length}</div><div class="label">Anuladas</div></div></div>`;
+        }
+
+        // Filtrar lista
+        const list = all.filter(r => {
+            if (stFilter && r.status !== stFilter) return false;
+            if (!stFilter && r.status === 'anulado') return false;  // ocultar anuladas por defecto
             if (!q) return true;
             return (
-                (r.productName  || '').toLowerCase().includes(q) ||
-                (r.customerName || '').toLowerCase().includes(q) ||
-                (r.reason       || '').toLowerCase().includes(q)
+                (r.productName  ||'').toLowerCase().includes(q) ||
+                (r.customerName ||'').toLowerCase().includes(q) ||
+                (r.reason       ||'').toLowerCase().includes(q) ||
+                (r.docRef       ||'').toLowerCase().includes(q) ||
+                (r.returnNumber ||'').toLowerCase().includes(q) ||
+                (r.notes        ||'').toLowerCase().includes(q)
             );
         });
-        tbody.innerHTML = list.length === 0
-            ? `<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text-2);">${q?'🔍 Sin resultados.':'↩️ No hay devoluciones registradas.'}</td></tr>`
-            : list.map(r => `
-            <tr>
-                <td style="font-size:11px;color:var(--text-2);">${r.id.slice(0,8)}</td>
-                <td>${r.saleId ? data.sales.find(s => s.id === r.saleId)?.invoice || 'N/A' : 'N/A'}</td>
-                <td>${r.customerName || 'N/A'}</td>
-                <td>${r.productName}</td>
-                <td style="text-align:center;">${r.quantity}</td>
-                <td>${r.reason}</td>
-                <td style="font-size:12px;">${new Date(r.date).toLocaleDateString()}</td>
-                <td><button class="btn btn-sm btn-danger" onclick="voidReturn('${r.id}')">Anular</button></td>
-            </tr>
-        `).join('');
+
+        const tbody = document.getElementById('returnsTableBody');
+        if (!tbody) return;
+
+        if (list.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:28px;color:var(--text-2);">${q?'🔍 Sin resultados para "'+q+'"':'↩️ No hay devoluciones registradas.'}</td></tr>`;
+            return;
+        }
+
+        const today = new Date().toISOString().slice(0,10);
+        tbody.innerHTML = list.map(r => {
+            const rCurr    = r.currency || defCurr;
+            const isVoid   = r.status === 'anulado';
+            const rowStyle = isVoid ? 'opacity:.55;' : '';
+            const badge    = isVoid
+                ? '<span class="badge badge-secondary">Anulada</span>'
+                : '<span class="badge badge-success">Activa</span>';
+            const originIcon = r.origin === 'invoice' ? '🧾' : r.origin === 'manual' ? '📝' : '🛒';
+            const originLabel= r.origin === 'invoice' ? 'Factura' : r.origin === 'manual' ? 'Manual' : 'Venta';
+
+            return `<tr style="${rowStyle}">
+                <td style="font-size:12px;font-weight:600;color:var(--primary);">${r.returnNumber||r.id.slice(0,8)}</td>
+                <td style="font-size:12px;">${originIcon} ${originLabel}</td>
+                <td style="font-size:12px;color:var(--text-2);">${r.docRef||'—'}</td>
+                <td>${r.customerName||'—'}</td>
+                <td>${r.productName||'—'}</td>
+                <td style="text-align:center;font-weight:600;">${r.quantity}</td>
+                <td style="text-align:right;">${dcFmtBadge(r.amount||0, rCurr)}</td>
+                <td style="font-size:12px;">${r.reason||'—'}</td>
+                <td style="font-size:12px;">${r.date ? new Date(r.date).toLocaleDateString() : '—'}</td>
+                <td>${badge}</td>
+                <td style="white-space:nowrap;">
+                    ${!isVoid ? `<button class="btn btn-sm btn-danger" onclick="voidReturn('${r.id}')">Anular</button>` : ''}
+                </td>
+            </tr>`;
+        }).join('');
     }
 
     async function voidReturn(id) {
-        if (!confirm('¿Anular esta devolución?')) return;
-        const ret = data.returns.find(r => r.id === id);
-        if (!ret) return;
-        // Revertir stock (restar lo devuelto)
-        const product = data.products.find(p => p.id === ret.productId);
+        if (!confirm('¿Anular esta devolución?\n\nSe revertirá el stock y los asientos contables.')) return;
+
+        const ret = (data.returns||[]).find(r => r.id === id);
+        if (!ret) { showToast('⚠️','Devolución no encontrada'); return; }
+        if (ret.status === 'anulado') { showToast('⚠️','Ya está anulada'); return; }
+
+        const qty   = Number(ret.quantity) || 0;
+        const amt   = Number(ret.amount)   || 0;
+        const defCurr = data?.settings?.defaultCurrency || 'VES';
+
+        // Revertir stock
+        const product = (data.products||[]).find(p => p.id === ret.productId);
         if (product) {
-            product.stock -= ret.quantity;
+            const prevStock = product.stock;
+            product.stock   = Math.max(0, product.stock - qty);
+            product.updatedAt = new Date().toISOString();
+            if (!Array.isArray(data.inventoryMovements)) data.inventoryMovements = [];
             data.inventoryMovements.push({
                 id: generateId(),
-                productId: product.id,
-                productName: product.name,
-                type: 'Salida',
-                quantity: -ret.quantity,
-                warehouseId: product.warehouseId,
-                date: new Date().toISOString(),
-                user: 'admin',
-                reason: 'Anulación de devolución',
-                notes: `Reversión de devolución ${ret.id}`,
-                previousStock: product.stock + ret.quantity,
-                newStock: product.stock
+                productId:     product.id,
+                productName:   product.name,
+                type:          'Salida',
+                quantity:      qty,
+                warehouseId:   product.warehouseId,
+                date:          new Date().toISOString().slice(0,10),
+                user:          'sistema',
+                reason:        'Anulación de devolución',
+                reference:     ret.returnNumber || ret.id,
+                notes:         `Reversión de ${ret.returnNumber||ret.id}`,
+                previousStock: prevStock,
+                newStock:      product.stock,
             });
         }
-        ret.status = 'anulado';
-        logAudit('void', 'return', id, { reason: 'Anulado' });
+
+        // Revertir asientos contables
+        const revenueAcc   = data.chartOfAccounts?.find(a => a.code === '4-01');
+        const costAcc      = data.chartOfAccounts?.find(a => a.code === '5-01');
+        const inventoryAcc = data.chartOfAccounts?.find(a => a.code === '1-03');
+        const cashAcc      = data.chartOfAccounts?.find(a => a.code === '1-01-001');
+        const cost = product ? (product.cost || (ret.price||0) * 0.6) : (ret.price||0) * 0.6;
+
+        if (revenueAcc)   revenueAcc.balance   = (revenueAcc.balance||0)   + amt;
+        if (costAcc)      costAcc.balance       = (costAcc.balance||0)      + (cost * qty);
+        if (inventoryAcc) inventoryAcc.balance  = Math.max(0, (inventoryAcc.balance||0) - (cost * qty));
+        if (cashAcc)      cashAcc.balance       = (cashAcc.balance||0)      + amt;
+
+        // Revertir marca en la venta/factura original
+        if (ret.saleId) {
+            const sale = (data.sales||[]).find(s => s.id === ret.saleId);
+            if (sale?.returns) {
+                sale.returns = sale.returns.filter(rv => rv.returnId !== id);
+                if (!sale.returns.length) delete sale.hasReturn;
+            }
+        }
+        if (ret.invoiceId) {
+            const inv = (data.invoices||[]).find(i => i.id === ret.invoiceId);
+            if (inv?.returns) {
+                inv.returns = inv.returns.filter(rv => rv.returnId !== id);
+                if (!inv.returns.length) delete inv.hasReturn;
+            }
+        }
+
+        ret.status    = 'anulado';
+        ret.annulledAt = new Date().toISOString();
+        logAudit('void','return', id, { reason: 'Anulado' });
         renderAll();
-        await _persistAndNotify('Devolución anulada', 'Cambio guardado localmente');
+        await _persistAndNotify('Devolución anulada','Cambio guardado localmente');
     }
 
     /* ─── Crear nueva Cuenta por Cobrar / Cuenta por Pagar manualmente ─── */
