@@ -4336,12 +4336,7 @@
                             <option value="USDT">🟡 USDT</option>
                             <option value="BANK_TRANSFER">🏦 Transferencia</option>
                         </select>
-                        <select id="posCurrency" oninput="updateCartUI()" style="width:90px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit;font-size:13px;outline:none;">
-                            <option value="VES">🇻🇪 VES</option>
-                            <option value="EUR">🇪🇺 EUR</option>
-                            <option value="USD">🇺🇸 USD</option>
-                        </select>
-                        <input type="number" placeholder="Monto pagado" id="paidAmount" value="0"
+                        <input type="number" placeholder="Monto en $" id="paidAmount" value="0"
                             inputmode="decimal" style="width:110px;" oninput="updateCambio()" />
                     </div>
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;font-size:13px;padding:4px 0;min-height:20px;">
@@ -7844,10 +7839,10 @@
         const { totalUSD, rateUSD, rateEUR } = _posCartTotals();
         const posCurr      = document.getElementById('posCurrency')?.value || 'USD';
         const paidRaw      = document.getElementById('paidAmount')?.value || '';
-        // Normalizar el valor del input: reemplazar coma por punto, quitar símbolos
+        // El input siempre es en USD — solo normalizar separador decimal
         const paidNorm     = parseFloat(paidRaw.replace(',', '.')) || 0;
-        // Convertir el monto pagado a USD para comparar en la misma moneda
-        const paidUSD      = _posPaidToUSD(paidNorm, posCurr, rateUSD, rateEUR);
+        // El monto ingresado YA está en USD, no requiere conversión
+        const paidUSD      = paidNorm;
         const totalInCurr  = _posToPosCurr(totalUSD, posCurr, rateUSD, rateEUR);
 
         // Comparar en centavos enteros para evitar floating-point
@@ -7926,11 +7921,11 @@
         // Total en la moneda que el cajero seleccionó (para mostrarlo en el error)
         const totalInCurr = _posToPosCurr(totalUSD, posCurr, rateUSD, rateEUR);
 
-        // Leer el monto del input — normalizar coma como separador decimal
+        // Leer el monto del input — siempre en USD, solo normalizar separador decimal
         const paidRaw  = (document.getElementById('paidAmount').value || '').replace(',', '.');
         const paidInCurr = parseFloat(paidRaw) || 0;
-        // Convertir el monto pagado a USD (moneda base de comparación)
-        const paidUSD  = _posPaidToUSD(paidInCurr, posCurr, rateUSD, rateEUR);
+        // El input es en USD — no requiere conversión
+        const paidUSD  = paidInCurr;
 
         // ── Comparar en centavos enteros para evitar errores floating-point ──
         const paidCents  = Math.round(paidUSD  * 100);
