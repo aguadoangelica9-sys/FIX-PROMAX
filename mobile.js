@@ -739,6 +739,157 @@
     }
 
     /* ══════════════════════════════════════════════════════════
+       ESTADOS DE MÓDULOS — Loading / Empty / Error / Retry
+       Inyecta indicadores visuales en cada módulo cuando
+       los datos tardan, fallan o no existen.
+       ══════════════════════════════════════════════════════════ */
+
+    /**
+     * Muestra un estado visual dentro de un contenedor
+     * @param {string} containerId  - ID del elemento donde insertar
+     * @param {'loading'|'empty'|'error'} type
+     * @param {string} [message]    - mensaje personalizado
+     * @param {Function} [onRetry]  - callback del botón Reintentar
+     */
+    function _showModuleState(containerId, type, message, onRetry) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const configs = {
+            loading: {
+                icon: '<div class="mob-spinner" style="margin:0 auto;"></div>',
+                title: message || 'Cargando...',
+                sub: '',
+                btn: null,
+            },
+            empty: {
+                icon: '<span style="font-size:48px;line-height:1;">📭</span>',
+                title: message || 'No hay datos',
+                sub: 'Aún no se han registrado elementos.',
+                btn: null,
+            },
+            error: {
+                icon: '<span style="font-size:48px;line-height:1;">⚠️</span>',
+                title: message || 'No se pudo cargar',
+                sub: 'Verifica tu conexión e inténtalo de nuevo.',
+                btn: onRetry ? 'Reintentar' : null,
+            },
+        };
+
+        const cfg = configs[type] || configs.loading;
+        const retryId = 'mobRetry_' + containerId;
+
+        container.innerHTML = `
+            <div class="mob-state" role="${type === 'error' ? 'alert' : 'status'}"
+                 aria-live="${type === 'loading' ? 'polite' : 'assertive'}">
+                <div class="mob-state-icon">${cfg.icon}</div>
+                <div class="mob-state-title">${cfg.title}</div>
+                ${cfg.sub ? `<div class="mob-state-sub">${cfg.sub}</div>` : ''}
+                ${cfg.btn ? `<button id="${retryId}" class="btn btn-primary"
+                    style="margin-top:8px;min-height:44px;padding:0 24px;"
+                    aria-label="${cfg.btn}">
+                    🔄 ${cfg.btn}
+                </button>` : ''}
+            </div>`;
+
+        if (cfg.btn && onRetry) {
+            setTimeout(() => {
+                const btn = document.getElementById(retryId);
+                if (btn) btn.onclick = () => {
+                    _showModuleState(containerId, 'loading');
+                    setTimeout(onRetry, 200);
+                };
+            }, 50);
+        }
+    }
+    window._showModuleState = _showModuleState;
+
+    /**
+     * Observa el contenido de un tbody/contenedor y si está vacío
+     * muestra el estado 'empty' automáticamente.
+     */
+    function _watchModuleEmpty(tbodyId, emptyMsg) {
+        const el = document.getElementById(tbodyId);
+        if (!el) return;
+
+        function _check() {
+            const hasContent = el.children.length > 0 &&
+                               el.innerHTML.trim() !== '' &&
+                               !el.querySelector('.mob-state');
+            if (!hasContent && !el.querySelector('.mob-state')) {
+                // Solo mostrar empty si el ERP no puso su propio mensaje
+                const text = el.textContent.trim();
+                if (!text || text.length < 5) {
+                    _showModuleState(tbodyId, 'empty', emptyMsg);
+                }
+            }
+        }
+
+        const obs = new MutationObserver(_check);
+        obs.observe(el, { childList: true, subtree: true });
+    }
+
+    /**
+     * Instala observadores de estado en los módulos principales.
+     * Se llama una vez tras el login.
+     */
+    function _initModuleStates() {
+        if (!isMobile()) return;
+
+        // Par: [tbodyId, mensaje vacío]
+        const modules = [
+            ['salesTableBody',     'Aún no hay ventas registradas'],
+            ['invoicesTableBody',  'No hay facturas registradas'],
+            ['quotesTableBody',    'No hay cotizaciones creadas'],
+            ['productsTableBody',  'No hay productos en el catálogo'],
+            ['customersTableBody', 'No hay clientes registrados'],
+            ['suppliersTableBody', 'Aún no hay proveedores'],
+            ['inventoryTableBody', 'Inventario sin registros'],
+            ['purchasesTableBody', 'No hay compras registradas'],
+            ['expensesTableBody',  'No hay gastos registrados'],
+            ['returnsTableBody',   'No hay devoluciones'],
+        ];
+
+        modules.forEach(([id, msg]) => _watchModuleEmpty(id, msg));
+    }
+    window._initModuleStates = _initModuleStates;
+
+    /**
+     * Agrega CSS de estados al documento si no existe ya
+     * (los estilos .mob-state, .mob-spinner ya están en mobile.css,
+     *  pero esto asegura que estén disponibles aunque el CSS tarde)
+     */
+    function _ensureStateStyles() {
+        if (document.getElementById('mobStateStyles')) return;
+        const style = document.createElement('style');
+        style.id = 'mobStateStyles';
+        style.textContent = `
+            .mob-state {
+                display:flex;flex-direction:column;
+                align-items:center;justify-content:center;
+                padding:48px 24px;text-align:center;gap:12px;
+                min-height:180px;
+            }
+            .mob-state-title {
+                font-size:16px;font-weight:700;color:var(--text);
+            }
+            .mob-state-sub {
+                font-size:13px;color:var(--text-2);
+                line-height:1.5;max-width:260px;
+            }
+            .mob-spinner {
+                width:32px;height:32px;
+                border:3px solid var(--border);
+                border-top-color:var(--primary);
+                border-radius:50%;
+                animation:mobSpin 0.7s linear infinite;
+            }
+            @keyframes mobSpin { to { transform:rotate(360deg); } }
+        `;
+        document.head.appendChild(style);
+    }
+
+    /* ══════════════════════════════════════════════════════════
        INICIALIZACIÓN — se ejecuta cuando el DOM está listo
        ══════════════════════════════════════════════════════════ */
     function _init() {
@@ -755,6 +906,7 @@
         _watchSyncIndicator();
         _enhanceTables();
         _makeSearchSticky();
+        _ensureStateStyles();   // garantizar que los estilos de estado estén disponibles
 
         // Hooks sobre las funciones del ERP
         _tryHooks();
@@ -812,6 +964,10 @@
         _syncMobThemeBtn();
         _syncMobCurrency();
         _syncAlertBadge();
+
+        // Instalar estados de módulos (loading/empty/error)
+        _ensureStateStyles();
+        setTimeout(_initModuleStates, 800);
     }
 
     function _tryHooks(attempt) {
