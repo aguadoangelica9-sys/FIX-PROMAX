@@ -7707,32 +7707,6 @@
 
         if (!container) return;
 
-        // ── Helper: convierte un precio desde su moneda original ──
-        // Siempre devuelve { usd: string, ves: string }
-        // ── Helper: convierte precio a USD y VES sin depender del selector de moneda ──
-        function toVES(amount, currency) {
-            const orig = (currency || 'USD').toUpperCase();
-            if (orig === 'VES') return amount;
-            const rate = window.CurrencySystem?.getRateFor(orig, 'VES') || (orig === 'USD' ? 36 : 40);
-            return amount * rate;
-        }
-        function toUSD(amount, currency) {
-            const orig = (currency || 'USD').toUpperCase();
-            if (orig === 'USD') return amount;
-            const vesAmount = toVES(amount, orig);
-            const rUSD = window.CurrencySystem?.getRateFor('USD', 'VES') || 36;
-            return vesAmount / rUSD;
-        }
-
-        function dualPrice(amount, currency) {
-            const inUSD = toUSD(amount, currency);
-            const inVES = toVES(amount, currency);
-            const fmtUSD = window.CurrencySystem ? window.CurrencySystem.format(inUSD, 'USD') : '$' + Math.round(inUSD).toLocaleString('en-US');
-            const fmtVES = window.CurrencySystem ? window.CurrencySystem.format(inVES, 'VES')
-                : 'Bs.\u00a0' + Math.round(inVES).toLocaleString('es-VE');
-            return { usd: fmtUSD, ves: fmtVES };
-        }
-
         if (cart.length === 0) {
             container.innerHTML =
                 `<div class="text-muted text-sm text-center" style="padding:30px 0;">El carrito está vacío</div>`;
@@ -7748,15 +7722,23 @@
         }
 
         let html = '';
-        let subtotalVES = 0;
 
         cart.forEach(item => {
             const prod    = data.products.find(p => p.id === item.id);
             const curr    = prod?.currency || data?.settings?.defaultCurrency || 'USD';
             const lineAmt = item.qty * item.price;
-            const dual    = dualPrice(lineAmt, curr);
-            // Acumular siempre en VES como moneda puente
-            subtotalVES += toVES(lineAmt, curr);
+            // Mostrar el precio de la línea en USD y Bs
+            const rUSD = window.CurrencySystem?.getRateFor('USD', 'VES') || 36;
+            const rEUR = window.CurrencySystem?.getRateFor('EUR', 'VES') || 40;
+            const currUp = curr.toUpperCase();
+            let lineUSD = currUp === 'USD' ? lineAmt
+                : currUp === 'VES' ? lineAmt / rUSD
+                : (lineAmt * rEUR) / rUSD;
+            lineUSD = Math.round(lineUSD * 100) / 100;
+            const lineVES = Math.round(lineUSD * rUSD * 100) / 100;
+            const fmtLine = (n, c) => window.CurrencySystem
+                ? window.CurrencySystem.format(n, c)
+                : (c === 'USD' ? '$' : 'Bs.\u00a0') + n.toFixed(2);
 
             html += `
                 <div class="cart-item">
@@ -7767,8 +7749,8 @@
                         <button onclick="updateQty('${item.id}',1)">+</button>
                     </div>
                     <div style="text-align:right;min-width:70px;line-height:1.2;">
-                        <div style="font-weight:700;font-size:13px;">${dual.usd}</div>
-                        <div style="font-size:10px;color:var(--text-3);">${dual.ves}</div>
+                        <div style="font-weight:700;font-size:13px;">${fmtLine(lineUSD,'USD')}</div>
+                        <div style="font-size:10px;color:var(--text-3);">${fmtLine(lineVES,'VES')}</div>
                     </div>
                     <button class="remove" onclick="removeFromCart('${item.id}')">✕</button>
                 </div>
@@ -7777,80 +7759,133 @@
         container.innerHTML = html;
         countEl.textContent = `${cart.reduce((s,i) => s + i.qty, 0)} items`;
 
-        // Calcular totales en VES y convertir a USD usando tasas directas
-        const rateUSD    = window.CurrencySystem?.getRateFor('USD','VES') || 36;
-        const taxVES     = subtotalVES * 0.16;
-        const totalVES   = subtotalVES + taxVES;
-        const subtotalUSDval = subtotalVES / rateUSD;
-        const taxUSDval      = taxVES      / rateUSD;
-        const totalUSDval    = totalVES    / rateUSD;
+        // ── Usar _posCartTotals() — mismos valores que usará completeSale ──
+        const { subtotalUSD: sUSD, taxUSD: tUSD, totalUSD: totUSD, rateUSD } = _posCartTotals();
+        const subtotalVES = Math.round(sUSD   * rateUSD * 100) / 100;
+        const taxVES      = Math.round(tUSD   * rateUSD * 100) / 100;
+        const totalVES    = Math.round(totUSD * rateUSD * 100) / 100;
 
-        const fmtU = (n) => window.CurrencySystem ? window.CurrencySystem.format(n, 'USD') : '$' + Math.round(n).toLocaleString('en-US');
+        const fmtU = (n) => window.CurrencySystem ? window.CurrencySystem.format(n, 'USD')
+            : '$' + n.toFixed(2);
         const fmtV = (n) => window.CurrencySystem ? window.CurrencySystem.format(n, 'VES')
             : 'Bs.\u00a0' + Math.round(n).toLocaleString('es-VE');
 
-        if (subtotalEl) subtotalEl.textContent = fmtU(subtotalUSDval);
+        if (subtotalEl) subtotalEl.textContent = fmtU(sUSD);
         if (subBsEl)    subBsEl.textContent    = fmtV(subtotalVES);
-        if (taxEl)      taxEl.textContent      = fmtU(taxUSDval);
+        if (taxEl)      taxEl.textContent      = fmtU(tUSD);
         if (taxBsEl)    taxBsEl.textContent    = fmtV(taxVES);
-        if (totalEl)    totalEl.textContent    = fmtU(totalUSDval);
+        if (totalEl)    totalEl.textContent    = fmtU(totUSD);
         if (totalBsEl)  totalBsEl.textContent  = fmtV(totalVES);
 
         updateCambio();
     }
 
-    function updateCambio() {
-        const rateUSD  = window.CurrencySystem?.getRateFor('USD','VES') || 36;
-        const rateEUR  = window.CurrencySystem?.getRateFor('EUR','VES') || 40;
+    // ── Helper POS: calcula los totales del carrito en USD (moneda base interna) ──────────────
+    // Evita la doble conversión USD→VES→USD que causa errores de precisión.
+    // Cada producto se convierte a USD directamente usando las tasas del CurrencySystem.
+    function _posCartTotals() {
+        const rateUSD = window.CurrencySystem?.getRateFor('USD', 'VES') || 36;
+        const rateEUR = window.CurrencySystem?.getRateFor('EUR', 'VES') || 40;
 
-        // Calcular total en VES usando tasas directas (no dc() que depende del selector)
-        const subtotalVES = cart.reduce((s, item) => {
+        // Calcular subtotal directo en USD — sin pasar por VES como moneda puente
+        let subtotalUSD = 0;
+        cart.forEach(item => {
             const prod = data.products.find(p => p.id === item.id);
-            const curr = prod?.currency || data?.settings?.defaultCurrency || 'USD';
-            const orig = curr.toUpperCase();
-            const lineVES = orig === 'VES' ? item.qty * item.price
-                : orig === 'USD' ? item.qty * item.price * rateUSD
-                : item.qty * item.price * rateEUR;
-            return s + lineVES;
-        }, 0);
-        const totalVES = subtotalVES * 1.16;
-        const totalUSD = totalVES / rateUSD;
+            const curr = (prod?.currency || data?.settings?.defaultCurrency || 'USD').toUpperCase();
+            const lineAmt = item.qty * item.price;
+            // Convertir el precio del producto a USD directamente
+            let lineUSD;
+            if (curr === 'USD') {
+                lineUSD = lineAmt;
+            } else if (curr === 'VES') {
+                lineUSD = lineAmt / rateUSD;
+            } else { // EUR
+                lineUSD = (lineAmt * rateEUR) / rateUSD;
+            }
+            subtotalUSD += lineUSD;
+        });
 
-        const curr   = document.getElementById('posCurrency')?.value || 'USD';
-        const paid   = parseFloat(document.getElementById('paidAmount')?.value) || 0;
-        // Convertir el total a la moneda de pago seleccionada
-        const totalInCurr = curr === 'VES' ? totalVES
-            : curr === 'USD' ? totalUSD
-            : totalVES / rateEUR;
-        const cambio = paid - totalInCurr;
+        // Redondear a centavos para evitar acumulación de errores floating-point
+        subtotalUSD = Math.round(subtotalUSD * 100) / 100;
+        const taxUSD   = Math.round(subtotalUSD * 0.16 * 100) / 100;
+        const totalUSD = Math.round((subtotalUSD + taxUSD) * 100) / 100;
 
+        return { subtotalUSD, taxUSD, totalUSD, rateUSD, rateEUR };
+    }
+
+    // ── Convierte un monto USD a la moneda del selector posCurrency ─────────────────────────
+    function _posToPosCurr(amountUSD, posCurr, rateUSD, rateEUR) {
+        if (posCurr === 'USD') return amountUSD;
+        if (posCurr === 'VES') return Math.round(amountUSD * rateUSD * 100) / 100;
+        // EUR
+        return Math.round((amountUSD * rateUSD / rateEUR) * 100) / 100;
+    }
+
+    // ── Convierte un monto en posCurrency a USD ──────────────────────────────────────────────
+    function _posPaidToUSD(paidInCurr, posCurr, rateUSD, rateEUR) {
+        if (posCurr === 'USD') return paidInCurr;
+        if (posCurr === 'VES') return Math.round(paidInCurr / rateUSD * 100) / 100;
+        // EUR
+        return Math.round((paidInCurr * rateEUR / rateUSD) * 100) / 100;
+    }
+
+    function updateCambio() {
         const cambioEl   = document.getElementById('cartCambio');
         const cambioBsEl = document.getElementById('cartCambioBs');
-
         if (!cambioEl) return;
 
-        const fmtU = (n) => window.CurrencySystem ? window.CurrencySystem.format(n, 'USD') : '$' + Math.round(n).toLocaleString('en-US');
-        const fmtV = (n) => window.CurrencySystem ? window.CurrencySystem.format(n, 'VES')
-            : 'Bs.\u00a0' + Math.round(n).toLocaleString('es-VE');
-
-        if (paid <= 0) {
+        if (cart.length === 0) {
             cambioEl.textContent = '—';
             cambioEl.style.color = 'var(--text-3)';
             if (cambioBsEl) { cambioBsEl.textContent = ''; cambioBsEl.style.display = 'none'; }
-        } else if (cambio >= 0) {
-            const cambioVES = curr === 'VES' ? cambio
-                : curr === 'USD' ? cambio * rateUSD
-                : cambio * rateEUR;
-            const cambioUSD = cambioVES / rateUSD;
-            cambioEl.textContent = fmtU(cambioUSD);
-            cambioEl.style.color = 'var(--success)';
-            if (cambioBsEl) {
+            return;
+        }
+
+        const { totalUSD, rateUSD, rateEUR } = _posCartTotals();
+        const posCurr      = document.getElementById('posCurrency')?.value || 'USD';
+        const paidRaw      = document.getElementById('paidAmount')?.value || '';
+        // Normalizar el valor del input: reemplazar coma por punto, quitar símbolos
+        const paidNorm     = parseFloat(paidRaw.replace(',', '.')) || 0;
+        // Convertir el monto pagado a USD para comparar en la misma moneda
+        const paidUSD      = _posPaidToUSD(paidNorm, posCurr, rateUSD, rateEUR);
+        const totalInCurr  = _posToPosCurr(totalUSD, posCurr, rateUSD, rateEUR);
+
+        // Comparar en centavos enteros para evitar floating-point
+        const paidCents    = Math.round(paidUSD   * 100);
+        const totalCents   = Math.round(totalUSD  * 100);
+        const cambioCents  = paidCents - totalCents;
+
+        const fmtU = (n) => window.CurrencySystem ? window.CurrencySystem.format(n, 'USD')
+            : '$' + n.toFixed(2);
+        const fmtV = (n) => window.CurrencySystem ? window.CurrencySystem.format(n, 'VES')
+            : 'Bs.\u00a0' + Math.round(n).toLocaleString('es-VE');
+        const fmtC = (n, cur) => window.CurrencySystem ? window.CurrencySystem.format(n, cur)
+            : formatCurrency(n, cur);
+
+        if (paidNorm <= 0) {
+            cambioEl.textContent = '—';
+            cambioEl.style.color = 'var(--text-3)';
+            if (cambioBsEl) { cambioBsEl.textContent = ''; cambioBsEl.style.display = 'none'; }
+        } else if (cambioCents >= 0) {
+            // Pago suficiente — calcular cambio
+            const cambioUSD = cambioCents / 100;
+            const cambioEnCurr = _posToPosCurr(cambioUSD, posCurr, rateUSD, rateEUR);
+            cambioEl.textContent = fmtC(cambioEnCurr, posCurr);
+            cambioEl.style.color = cambioCents === 0 ? 'var(--success)' : 'var(--success)';
+            if (cambioBsEl && posCurr !== 'VES') {
+                const cambioVES = Math.round(cambioUSD * rateUSD * 100) / 100;
                 cambioBsEl.textContent = '= ' + fmtV(cambioVES);
                 cambioBsEl.style.display = 'block';
+            } else if (cambioBsEl) {
+                cambioBsEl.textContent = '';
+                cambioBsEl.style.display = 'none';
             }
         } else {
-            const faltaStr = formatCurrency(Math.abs(cambio), curr);
-            cambioEl.textContent = `Faltan ${faltaStr}`;
+            // Pago insuficiente — mostrar cuánto falta en la moneda de pago
+            const faltaCents   = Math.abs(cambioCents);
+            const faltaUSD     = faltaCents / 100;
+            const faltaEnCurr  = _posToPosCurr(faltaUSD, posCurr, rateUSD, rateEUR);
+            cambioEl.textContent = `Faltan ${fmtC(faltaEnCurr, posCurr)}`;
             cambioEl.style.color = 'var(--danger)';
             if (cambioBsEl) { cambioBsEl.textContent = ''; cambioBsEl.style.display = 'none'; }
         }
@@ -7884,37 +7919,51 @@
             showToast('⚠️', 'El carrito está vacío');
             return;
         }
-        // Calcular totales en VES usando tasas directas (no dc() que depende del selector)
-        const rateUSD = window.CurrencySystem?.getRateFor('USD','VES') || 36;
-        const rateEUR = window.CurrencySystem?.getRateFor('EUR','VES') || 40;
-        const subtotalVES = cart.reduce((s, item) => {
-            const prod = data.products.find(p => p.id === item.id);
-            const curr = (prod?.currency || data?.settings?.defaultCurrency || 'USD').toUpperCase();
-            const lineVES = curr === 'VES' ? item.qty * item.price
-                : curr === 'USD' ? item.qty * item.price * rateUSD
-                : item.qty * item.price * rateEUR;
-            return s + lineVES;
-        }, 0);
-        const taxVES   = subtotalVES * 0.16;
-        const totalVES = subtotalVES + taxVES;
-        const posCurr  = document.getElementById('posCurrency')?.value || 'USD';
-        const rate     = posCurr === 'USD' ? rateUSD : posCurr === 'EUR' ? rateEUR : 1;
-        const totalInCurr = totalVES / rate;
+        // ── Usar _posCartTotals() — calcula en USD directo sin doble conversión VES ──
+        const { subtotalUSD, taxUSD, totalUSD, rateUSD, rateEUR } = _posCartTotals();
 
-        const subtotal   = subtotalVES / rateUSD;   // guardar en USD para historial
-        const tax        = taxVES      / rateUSD;
-        const grandTotal = totalVES    / rateUSD;
+        const posCurr     = document.getElementById('posCurrency')?.value || 'USD';
+        // Total en la moneda que el cajero seleccionó (para mostrarlo en el error)
+        const totalInCurr = _posToPosCurr(totalUSD, posCurr, rateUSD, rateEUR);
 
-        const paid = parseFloat(document.getElementById('paidAmount').value) || 0;
+        // Leer el monto del input — normalizar coma como separador decimal
+        const paidRaw  = (document.getElementById('paidAmount').value || '').replace(',', '.');
+        const paidInCurr = parseFloat(paidRaw) || 0;
+        // Convertir el monto pagado a USD (moneda base de comparación)
+        const paidUSD  = _posPaidToUSD(paidInCurr, posCurr, rateUSD, rateEUR);
 
-        if (paid < totalInCurr - 0.01) {
-            showToast('⚠️', `Monto insuficiente. Total: ${formatCurrency(totalInCurr, posCurr)}`);
+        // ── Comparar en centavos enteros para evitar errores floating-point ──
+        const paidCents  = Math.round(paidUSD  * 100);
+        const totalCents = Math.round(totalUSD * 100);
+
+        if (paidCents < totalCents) {
+            const faltaCents   = totalCents - paidCents;
+            const faltaUSD     = faltaCents / 100;
+            const faltaEnCurr  = _posToPosCurr(faltaUSD, posCurr, rateUSD, rateEUR);
+            const fmtC = (n, cur) => window.CurrencySystem
+                ? window.CurrencySystem.format(n, cur)
+                : formatCurrency(n, cur);
+            showToast('⚠️',
+                `Monto insuficiente. ` +
+                `Total: ${fmtC(totalInCurr, posCurr)} — ` +
+                `Faltan: ${fmtC(faltaEnCurr, posCurr)}`
+            );
             return;
         }
 
+        // ── Todos los valores almacenados en USD (moneda base) ─────────────────
+        const subtotal   = Math.round(subtotalUSD * 100) / 100;
+        const tax        = Math.round(taxUSD      * 100) / 100;
+        const grandTotal = Math.round(totalUSD    * 100) / 100;
+        // paid guardado en USD para consistencia con total/subtotal/tax
+        const paidToSave = Math.round(paidUSD     * 100) / 100;
+        // Cambio calculado en centavos, devuelto en USD
+        const cambioUSD  = (paidCents - totalCents) / 100;
+
         const invoice = `INV-${Date.now().toString().slice(-6)}`;
         const saleId = generateId();
-        // Registrar venta
+
+        // Registrar venta — todo en USD
         const sale = {
             id: saleId,
             invoice,
@@ -7922,12 +7971,15 @@
             items: cart.map(i => ({ productId: i.id, qty: i.qty, price: i.price })),
             subtotal,
             tax,
-            total: grandTotal,
-            paid,
-            method: document.getElementById('paymentMethod').value,
-            date: new Date().toISOString(),
-            status: 'Pagada',
-            currency: document.getElementById('posCurrency')?.value || data?.settings?.defaultCurrency || 'VES',
+            total:    grandTotal,
+            paid:     paidToSave,
+            cambio:   cambioUSD,
+            method:   document.getElementById('paymentMethod').value,
+            date:     new Date().toISOString(),
+            status:   'Pagada',
+            currency: 'USD',                   // base interna siempre USD
+            posCurrency: posCurr,              // moneda en que operó el cajero
+            paidInPosCurr: paidInCurr,         // monto original tal como lo ingresó el cajero
         };
         data.sales.push(sale);
         logAudit('create', 'sale', saleId, sale);
@@ -7937,7 +7989,7 @@
             const prod = data.products.find(p => p.id === item.id);
             if (prod) {
                 const oldStock = prod.stock;
-                prod.stock -= item.qty;
+                prod.stock = Math.max(0, prod.stock - item.qty);
                 data.inventoryMovements.push({
                     id: generateId(),
                     productId: prod.id,
@@ -7950,65 +8002,65 @@
                     reason: 'Venta POS',
                     notes: `Venta de ${item.qty} unidades`,
                     previousStock: oldStock,
-                    newStock: prod.stock
+                    newStock: prod.stock,
                 });
             }
         });
 
-        // Factura
+        // Factura — totales en USD, consistentes con la venta
         data.invoices.push({
             id: generateId(),
             number: invoice,
             customerId: null,
             date: new Date().toISOString().slice(0, 10),
             dueDate: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
-            total: grandTotal,
-            paid: paid,
-            notes: 'Venta POS',
-            status: paid >= grandTotal ? 'Pagada' : 'Pendiente',
+            items: sale.items,
+            subtotal,
+            tax,
+            total:  grandTotal,
+            paid:   paidToSave,   // en USD — mismo que sale.paid
+            notes:  'Venta POS',
+            status: paidCents >= totalCents ? 'Pagada' : 'Pendiente',
+            currency: 'USD',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         });
 
-        // Asientos contables
-        const cashAccount = data.chartOfAccounts.find(a => a.code === '1-01-001');
-        const revenueAccount = data.chartOfAccounts.find(a => a.code === '4-01');
-        const taxAccount = data.chartOfAccounts.find(a => a.code === '2-02');
-        const costAccount = data.chartOfAccounts.find(a => a.code === '5-01');
+        // Asientos contables — todos en USD
+        const cashAccount      = data.chartOfAccounts.find(a => a.code === '1-01-001');
+        const revenueAccount   = data.chartOfAccounts.find(a => a.code === '4-01');
+        const taxAccount       = data.chartOfAccounts.find(a => a.code === '2-02');
+        const costAccount      = data.chartOfAccounts.find(a => a.code === '5-01');
         const inventoryAccount = data.chartOfAccounts.find(a => a.code === '1-03');
         if (cashAccount && revenueAccount && taxAccount && costAccount && inventoryAccount) {
-            cashAccount.balance = (cashAccount.balance || 0) + paid;
-            revenueAccount.balance = (revenueAccount.balance || 0) + subtotal;
-            taxAccount.balance = (taxAccount.balance || 0) + tax;
-            const costEstimate = subtotal * 0.6;
-            costAccount.balance = (costAccount.balance || 0) + costEstimate;
-            inventoryAccount.balance = (inventoryAccount.balance || 0) - costEstimate;
-            data.journalEntries.push({ date: new Date().toISOString().slice(0, 10), ref: invoice, desc: 'Venta POS',
-                debit: paid, credit: null });
-            data.journalEntries.push({ date: new Date().toISOString().slice(0, 10), ref: invoice, desc: 'Venta POS',
-                debit: null, credit: subtotal });
-            data.journalEntries.push({ date: new Date().toISOString().slice(0, 10), ref: invoice, desc: 'Venta POS',
-                debit: null, credit: tax });
-            data.journalEntries.push({ date: new Date().toISOString().slice(0, 10), ref: invoice,
-                desc: 'Costo de venta', debit: costEstimate, credit: null });
-            data.journalEntries.push({ date: new Date().toISOString().slice(0, 10), ref: invoice,
-                desc: 'Costo de venta', debit: null, credit: costEstimate });
+            cashAccount.balance      = Math.round(((cashAccount.balance    || 0) + paidToSave)   * 100) / 100;
+            revenueAccount.balance   = Math.round(((revenueAccount.balance || 0) + subtotal)     * 100) / 100;
+            taxAccount.balance       = Math.round(((taxAccount.balance     || 0) + tax)          * 100) / 100;
+            const costEstimate       = Math.round(subtotal * 0.6 * 100) / 100;
+            costAccount.balance      = Math.round(((costAccount.balance      || 0) + costEstimate) * 100) / 100;
+            inventoryAccount.balance = Math.round(((inventoryAccount.balance || 0) - costEstimate) * 100) / 100;
+            const today = new Date().toISOString().slice(0, 10);
+            data.journalEntries.push({ date: today, ref: invoice, desc: 'Venta POS — Cobro',          debit: paidToSave,   credit: null        });
+            data.journalEntries.push({ date: today, ref: invoice, desc: 'Venta POS — Ingresos',       debit: null,         credit: subtotal     });
+            data.journalEntries.push({ date: today, ref: invoice, desc: 'Venta POS — IVA',            debit: null,         credit: tax          });
+            data.journalEntries.push({ date: today, ref: invoice, desc: 'Costo de venta',             debit: costEstimate, credit: null         });
+            data.journalEntries.push({ date: today, ref: invoice, desc: 'Costo de venta — Inventario',debit: null,         credit: costEstimate });
         }
 
-        // Registrar pago si aplica
-        if (paid > 0) {
-            data.payments.push({
-                id: generateId(),
-                type: 'cobro',
-                reference: invoice,
-                amount: paid,
-                date: new Date().toISOString(),
-                method: document.getElementById('paymentMethod').value,
-                customerId: null,
-                supplierId: null,
-                status: 'activo',
-            });
-        }
+        // Registrar pago
+        data.payments.push({
+            id: generateId(),
+            type: 'cobro',
+            reference: invoice,
+            amount: paidToSave,          // en USD
+            amountInPosCurr: paidInCurr, // en la moneda original del cajero
+            posCurrency: posCurr,
+            date: new Date().toISOString(),
+            method: document.getElementById('paymentMethod').value,
+            customerId: null,
+            supplierId: null,
+            status: 'activo',
+        });
 
         generateAlerts();
         cart = [];
@@ -8016,7 +8068,7 @@
         document.getElementById('paidAmount').value = '0';
         renderAll();
         await _persistAndNotify(
-            `🎉 Venta ${invoice} completada`,
+            `🎉 Venta ${invoice} completada — Cambio: ${_posToPosCurr(cambioUSD, posCurr, rateUSD, rateEUR).toFixed(2)} ${posCurr}`,
             `Venta ${invoice} guardada localmente — verifica conexión`
         );
     }
