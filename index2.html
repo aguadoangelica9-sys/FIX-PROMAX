@@ -7862,18 +7862,25 @@
             cambioEl.style.color = 'var(--text-3)';
             if (cambioBsEl) { cambioBsEl.textContent = ''; cambioBsEl.style.display = 'none'; }
         } else if (cambioCents >= 0) {
-            // Pago suficiente — calcular cambio
-            const cambioUSD = cambioCents / 100;
-            const cambioEnCurr = _posToPosCurr(cambioUSD, posCurr, rateUSD, rateEUR);
-            cambioEl.textContent = fmtC(cambioEnCurr, posCurr);
-            cambioEl.style.color = cambioCents === 0 ? 'var(--success)' : 'var(--success)';
-            if (cambioBsEl && posCurr !== 'VES') {
-                const cambioVES = Math.round(cambioUSD * rateUSD * 100) / 100;
-                cambioBsEl.textContent = '= ' + fmtV(cambioVES);
-                cambioBsEl.style.display = 'block';
-            } else if (cambioBsEl) {
-                cambioBsEl.textContent = '';
-                cambioBsEl.style.display = 'none';
+            if (cambioCents === 0) {
+                // Monto exacto — no hay cambio que mostrar
+                cambioEl.textContent = '✓ Monto exacto';
+                cambioEl.style.color = 'var(--success)';
+                if (cambioBsEl) { cambioBsEl.textContent = ''; cambioBsEl.style.display = 'none'; }
+            } else {
+                // Pago con vuelto — mostrar cuánto devolver
+                const cambioUSD = cambioCents / 100;
+                const cambioEnCurr = _posToPosCurr(cambioUSD, posCurr, rateUSD, rateEUR);
+                cambioEl.textContent = fmtC(cambioEnCurr, posCurr);
+                cambioEl.style.color = 'var(--success)';
+                if (cambioBsEl && posCurr !== 'VES') {
+                    const cambioVES = Math.round(cambioUSD * rateUSD * 100) / 100;
+                    cambioBsEl.textContent = '= ' + fmtV(cambioVES);
+                    cambioBsEl.style.display = 'block';
+                } else if (cambioBsEl) {
+                    cambioBsEl.textContent = '';
+                    cambioBsEl.style.display = 'none';
+                }
             }
         } else {
             // Pago insuficiente — mostrar cuánto falta en la moneda de pago
