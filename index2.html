@@ -4828,7 +4828,19 @@
         ═══════════════════════════════════════════════════════════ -->
         <div class="module-panel" id="module-purchases">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
-                <h2 style="font-size:20px;font-weight:700;">📥 Compras</h2>
+                <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+                    <h2 style="font-size:20px;font-weight:700;">📥 Compras</h2>
+                    <div id="purchasesHeaderTotal"
+                         style="display:none;align-items:center;gap:6px;background:var(--surface-2);
+                                border:1.5px solid var(--border);border-radius:10px;
+                                padding:5px 14px;font-size:13px;font-weight:600;">
+                        <span style="color:var(--text-3);font-weight:400;font-size:12px;">Total</span>
+                        <span id="purchasesHeaderTotalAmt" style="color:var(--primary);"></span>
+                        <span id="purchasesHeaderCount"
+                              style="background:var(--primary-light);color:var(--primary);
+                                     font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;"></span>
+                    </div>
+                </div>
                 <button class="btn btn-primary" onclick="openModal('purchase')">+ Nueva Compra</button>
             </div>
             <div style="margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
@@ -4862,7 +4874,19 @@
         ═══════════════════════════════════════════════════════════ -->
         <div class="module-panel" id="module-expenses">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
-                <h2 style="font-size:20px;font-weight:700;">💸 Gastos</h2>
+                <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+                    <h2 style="font-size:20px;font-weight:700;">💸 Gastos</h2>
+                    <div id="expensesHeaderTotal"
+                         style="display:none;align-items:center;gap:6px;background:var(--surface-2);
+                                border:1.5px solid var(--border);border-radius:10px;
+                                padding:5px 14px;font-size:13px;font-weight:600;">
+                        <span style="color:var(--text-3);font-weight:400;font-size:12px;">Total</span>
+                        <span id="expensesHeaderTotalAmt" style="color:var(--danger);"></span>
+                        <span id="expensesHeaderCount"
+                              style="background:rgba(239,68,68,.12);color:var(--danger);
+                                     font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;"></span>
+                    </div>
+                </div>
                 <button class="btn btn-primary" onclick="openModal('expense')">+ Nuevo Gasto</button>
             </div>
             <div style="margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
@@ -9808,6 +9832,20 @@
         const totEl    = document.getElementById('purchasesTotals');
         if (totEl) totEl.innerHTML = list.length > 0 ? `${list.length} orden${list.length!==1?'es':''} · ${dcFmt(totPurch, dispP)} (${dispP})` : '';
 
+        // Totalizador en encabezado
+        const hdrTotal = document.getElementById('purchasesHeaderTotal');
+        const hdrAmt   = document.getElementById('purchasesHeaderTotalAmt');
+        const hdrCount = document.getElementById('purchasesHeaderCount');
+        if (hdrTotal && hdrAmt && hdrCount) {
+            if (list.length > 0) {
+                hdrAmt.textContent   = `${dcFmt(totPurch, dispP)} ${dispP}`;
+                hdrCount.textContent = `${list.length} orden${list.length!==1?'es':''}`;
+                hdrTotal.style.display = 'flex';
+            } else {
+                hdrTotal.style.display = 'none';
+            }
+        }
+
         tbody.innerHTML = list.length === 0
             ? `<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--text-2);">${q||dateFrom||dateTo?'🔍 Sin compras con ese criterio.':'📥 No hay compras registradas.'}</td></tr>`
             : [...list].sort((a,b)=>new Date(b.date||0)-new Date(a.date||0)).map(p => `
@@ -9881,6 +9919,30 @@
             totEl.innerHTML = list.length > 0
                 ? `${list.length} gasto${list.length!==1?'s':''} · ${parts.join(' + ')}${dispPart}`
                 : '';
+        }
+
+        // Totalizador en encabezado
+        const hdrTotalE = document.getElementById('expensesHeaderTotal');
+        const hdrAmtE   = document.getElementById('expensesHeaderTotalAmt');
+        const hdrCountE = document.getElementById('expensesHeaderCount');
+        if (hdrTotalE && hdrAmtE && hdrCountE) {
+            if (list.length > 0) {
+                const partsH = [];
+                if (totVES > 0) partsH.push(formatCurrency(totVES,'VES'));
+                if (totEUR > 0) partsH.push(formatCurrency(totEUR,'EUR'));
+                if (totUSD > 0) partsH.push(formatCurrency(totUSD,'USD'));
+                // Si hay más de una moneda, mostrar también el equivalente en moneda display
+                const dispSuffix = partsH.length > 1
+                    ? ` = ${dcFmt(totDisp, disp)} ${disp}`
+                    : ` ${(list[0]?.currency || defCurr)}`;
+                hdrAmtE.textContent   = partsH.length === 1
+                    ? `${partsH[0]} ${list[0]?.currency || defCurr}`
+                    : `${partsH.join(' + ')}${dispSuffix}`;
+                hdrCountE.textContent = `${list.length} gasto${list.length!==1?'s':''}`;
+                hdrTotalE.style.display = 'flex';
+            } else {
+                hdrTotalE.style.display = 'none';
+            }
         }
 
         if (list.length === 0) {
