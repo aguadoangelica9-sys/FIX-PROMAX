@@ -4278,6 +4278,20 @@
                     <button class="btn btn-sm btn-primary" onclick="openModal('customer')">👤 Cliente</button>
                 </div>
             </div>
+            <!-- ── Tabs móvil: Productos / Carrito (mobile.css los controla) ── -->
+            <div id="posMobileTabs">
+                <button id="posMobileTabProds" class="pos-mobile-tab active"
+                        onclick="showPOSPanel('products')">
+                    📦 Productos
+                </button>
+                <button id="posMobileTabCart" class="pos-mobile-tab"
+                        onclick="showPOSPanel('cart')">
+                    🛒 Carrito
+                    <span id="posMobileCartCount"
+                          style="background:var(--danger);color:#fff;border-radius:20px;
+                                 font-size:11px;padding:1px 7px;margin-left:4px;display:none;">0</span>
+                </button>
+            </div>
             <div class="pos-grid">
                 <div id="posProductsPanel">
                     <div id="posSearchBar" style="display:flex;gap:10px;margin-bottom:14px;">
@@ -4446,7 +4460,7 @@
                         <table>
                             <thead><tr>
                                 <th>Tipo</th><th>Número</th><th>Cliente</th>
-                                <th>Descripción</th><th></th>Total</th><th>Estado</th><th>Fecha</th><th>Acciones</th>
+                                <th>Descripción</th><th>Total</th><th>Estado</th><th>Fecha</th><th>Acciones</th>
                             </tr></thead>
                             <tbody id="invoicesTableBody"></tbody>
                         </table>
@@ -16530,87 +16544,39 @@
             }
         }, { passive: true });
 
-        /* ── Mejorar POS: panel toggle en móvil ─────────────────── */
-        // En móvil el POS puede alternar entre vista de productos y carrito
-        let _posView = 'products'; // 'products' | 'cart'
-
-        function togglePOSPanel(view) {
-            _posView = view;
-            const posGrid = document.querySelector('.pos-grid');
-            if (!posGrid || window.innerWidth > 768) return;
-            const products = posGrid.querySelector('.pos-products');
-            const cart     = posGrid.querySelector('.pos-cart');
-            if (!products || !cart) return;
+        /* ── POS: panel toggle en móvil ─────────────────────────── */
+        // Sistema unificado — usa los IDs de mobile.css (#posProductsPanel / #posCartPanel)
+        function showPOSPanel(view) {
+            if (window.innerWidth > 768) return;
+            const prodsPanel = document.getElementById('posProductsPanel');
+            const cartPanel  = document.getElementById('posCartPanel');
+            const tabProds   = document.getElementById('posMobileTabProds');
+            const tabCart    = document.getElementById('posMobileTabCart');
+            const fab        = document.getElementById('mobCartFab');
+            if (!prodsPanel || !cartPanel) return;
 
             if (view === 'cart') {
-                products.style.display = 'none';
-                cart.style.display     = 'flex';
-                document.getElementById('posMobileTabProds')?.classList.remove('active');
-                document.getElementById('posMobileTabCart')?.classList.add('active');
+                prodsPanel.style.display = 'none';
+                cartPanel.classList.add('mob-visible');
+                tabProds?.classList.remove('active');
+                tabCart?.classList.add('active');
+                if (fab) fab.style.display = 'none';
             } else {
-                products.style.display = 'grid';
-                cart.style.display     = 'none';
-                document.getElementById('posMobileTabProds')?.classList.add('active');
-                document.getElementById('posMobileTabCart')?.classList.remove('active');
+                prodsPanel.style.display = '';   // mobile.css lo pone en block
+                cartPanel.classList.remove('mob-visible');
+                tabProds?.classList.add('active');
+                tabCart?.classList.remove('active');
+                // Mostrar FAB solo si hay items
+                const count = parseInt(document.getElementById('cartCount')?.textContent) || 0;
+                if (fab) fab.style.display = count > 0 ? '' : 'none';
             }
         }
+        window.showPOSPanel   = showPOSPanel;
+        window.togglePOSPanel = showPOSPanel; // alias legacy
 
-        window.togglePOSPanel = togglePOSPanel;
+        // injectPOSTabs eliminado — los tabs ya existen en el HTML (#posMobileTabs)
+        function injectPOSTabs() {}
 
-        // Inyectar barra de tabs del POS en móvil cuando se navega a POS
-        function injectPOSTabs() {
-            const posPanel = document.getElementById('module-pos');
-            if (!posPanel || document.getElementById('posMobileTabs')) return;
-
-            const tabsDiv = document.createElement('div');
-            tabsDiv.id = 'posMobileTabs';
-            tabsDiv.style.cssText = `
-                display: none;
-                margin-bottom: 12px;
-                background: var(--surface);
-                border: 1px solid var(--border);
-                border-radius: var(--radius-sm);
-                padding: 4px;
-                gap: 4px;
-            `;
-            tabsDiv.innerHTML = `
-                <button id="posMobileTabProds"
-                    style="flex:1;padding:10px;border:none;background:var(--primary-gradient);color:#fff;border-radius:6px;font-weight:600;font-size:14px;cursor:pointer;font-family:inherit;"
-                    onclick="togglePOSPanel('products')">
-                    📦 Productos
-                </button>
-                <button id="posMobileTabCart"
-                    style="flex:1;padding:10px;border:none;background:transparent;color:var(--text-2);border-radius:6px;font-weight:600;font-size:14px;cursor:pointer;font-family:inherit;"
-                    onclick="togglePOSPanel('cart')">
-                    🛒 Carrito <span id="posMobileCartCount" style="background:var(--danger);color:#fff;border-radius:20px;font-size:11px;padding:1px 6px;margin-left:4px;display:none;">0</span>
-                </button>
-            `;
-            // Insertar antes del pos-grid
-            const posGrid = posPanel.querySelector('.pos-grid');
-            if (posGrid) posPanel.insertBefore(tabsDiv, posGrid);
-
-            // Mostrar en móvil vía CSS
-            const style = document.createElement('style');
-            style.textContent = `
-                @media (max-width: 768px) {
-                    #posMobileTabs {
-                        display: flex !important;
-                    }
-                    .pos-grid {
-                        display: block !important;
-                    }
-                    .pos-grid .pos-cart {
-                        display: none;
-                    }
-                    .pos-grid .pos-products {
-                        max-height: calc(100dvh - 260px);
-                    }
-                }
-            `;
-            document.head.appendChild(style);
-        }
-
-        // Actualizar contador de items en el tab del carrito (hookeamos addToCart)
         function updatePOSCartBadge(count) {
             const badge = document.getElementById('posMobileCartCount');
             if (!badge) return;
@@ -16625,7 +16591,8 @@
 
         /* ── Inicializar tras DOM listo ──────────────────────────── */
         document.addEventListener('DOMContentLoaded', function() {
-            injectPOSTabs();
+            // Inicializar estado POS en móvil
+            if (window.innerWidth <= 768) showPOSPanel('products');
             // Inicializar estado de la barra inferior con el módulo activo
             const activePanel = document.querySelector('.module-panel.active');
             if (activePanel) {

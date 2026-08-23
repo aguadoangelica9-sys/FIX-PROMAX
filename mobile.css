@@ -866,8 +866,8 @@
 /* ── 1. Ocultar encabezado original ── */
 @media (max-width: 768px) {
 
-    /* El primer hijo de #module-pos es el encabezado del ERP: se oculta */
-    #module-pos > div:first-child:not(#posMobileTabs) {
+    /* Ocultar el div de título/barcode/botones del POS (tiene h2 + flex gap-2) */
+    #module-pos > div:first-child {
         display: none !important;
     }
 
@@ -1166,14 +1166,13 @@
 
 /* ── POS: eliminar padding del .main para que los tabs queden pegados al header ── */
 @media (max-width: 768px) {
-    /* Cuando el módulo POS está activo, quitar el padding-top del main */
-    #module-pos.module-panel.active {
-        margin-top: -16px !important;
-    }
-
-    /* El ERP también añade padding en .module-panel — anularlo para POS */
+    /* Sin padding en el module-panel del POS — los tabs se pegan al header */
     #module-pos.module-panel {
         padding: 0 !important;
+        margin-top: 0 !important;
+    }
+    #module-pos.module-panel.active {
+        margin-top: 0 !important;
     }
 }
 
@@ -1274,12 +1273,26 @@
         justify-content: center !important;
     }
 
-    /* Ocultar columna descripción en facturas — muy larga */
+    /* Tabla facturas: ocultar Tipo y Descripción en ≤768px */
+    #invoicesTableBody tr td:nth-child(1),
+    #module-invoices table thead tr th:nth-child(1),
+    #invoicesTableBody tr td:nth-child(4),
+    #module-invoices table thead tr th:nth-child(4) {
+        display: none !important;
+    }
+
+    /* Tabla facturas: ocultar también Fecha en ≤480px — queda Número / Cliente / Total / Estado / Acciones */
     @media (max-width: 480px) {
-        #invoicesTableBody tr td:nth-child(4),
-        #module-invoices table thead tr th:nth-child(4) {
+        #invoicesTableBody tr td:nth-child(7),
+        #module-invoices table thead tr th:nth-child(7) {
             display: none !important;
         }
+    }
+
+    /* Tabla cotizaciones: ocultar Vence en ≤768px */
+    #quotesTableBody tr td:nth-child(6),
+    #module-invoices #panel-quotes table thead tr th:nth-child(6) {
+        display: none !important;
     }
 
     /* Stats cotizaciones — horizontal scroll */
