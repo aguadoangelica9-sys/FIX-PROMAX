@@ -5621,6 +5621,60 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <!-- ═══════════════════════════════════════════════════════════════
+    MODAL — CONFIRMACIÓN RESET CON COUNTDOWN
+    ═══════════════════════════════════════════════════════════════ -->
+    <div class="modal-overlay" id="resetConfirmModal" role="dialog" aria-modal="true" aria-labelledby="resetModalTitle"
+         onclick="if(event.target===this) closeResetModal()">
+        <div class="modal-box" style="max-width:440px;text-align:center;">
+            <!-- Icono de advertencia -->
+            <div style="font-size:52px;line-height:1;margin-bottom:12px;">⚠️</div>
+            <h2 id="resetModalTitle" style="font-size:18px;font-weight:700;color:var(--danger);margin-bottom:10px;">
+                Eliminar todos los datos
+            </h2>
+            <p style="font-size:14px;color:var(--text-2);margin-bottom:6px;line-height:1.6;">
+                Esta acción borrará <strong>permanentemente</strong> todas las ventas, productos,
+                clientes, facturas, compras, gastos y demás registros de tu empresa.
+            </p>
+            <p style="font-size:13px;color:var(--text-3);margin-bottom:20px;">
+                No se puede deshacer.
+            </p>
+
+            <!-- Countdown ring -->
+            <div style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:22px;">
+                <div style="position:relative;width:72px;height:72px;">
+                    <svg width="72" height="72" style="transform:rotate(-90deg);">
+                        <circle cx="36" cy="36" r="30"
+                            fill="none" stroke="var(--border)" stroke-width="5"/>
+                        <circle id="resetCountdownRing" cx="36" cy="36" r="30"
+                            fill="none" stroke="var(--danger)" stroke-width="5"
+                            stroke-dasharray="188.5" stroke-dashoffset="0"
+                            stroke-linecap="round"
+                            style="transition:stroke-dashoffset 1s linear;"/>
+                    </svg>
+                    <span id="resetCountdownNum"
+                        style="position:absolute;inset:0;display:flex;align-items:center;
+                               justify-content:center;font-size:22px;font-weight:800;
+                               color:var(--danger);font-variant-numeric:tabular-nums;">
+                        15
+                    </span>
+                </div>
+                <span style="font-size:12px;color:var(--text-3);">Espera para confirmar</span>
+            </div>
+
+            <div class="form-actions" style="justify-content:center;gap:12px;">
+                <button class="btn btn-secondary" onclick="closeResetModal()" style="min-width:120px;">
+                    Cancelar
+                </button>
+                <button id="resetConfirmBtn" class="btn btn-danger" disabled
+                    onclick="confirmResetAll()"
+                    style="min-width:140px;opacity:.45;cursor:not-allowed;transition:opacity .3s;">
+                    🗑️ Sí, eliminar todo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════
     BARRA DE NAVEGACIÓN INFERIOR — MÓVIL
     Visible solo en ≤768px. Misma lógica que el sidebar pero táctil.
     ═══════════════════════════════════════════════════════════════ -->
@@ -13871,7 +13925,67 @@
     }
 
     async function resetAll() {
-        if (!confirm('¿Eliminar todos los datos? Esta acción no se puede deshacer.')) return;
+        // Abrir modal de confirmación con countdown de 15 s
+        const modal   = document.getElementById('resetConfirmModal');
+        const btn     = document.getElementById('resetConfirmBtn');
+        const numEl   = document.getElementById('resetCountdownNum');
+        const ringEl  = document.getElementById('resetCountdownRing');
+        if (!modal) return;
+
+        // Reiniciar estado
+        let _resetCountdownTimer = null;
+        let seconds = 15;
+        const circumference = 188.5; // 2π × r(30)
+
+        btn.disabled = true;
+        btn.style.opacity = '.45';
+        btn.style.cursor  = 'not-allowed';
+        numEl.textContent = seconds;
+        ringEl.style.strokeDashoffset = '0';
+
+        modal.classList.add('open');
+
+        // Guardar referencia del timer en el modal para cancelarlo si se cierra
+        _resetCountdownTimer = setInterval(() => {
+            seconds--;
+            numEl.textContent = seconds;
+            // Animar el arco: de 0 a circumference en 15 pasos
+            ringEl.style.strokeDashoffset = String(circumference * (1 - seconds / 15));
+
+            if (seconds <= 0) {
+                clearInterval(_resetCountdownTimer);
+                btn.disabled = false;
+                btn.style.opacity  = '1';
+                btn.style.cursor   = 'pointer';
+                numEl.textContent  = '✓';
+                numEl.style.color  = 'var(--success)';
+                ringEl.style.stroke = 'var(--success)';
+            }
+        }, 1000);
+
+        // Guardar timer para poder cancelarlo al cerrar
+        modal._countdownTimer = _resetCountdownTimer;
+    }
+
+    function closeResetModal() {
+        const modal = document.getElementById('resetConfirmModal');
+        if (!modal) return;
+        if (modal._countdownTimer) {
+            clearInterval(modal._countdownTimer);
+            modal._countdownTimer = null;
+        }
+        modal.classList.remove('open');
+        // Restaurar estado del countdown para la próxima apertura
+        const numEl  = document.getElementById('resetCountdownNum');
+        const ringEl = document.getElementById('resetCountdownRing');
+        const btn    = document.getElementById('resetConfirmBtn');
+        if (numEl)  { numEl.textContent = '15'; numEl.style.color = 'var(--danger)'; }
+        if (ringEl) { ringEl.style.stroke = 'var(--danger)'; ringEl.style.strokeDashoffset = '0'; }
+        if (btn)    { btn.disabled = true; btn.style.opacity = '.45'; btn.style.cursor = 'not-allowed'; }
+    }
+
+    async function confirmResetAll() {
+        closeResetModal();
 
         const token = localStorage.getItem('fixpromax_token');
         const authHeaders = token
@@ -13901,7 +14015,6 @@
                         }
                     }
                 } else {
-                    // Backend respondió ok:false (ej. 403 sin permisos)
                     showToast('❌', json.error || 'No tienes permiso para resetear los datos');
                     return;
                 }
@@ -13913,11 +14026,9 @@
                 showToast('❌', json.error || 'Solo el propietario puede resetear los datos');
                 return;
             } else {
-                // Fallo del servidor — reset local como fallback
                 data = defaultData();
             }
         } catch {
-            // Sin conexión — reset local
             data = defaultData();
         }
 
@@ -14026,7 +14137,12 @@
             e.preventDefault();
             openCmd();
         }
-        if (e.key === 'Escape') closeCmd();
+        if (e.key === 'Escape') {
+            closeCmd();
+            // Cerrar modal de reset si está abierto (cancela el countdown)
+            const resetModal = document.getElementById('resetConfirmModal');
+            if (resetModal && resetModal.classList.contains('open')) closeResetModal();
+        }
     });
 
     function openCmd() {
