@@ -5447,6 +5447,18 @@ app.get('/api/admin/company/:companyId/team', requireAdmin, async (req, res) => 
     }
 });
 
+// GET /api/admin/company/:companyId/db — leer BD completa de una empresa (solo admin)
+app.get('/api/admin/company/:companyId/db', requireAdmin, async (req, res) => {
+    try {
+        const { companyId } = req.params;
+        const data = await DB.readCompanyDB(companyId);
+        if (!data) return err(res, 'BD no encontrada', 404);
+        ok(res, data);
+    } catch (e) {
+        err(res, 'Error al leer BD: ' + e.message, 500);
+    }
+});
+
 // PUT /api/admin/company/:companyId/db — restaurar BD completa de una empresa (solo admin)
 app.put('/api/admin/company/:companyId/db', requireAdmin, async (req, res) => {
     try {
