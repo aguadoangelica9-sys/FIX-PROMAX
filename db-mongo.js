@@ -520,6 +520,61 @@ async function writeConfig(cfg) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// BACKUPS AUTOMÁTICOS POR EMPRESA
+// Guarda un snapshot completo cada vez que se llama saveBackup().
+// Conserva solo los últimos 10 backups por empresa para no saturar la BD.
+// ─────────────────────────────────────────────────────────────────────────────
+const BACKUP_KEEP = 10; // backups máximos por empresa
+
+async function saveBackup(companyId, data, trigger = 'auto') {
+    try {
+        const { CompanyBackup } = require('./models/index');
+        await CompanyBackup.create({
+            companyId,
+            savedAt:   new Date().toISOString(),
+            trigger,
+            products:  (data.products  || []).length,
+            customers: (data.customers || []).length,
+            sales:     (data.sales     || []).length,
+            snapshot:  data,
+        });
+        // Borrar backups más viejos si hay más de BACKUP_KEEP
+        const count = await CompanyBackup.countDocuments({ companyId });
+        if (count > BACKUP_KEEP) {
+            const oldest = await CompanyBackup.find({ companyId })
+                .sort({ savedAt: 1 })
+                .limit(count - BACKUP_KEEP)
+                .select('_id');
+            await CompanyBackup.deleteMany({ _id: { $in: oldest.map(d => d._id) } });
+        }
+    } catch (e) {
+        // El backup no debe interrumpir el flujo principal
+        console.warn('[saveBackup] Error (no crítico):', e.message);
+    }
+}
+
+async function listBackups(companyId) {
+    try {
+        const { CompanyBackup } = require('./models/index');
+        return await CompanyBackup.find({ companyId })
+            .sort({ savedAt: -1 })
+            .select('-snapshot') // no devolver el snapshot completo en el listado
+            .lean();
+    } catch (e) {
+        return [];
+    }
+}
+
+async function getBackup(backupId) {
+    try {
+        const { CompanyBackup } = require('./models/index');
+        return await CompanyBackup.findById(backupId).lean();
+    } catch (e) {
+        return null;
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // EXPORTS
 // ─────────────────────────────────────────────────────────────────────────────
 module.exports = {
@@ -556,4 +611,7 @@ module.exports = {
 
     // Config
     getConfig, writeConfig,
+
+    // Backups automáticos
+    saveBackup, listBackups, getBackup,
 };

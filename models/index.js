@@ -251,4 +251,13 @@ module.exports = {
     WAAlert:     mongoose.model('WAAlert',     WAAlertSchema),
     AppConfig:   mongoose.model('AppConfig',   AppConfigSchema),
     CompanyDB:   mongoose.model('CompanyDB',   CompanyDBSchema),
+    CompanyBackup: mongoose.model('CompanyBackup', new mongoose.Schema({
+        companyId:  { type: String, required: true, index: true },
+        savedAt:    { type: String, default: () => new Date().toISOString() },
+        trigger:    { type: String, default: 'auto' }, // 'auto' | 'manual'
+        products:   Number,
+        customers:  Number,
+        sales:      Number,
+        snapshot:   { type: mongoose.Schema.Types.Mixed }, // BD completa
+    }, { versionKey: false })),
 };

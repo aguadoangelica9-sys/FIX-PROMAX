@@ -3428,9 +3428,39 @@ async function readDB() {
 async function writeDB(data) {
     const ctx = reqContext.getStore();
     if (ctx?.isDemo || ctx?.companyId === DEMO_COMPANY_ID) return DB.writeCompanyDB(DEMO_COMPANY_ID, data);
-    if (ctx?.companyId) return DB.writeCompanyDB(ctx.companyId, data);
-    console.error('[writeDB] ❌š ï¸  Intento de escritura sin contexto de empresa "” operación rechazada');
+    if (ctx?.companyId) {
+        await DB.writeCompanyDB(ctx.companyId, data);
+        // Backup automático sin bloquear el flujo principal
+        setImmediate(() => _autoBackup(ctx.companyId, data));
+        return;
+    }
+    console.error('[writeDB] Sin contexto de empresa — operación rechazada');
     throw new Error('writeDB requiere un contexto de empresa. Asegúrate de que requireAuth está activo.');
+}
+
+// ── Backup automático: snapshot cuando cambian datos importantes ─────────────
+const _backupState = new Map(); // companyId → contadores anteriores
+
+async function _autoBackup(companyId, data) {
+    try {
+        const prev = _backupState.get(companyId) || {};
+        const cur = {
+            products:         (data.products         || []).length,
+            customers:        (data.customers        || []).length,
+            sales:            (data.sales            || []).length,
+            expenses:         (data.expenses         || []).length,
+            accountMovements: (data.accountMovements || []).length,
+            invoices:         (data.invoices         || []).length,
+            purchases:        (data.purchases        || []).length,
+        };
+        const changed = Object.keys(cur).some(k => cur[k] !== prev[k]);
+        if (!changed) return;
+        _backupState.set(companyId, cur);
+        await DB.saveBackup(companyId, data, 'auto');
+        console.log(`[backup:auto] ${companyId} P:${cur.products} C:${cur.customers} V:${cur.sales} G:${cur.expenses}`);
+    } catch (e) {
+        console.warn('[_autoBackup] Error (no critico):', e.message);
+    }
 }
 
 // ❌”€❌”€ requireAuth ya fue actualizado directamente (línea ~1306) con companyId, teamRole y contexto async ❌”€❌”€
@@ -5494,6 +5524,43 @@ app.get('/api/admin/company/:companyId/db', requireAdmin, async (req, res) => {
         ok(res, data);
     } catch (e) {
         err(res, 'Error al leer BD: ' + e.message, 500);
+    }
+});
+
+// GET /api/admin/company/:companyId/backups — listar backups de una empresa
+app.get('/api/admin/company/:companyId/backups', requireAdmin, async (req, res) => {
+    try {
+        const backups = await DB.listBackups(req.params.companyId);
+        ok(res, backups);
+    } catch (e) {
+        err(res, 'Error listando backups: ' + e.message, 500);
+    }
+});
+
+// GET /api/admin/backups/:backupId — obtener snapshot completo de un backup
+app.get('/api/admin/backups/:backupId', requireAdmin, async (req, res) => {
+    try {
+        const backup = await DB.getBackup(req.params.backupId);
+        if (!backup) return err(res, 'Backup no encontrado', 404);
+        ok(res, backup);
+    } catch (e) {
+        err(res, 'Error obteniendo backup: ' + e.message, 500);
+    }
+});
+
+// POST /api/admin/backups/:backupId/restore — restaurar BD desde un backup
+app.post('/api/admin/backups/:backupId/restore', requireAdmin, async (req, res) => {
+    try {
+        const backup = await DB.getBackup(req.params.backupId);
+        if (!backup) return err(res, 'Backup no encontrado', 404);
+        await DB.writeCompanyDB(backup.companyId, backup.snapshot);
+        console.log(`[backup:restore] admin=${req.admin.email} companyId=${backup.companyId} backupId=${req.params.backupId}`);
+        await logAdminAction(req.admin.id, req.admin.email, 'backup_restore', backup.companyId, null,
+            `Restaurado backup ${req.params.backupId} (${backup.savedAt})`);
+        ok(res, { restored: true, companyId: backup.companyId, savedAt: backup.savedAt,
+                  products: backup.products, customers: backup.customers });
+    } catch (e) {
+        err(res, 'Error restaurando backup: ' + e.message, 500);
     }
 });
 
