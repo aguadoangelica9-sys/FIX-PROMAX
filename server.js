@@ -4007,6 +4007,26 @@ app.get('/api/admin/users/:id', requireAdmin, async (req, res) => {
 });
 
 // ❌”€❌”€ ACCIONES SOBRE USUARIOS (admin) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
+// PATCH /api/admin/users/:id/patch — actualizar campos del usuario (solo admin)
+app.patch('/api/admin/users/:id/patch', requireAdmin, async (req, res) => {
+    try {
+        const users = await readUsers();
+        const idx   = users.findIndex(u => u.id === req.params.id);
+        if (idx === -1) return err(res, 'Usuario no encontrado', 404);
+        const allowed = ['companyId','teamRole','role','active','name','company','mode'];
+        const patch   = {};
+        for (const k of allowed) {
+            if (req.body[k] !== undefined) patch[k] = req.body[k];
+        }
+        Object.assign(users[idx], patch, { updatedAt: new Date().toISOString() });
+        await writeUsers(users);
+        await logAdminAction(req.admin.id, req.admin.email, 'user_patch', users[idx].id, users[idx].email, JSON.stringify(patch));
+        ok(res, { done: true, user: users[idx] });
+    } catch (e) {
+        err(res, 'Error: ' + e.message, 500);
+    }
+});
+
 app.post('/api/admin/users/:id/action', requireAdmin, async (req, res) => {
     const { action, reason } = req.body;
     const ALLOWED = ['suspend', 'reactivate', 'grant_access', 'revoke_access', 'force_logout'];
