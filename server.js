@@ -525,7 +525,25 @@ app.get('/api/db', requireAuth, requireSubscription, async (req, res) => {
 
 app.put('/api/db', requireAuth, requireSubscription, async (req, res) => {
     try {
-        await writeDB(req.body); // await writeDB() ya usa el companyId del contexto async
+        const incoming = req.body;
+        // Protección contra sobreescritura accidental con BD vacía:
+        // Si el cliente manda 0 productos pero en Mongo ya hay productos, rechazar.
+        const current = await readDB();
+        const currentProds  = (current?.products  || []).length;
+        const currentCusts  = (current?.customers || []).length;
+        const incomingProds = (incoming?.products  || []).length;
+        const incomingCusts = (incoming?.customers || []).length;
+
+        if (currentProds > 10 && incomingProds === 0) {
+            console.warn(`[PUT /api/db] BLOQUEADO: intento de sobreescribir ${currentProds} productos con 0 — usuario ${req.user.email}`);
+            return ok(res, { saved: true, warning: 'BD local vacía ignorada — se conservan datos del servidor' });
+        }
+        if (currentProds > 0 && incomingProds < currentProds * 0.3) {
+            console.warn(`[PUT /api/db] BLOQUEADO: reducción sospechosa de ${currentProds} a ${incomingProds} productos — usuario ${req.user.email}`);
+            return ok(res, { saved: true, warning: 'Reducción masiva de productos bloqueada' });
+        }
+
+        await writeDB(incoming);
         ok(res, { saved: true });
     } catch (e) {
         err(res, 'Error al guardar la base de datos', 500);
