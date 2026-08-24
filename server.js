@@ -4018,10 +4018,10 @@ app.patch('/api/admin/users/:id/patch', requireAdmin, async (req, res) => {
         for (const k of allowed) {
             if (req.body[k] !== undefined) patch[k] = req.body[k];
         }
-        Object.assign(users[idx], patch, { updatedAt: new Date().toISOString() });
-        await writeUsers(users);
-        await logAdminAction(req.admin.id, req.admin.email, 'user_patch', users[idx].id, users[idx].email, JSON.stringify(patch));
-        ok(res, { done: true, user: users[idx] });
+        // Usar updateUser de MongoDB directamente para evitar problemas de schema
+        const updated = await DB.updateUser(req.params.id, patch);
+        await logAdminAction(req.admin.id, req.admin.email, 'user_patch', req.params.id, users[idx].email, JSON.stringify(patch));
+        ok(res, { done: true, user: updated });
     } catch (e) {
         err(res, 'Error: ' + e.message, 500);
     }
