@@ -2029,10 +2029,10 @@ app.post('/api/auth/register', async (req, res) => {
         teamRole:  'owner',        // propietario de su empresa
         permissions: null,         // propietario tiene todos los permisos
     };
-    // Crear BD para la nueva empresa solo si no existe todavía
-    // En MongoDB usamos writeCompanyDB con $setOnInsert para no sobreescribir datos existentes
+    // Crear BD para la nueva empresa solo si no existe todavía y está completamente vacía
+    // NUNCA sobreescribir una BD que ya existe en MongoDB — aunque parezca vacía
     const existingDB = await DB.readCompanyDB(newUser.companyId);
-    if (!existingDB || (!existingDB.products?.length && !existingDB.customers?.length)) {
+    if (!existingDB) {
         await writeCompanyDB(newUser.companyId, defaultData());
     }
     users.push(newUser);
