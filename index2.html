@@ -4347,18 +4347,11 @@
                     </div>
                     <!-- Toggle IVA -->
                     <div style="display:flex;align-items:center;gap:8px;margin:4px 0;font-size:13px;color:var(--text-2);">
-                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;">
-                            <div style="position:relative;width:36px;height:20px;">
-                                <input type="checkbox" id="posIvaToggle" checked
-                                    style="opacity:0;width:0;height:0;position:absolute;"
-                                    onchange="updateCartUI()" />
-                                <span id="posIvaTrack"
-                                    style="position:absolute;inset:0;border-radius:20px;background:var(--primary);transition:background .2s;cursor:pointer;"
-                                    onclick="document.getElementById('posIvaToggle').click()"></span>
-                                <span id="posIvaThumb"
-                                    style="position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .2s;pointer-events:none;"></span>
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;" onclick="posToggleIVA()">
+                            <div id="posIvaTrack" style="position:relative;width:40px;height:22px;border-radius:11px;background:var(--primary);transition:background .2s;flex-shrink:0;">
+                                <div id="posIvaThumb" style="position:absolute;top:3px;left:21px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;pointer-events:none;"></div>
                             </div>
-                            Cobrar IVA (16%)
+                            <span id="posIvaLabel">Cobrar IVA (16%)</span>
                         </label>
                     </div>
                     <div class="payment-row" style="flex-wrap:wrap;gap:8px;">
@@ -7657,6 +7650,18 @@
     /* ─── POS (existente) ─── */
     let cart = [];
     let posSelectedCustomerId = null;
+    let posIvaActivo = true; // estado del toggle IVA — true = cobrar IVA
+
+    function posToggleIVA() {
+        posIvaActivo = !posIvaActivo;
+        const track = document.getElementById('posIvaTrack');
+        const thumb = document.getElementById('posIvaThumb');
+        const label = document.getElementById('posIvaLabel');
+        if (track) track.style.background = posIvaActivo ? 'var(--primary)' : 'var(--text-3)';
+        if (thumb) thumb.style.left       = posIvaActivo ? '21px' : '3px';
+        if (label) label.textContent      = posIvaActivo ? 'Cobrar IVA (16%)' : 'Sin IVA';
+        updateCartUI();
+    }
 
     // ── POS: lógica del buscador de clientes ────────────────────────────────
 
@@ -7895,15 +7900,14 @@
         if (totalBsEl)  totalBsEl.textContent  = fmtV(totalVES);
 
         // ── Actualizar visual del toggle IVA ──────────────────────────────────
-        const ivaOn    = document.getElementById('posIvaToggle')?.checked !== false;
         const ivaTrack = document.getElementById('posIvaTrack');
         const ivaThumb = document.getElementById('posIvaThumb');
         const taxRow   = document.getElementById('cartTaxRow');
         const taxBsRow = document.getElementById('cartTaxBsRow');
-        if (ivaTrack) ivaTrack.style.background = ivaOn ? 'var(--primary)' : 'var(--text-3)';
-        if (ivaThumb) ivaThumb.style.transform  = ivaOn ? 'translateX(16px)' : 'translateX(0)';
-        if (taxRow)   taxRow.style.opacity       = ivaOn ? '1' : '0.35';
-        if (taxBsRow) taxBsRow.style.opacity     = ivaOn ? '1' : '0.35';
+        if (ivaTrack) ivaTrack.style.background = posIvaActivo ? 'var(--primary)' : 'var(--text-3)';
+        if (ivaThumb) ivaThumb.style.left        = posIvaActivo ? '21px' : '3px';
+        if (taxRow)   taxRow.style.opacity        = posIvaActivo ? '1' : '0.35';
+        if (taxBsRow) taxBsRow.style.opacity      = posIvaActivo ? '1' : '0.35';
 
         updateCambio();
     }
@@ -7935,7 +7939,7 @@
 
         // Redondear a centavos para evitar acumulación de errores floating-point
         subtotalUSD = Math.round(subtotalUSD * 100) / 100;
-        const ivaActivo = document.getElementById('posIvaToggle')?.checked !== false;
+        const ivaActivo = posIvaActivo;
         const taxUSD   = ivaActivo ? Math.round(subtotalUSD * 0.16 * 100) / 100 : 0;
         const totalUSD = Math.round((subtotalUSD + taxUSD) * 100) / 100;
 
@@ -8201,6 +8205,13 @@
         generateAlerts();
         cart = [];
         posClientClear();
+        posIvaActivo = true; // resetear IVA a activo para la siguiente venta
+        const track = document.getElementById('posIvaTrack');
+        const thumb = document.getElementById('posIvaThumb');
+        const label = document.getElementById('posIvaLabel');
+        if (track) track.style.background = 'var(--primary)';
+        if (thumb) thumb.style.left = '21px';
+        if (label) label.textContent = 'Cobrar IVA (16%)';
         updateCartUI();
         document.getElementById('paidAmount').value = '0';
         renderAll();
