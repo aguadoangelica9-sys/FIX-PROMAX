@@ -47,7 +47,12 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
     <!-- Librería para leer Excel/CSV -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <script>
+        // Fallback si el CDN principal falla
+        if (typeof XLSX === 'undefined') {
+            document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"><\/script>');
+        }
     </script>
     <!-- ── Sistema Global de Monedas VES/EUR ── -->
     <script src="/currency.js"></script>
@@ -13531,6 +13536,13 @@
     function smartImportPreview(event) {
         const file = event?.target?.files?.[0];
         if (!file) return;
+
+        // Verificar que la librería XLSX está disponible
+        if (typeof XLSX === 'undefined') {
+            showToast('⚠️', 'La librería de Excel no está disponible. Por favor recarga la página e intenta de nuevo.');
+            return;
+        }
+
         const ext = file.name.split('.').pop().toLowerCase();
         window._lastImportFileName = file.name;
         document.getElementById('dropText').textContent = '📄 ' + file.name;
@@ -13698,8 +13710,14 @@
                 document.getElementById('importResultMsg').style.display = 'none';
 
             } catch(err) {
-                showToast('⚠️', 'Error al leer: ' + err.message);
-                console.error(err);
+                let msg = err.message || 'Error desconocido';
+                if (!window.XLSX) {
+                    msg = 'La librería de Excel no cargó. Verifica tu conexión a internet y recarga la página.';
+                } else if (msg.includes('Cannot read') || msg.includes('undefined')) {
+                    msg = 'El archivo no tiene el formato esperado. Asegúrate de que sea un .xlsx, .xls o .csv válido.';
+                }
+                showToast('⚠️', 'Error al leer: ' + msg);
+                console.error('[ImportExcel]', err);
             }
         };
         reader.readAsArrayBuffer(file);
