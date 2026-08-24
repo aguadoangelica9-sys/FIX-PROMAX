@@ -47,13 +47,8 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
     <!-- Librería para leer Excel/CSV -->
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-    <script>
-        // Fallback si el CDN principal falla
-        if (typeof XLSX === 'undefined') {
-            document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"><\/script>');
-        }
-    </script>
+    <!-- XLSX servida localmente — sin dependencia de CDN externo -->
+    <script src="/xlsx.full.min.js"></script>
     <!-- ── Sistema Global de Monedas VES/EUR ── -->
     <script src="/currency.js"></script>
     <style>
