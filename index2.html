@@ -4341,9 +4341,25 @@
                             <div style="font-size:11px;color:var(--text-3);">= <span id="cartSubtotalBs">Bs. 0</span></div>
                         </div>
                         <div style="text-align:right;">
-                            <div>IVA (16%): <span id="cartTax" style="font-weight:600;color:var(--text);">$0.00</span></div>
-                            <div style="font-size:11px;color:var(--text-3);">= <span id="cartTaxBs">Bs. 0</span></div>
+                            <div id="cartTaxRow">IVA (16%): <span id="cartTax" style="font-weight:600;color:var(--text);">$0.00</span></div>
+                            <div id="cartTaxBsRow" style="font-size:11px;color:var(--text-3);">= <span id="cartTaxBs">Bs. 0</span></div>
                         </div>
+                    </div>
+                    <!-- Toggle IVA -->
+                    <div style="display:flex;align-items:center;gap:8px;margin:4px 0;font-size:13px;color:var(--text-2);">
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;">
+                            <div style="position:relative;width:36px;height:20px;">
+                                <input type="checkbox" id="posIvaToggle" checked
+                                    style="opacity:0;width:0;height:0;position:absolute;"
+                                    onchange="updateCartUI()" />
+                                <span id="posIvaTrack"
+                                    style="position:absolute;inset:0;border-radius:20px;background:var(--primary);transition:background .2s;cursor:pointer;"
+                                    onclick="document.getElementById('posIvaToggle').click()"></span>
+                                <span id="posIvaThumb"
+                                    style="position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .2s;pointer-events:none;"></span>
+                            </div>
+                            Cobrar IVA (16%)
+                        </label>
                     </div>
                     <div class="payment-row" style="flex-wrap:wrap;gap:8px;">
                         <select id="paymentMethod" style="flex:1;">
@@ -7878,6 +7894,17 @@
         if (totalEl)    totalEl.textContent    = fmtU(totUSD);
         if (totalBsEl)  totalBsEl.textContent  = fmtV(totalVES);
 
+        // ── Actualizar visual del toggle IVA ──────────────────────────────────
+        const ivaOn    = document.getElementById('posIvaToggle')?.checked !== false;
+        const ivaTrack = document.getElementById('posIvaTrack');
+        const ivaThumb = document.getElementById('posIvaThumb');
+        const taxRow   = document.getElementById('cartTaxRow');
+        const taxBsRow = document.getElementById('cartTaxBsRow');
+        if (ivaTrack) ivaTrack.style.background = ivaOn ? 'var(--primary)' : 'var(--text-3)';
+        if (ivaThumb) ivaThumb.style.transform  = ivaOn ? 'translateX(16px)' : 'translateX(0)';
+        if (taxRow)   taxRow.style.opacity       = ivaOn ? '1' : '0.35';
+        if (taxBsRow) taxBsRow.style.opacity     = ivaOn ? '1' : '0.35';
+
         updateCambio();
     }
 
@@ -7908,7 +7935,8 @@
 
         // Redondear a centavos para evitar acumulación de errores floating-point
         subtotalUSD = Math.round(subtotalUSD * 100) / 100;
-        const taxUSD   = Math.round(subtotalUSD * 0.16 * 100) / 100;
+        const ivaActivo = document.getElementById('posIvaToggle')?.checked !== false;
+        const taxUSD   = ivaActivo ? Math.round(subtotalUSD * 0.16 * 100) / 100 : 0;
         const totalUSD = Math.round((subtotalUSD + taxUSD) * 100) / 100;
 
         return { subtotalUSD, taxUSD, totalUSD, rateUSD, rateEUR };
