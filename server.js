@@ -5455,7 +5455,7 @@ app.put('/api/admin/company/:companyId/db', requireAdmin, async (req, res) => {
         if (!req.body || typeof req.body !== 'object') return err(res, 'Body JSON inválido', 400);
         await DB.writeCompanyDB(companyId, req.body);
         const d = req.body;
-        console.log(`[ADMIN RESTORE] ${req.user.email} restauró BD de empresa ${companyId} — P:${(d.products||[]).length} V:${(d.sales||[]).length} C:${(d.customers||[]).length}`);
+        console.log(`[ADMIN RESTORE] ${req.admin.email} restauró BD de empresa ${companyId} — P:${(d.products||[]).length} V:${(d.sales||[]).length} C:${(d.customers||[]).length}`);
         ok(res, { restored: true, companyId, products: (d.products||[]).length, sales: (d.sales||[]).length, customers: (d.customers||[]).length });
     } catch (e) {
         err(res, 'Error al restaurar BD: ' + e.message, 500);
