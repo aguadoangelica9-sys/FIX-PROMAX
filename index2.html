@@ -4354,6 +4354,17 @@
                             <span id="posIvaLabel">Cobrar IVA (16%)</span>
                         </label>
                     </div>
+                    <!-- Toggle CRÉDITO -->
+                    <div style="display:flex;align-items:center;gap:8px;margin:4px 0;font-size:13px;color:var(--text-2);">
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;" onclick="posToggleCredito()">
+                            <div id="posCreditTrack" style="position:relative;width:40px;height:22px;border-radius:11px;background:var(--border);transition:background .2s;flex-shrink:0;">
+                                <div id="posCreditThumb" style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.2);"></div>
+                            </div>
+                            <span id="posCreditLabel">Venta a crédito</span>
+                        </label>
+                        <!-- Indicador de saldo del cliente cuando crédito está activo -->
+                        <span id="posCreditBadge" style="display:none;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:#fef9c3;color:#ca8a04;border:1px solid #fde047;"></span>
+                    </div>
                     <div class="payment-row" style="flex-wrap:wrap;gap:8px;">
                         <select id="paymentMethod" style="flex:1;">
                             <option value="CASH">💵 Efectivo</option>
@@ -4409,6 +4420,7 @@
                     style="padding:9px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit;outline:none;">
                     <option value="">Todos los estados</option>
                     <option value="Pagada">Pagada</option>
+                    <option value="Crédito">💳 Crédito</option>
                     <option value="Anulada">Anulada</option>
                 </select>
                 <select id="salesCurrFilter" onchange="renderSales()"
@@ -7663,6 +7675,50 @@
         updateCartUI();
     }
 
+    // ── Toggle de venta a crédito ─────────────────────────────────────────
+    let posCreditoActivo = false; // estado del toggle crédito
+
+    function posToggleCredito() {
+        posCreditoActivo = !posCreditoActivo;
+        const track  = document.getElementById('posCreditTrack');
+        const thumb  = document.getElementById('posCreditThumb');
+        const label  = document.getElementById('posCreditLabel');
+        const badge  = document.getElementById('posCreditBadge');
+        const paidEl = document.getElementById('paidAmount');
+
+        if (track) track.style.background = posCreditoActivo ? 'var(--warning)' : 'var(--border)';
+        if (thumb) thumb.style.left       = posCreditoActivo ? '21px' : '3px';
+        if (label) label.textContent      = posCreditoActivo ? '🟡 Venta a crédito (ACTIVO)' : 'Venta a crédito';
+        if (label) label.style.fontWeight = posCreditoActivo ? '700' : '400';
+        if (label) label.style.color      = posCreditoActivo ? 'var(--warning)' : '';
+
+        // Si activo: monto pagado = 0 y se deshabilita el campo
+        if (paidEl) {
+            paidEl.value    = posCreditoActivo ? '0' : '';
+            paidEl.disabled = posCreditoActivo;
+            paidEl.style.opacity = posCreditoActivo ? '0.4' : '1';
+        }
+
+        // Mostrar saldo actual del cliente si hay uno seleccionado
+        if (posCreditoActivo && posSelectedCustomerId) {
+            const c = data.customers.find(x => x.id === posSelectedCustomerId);
+            if (c && badge) {
+                const saldo = c.balance || 0;
+                badge.textContent = saldo > 0
+                    ? `Saldo pendiente: ${dcFmt(saldo, 'USD')}`
+                    : 'Sin deuda pendiente';
+                badge.style.background = saldo > 0 ? '#fee2e2' : '#dcfce7';
+                badge.style.color      = saldo > 0 ? '#dc2626' : '#16a34a';
+                badge.style.borderColor= saldo > 0 ? '#fca5a5' : '#86efac';
+                badge.style.display    = 'inline-block';
+            }
+        } else {
+            if (badge) badge.style.display = 'none';
+        }
+
+        updateCambio();
+    }
+
     // ── POS: lógica del buscador de clientes ────────────────────────────────
 
     function posClientShowDropdown() {
@@ -8063,20 +8119,21 @@
         const { subtotalUSD, taxUSD, totalUSD, rateUSD, rateEUR } = _posCartTotals();
 
         const posCurr     = document.getElementById('posCurrency')?.value || 'USD';
-        // Total en la moneda que el cajero seleccionó (para mostrarlo en el error)
         const totalInCurr = _posToPosCurr(totalUSD, posCurr, rateUSD, rateEUR);
 
-        // Leer el monto del input — siempre en USD, solo normalizar separador decimal
-        const paidRaw  = (document.getElementById('paidAmount').value || '').replace(',', '.');
-        const paidInCurr = parseFloat(paidRaw) || 0;
-        // El input es en USD — no requiere conversión
-        const paidUSD  = paidInCurr;
+        // ── Si es venta a crédito: saltar validación de monto ────────────────
+        const esCredito = typeof posCreditoActivo !== 'undefined' && posCreditoActivo;
 
-        // ── Comparar en centavos enteros para evitar errores floating-point ──
+        // Leer el monto del input — siempre en USD
+        const paidRaw    = (document.getElementById('paidAmount').value || '').replace(',', '.');
+        const paidInCurr = esCredito ? 0 : (parseFloat(paidRaw) || 0);
+        const paidUSD    = paidInCurr;
+
+        // ── Comparar en centavos enteros ──────────────────────────────────────
         const paidCents  = Math.round(paidUSD  * 100);
         const totalCents = Math.round(totalUSD * 100);
 
-        if (paidCents < totalCents) {
+        if (!esCredito && paidCents < totalCents) {
             const faltaCents   = totalCents - paidCents;
             const faltaUSD     = faltaCents / 100;
             const faltaEnCurr  = _posToPosCurr(faltaUSD, posCurr, rateUSD, rateEUR);
@@ -8091,14 +8148,18 @@
             return;
         }
 
+        // ── Si es crédito y no hay cliente seleccionado: avisar ──────────────
+        if (esCredito && !posSelectedCustomerId) {
+            showToast('⚠️', 'Selecciona un cliente para registrar la venta a crédito');
+            return;
+        }
+
         // ── Todos los valores almacenados en USD (moneda base) ─────────────────
         const subtotal   = Math.round(subtotalUSD * 100) / 100;
         const tax        = Math.round(taxUSD      * 100) / 100;
         const grandTotal = Math.round(totalUSD    * 100) / 100;
-        // paid guardado en USD para consistencia con total/subtotal/tax
-        const paidToSave = Math.round(paidUSD     * 100) / 100;
-        // Cambio calculado en centavos, devuelto en USD
-        const cambioUSD  = (paidCents - totalCents) / 100;
+        const paidToSave = esCredito ? 0 : Math.round(paidUSD * 100) / 100;
+        const cambioUSD  = esCredito ? 0 : (paidCents - totalCents) / 100;
 
         const invoice = `INV-${Date.now().toString().slice(-6)}`;
         const saleId = generateId();
@@ -8114,13 +8175,23 @@
             total:    grandTotal,
             paid:     paidToSave,
             cambio:   cambioUSD,
-            method:   document.getElementById('paymentMethod').value,
+            method:   esCredito ? 'CREDITO' : document.getElementById('paymentMethod').value,
             date:     new Date().toISOString(),
-            status:   'Pagada',
-            currency: 'USD',                   // base interna siempre USD
-            posCurrency: posCurr,              // moneda en que operó el cajero
-            paidInPosCurr: paidInCurr,         // monto original tal como lo ingresó el cajero
+            status:   esCredito ? 'Crédito' : 'Pagada',
+            isCredit: esCredito,
+            currency: 'USD',
+            posCurrency: posCurr,
+            paidInPosCurr: paidInCurr,
         };
+
+        // ── Si es crédito: sumar al balance del cliente ──────────────────────
+        if (esCredito && posSelectedCustomerId) {
+            const clientIdx = data.customers.findIndex(c => c.id === posSelectedCustomerId);
+            if (clientIdx !== -1) {
+                data.customers[clientIdx].balance =
+                    Math.round(((data.customers[clientIdx].balance || 0) + grandTotal) * 100) / 100;
+            }
+        }
         data.sales.push(sale);
         logAudit('create', 'sale', saleId, sale);
 
@@ -8212,13 +8283,26 @@
         if (track) track.style.background = 'var(--primary)';
         if (thumb) thumb.style.left = '21px';
         if (label) label.textContent = 'Cobrar IVA (16%)';
+        // Resetear crédito para la siguiente venta
+        posCreditoActivo = false;
+        const cTrack = document.getElementById('posCreditTrack');
+        const cThumb = document.getElementById('posCreditThumb');
+        const cLabel = document.getElementById('posCreditLabel');
+        const cBadge = document.getElementById('posCreditBadge');
+        const paidEl = document.getElementById('paidAmount');
+        if (cTrack) cTrack.style.background = 'var(--border)';
+        if (cThumb) cThumb.style.left = '3px';
+        if (cLabel) { cLabel.textContent = 'Venta a crédito'; cLabel.style.fontWeight = '400'; cLabel.style.color = ''; }
+        if (cBadge) cBadge.style.display = 'none';
+        if (paidEl) { paidEl.disabled = false; paidEl.style.opacity = '1'; }
         updateCartUI();
         document.getElementById('paidAmount').value = '0';
         renderAll();
-        await _persistAndNotify(
-            `🎉 Venta ${invoice} completada — Cambio: ${_posToPosCurr(cambioUSD, posCurr, rateUSD, rateEUR).toFixed(2)} ${posCurr}`,
-            `Venta ${invoice} guardada localmente — verifica conexión`
-        );
+        const msgOk = esCredito
+            ? `💳 Venta ${invoice} a crédito registrada — Saldo añadido al cliente`
+            : `🎉 Venta ${invoice} completada — Cambio: ${_posToPosCurr(cambioUSD, posCurr, rateUSD, rateEUR).toFixed(2)} ${posCurr}`;
+        const msgFail = `Venta ${invoice} guardada localmente — verifica conexión`;
+        await _persistAndNotify(msgOk, msgFail);
     }
 
     /* ─── Dashboard ─── */
@@ -8748,7 +8832,7 @@
                 <td style="white-space:nowrap;">${dcFmtBadge(s.total, s.currency)}</td>
                 <td>${s.method || 'N/A'}</td>
                 <td style="font-size:12px;">${new Date(s.date).toLocaleDateString()}</td>
-                <td><span class="badge ${s.status === 'Anulada' ? 'badge-secondary' : 'badge-success'}">${s.status || 'Pagada'}</span></td>
+                <td><span class="badge ${s.status === 'Anulada' ? 'badge-secondary' : s.status === 'Crédito' ? 'badge-warning' : 'badge-success'}">${s.status || 'Pagada'}</span></td>
                 <td style="white-space:nowrap;">
                     <button class="btn btn-sm" onclick="printSaleReceipt('${s.id}')" title="Ver/Imprimir">🖨️</button>
                     ${s.status !== 'Anulada' ? `<button class="btn btn-sm btn-danger" onclick="voidSale('${s.id}')">Anular</button>` : ''}

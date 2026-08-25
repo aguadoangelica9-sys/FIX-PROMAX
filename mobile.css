@@ -1681,3 +1681,24 @@
     #mobileHeaderLogo { font-size: 14px !important; }
     .module-panel { padding: 20px 20px 12px !important; }
 }
+
+/* ── Toggle de crédito en POS — estilos móvil ── */
+@media (max-width: 768px) {
+    /* Contenedor del toggle */
+    #posCreditTrack {
+        flex-shrink: 0;
+    }
+
+    /* Badge de saldo del cliente */
+    #posCreditBadge {
+        font-size: 11px !important;
+        padding: 3px 10px !important;
+        border-radius: 20px !important;
+        display: inline-block;
+    }
+
+    /* Fila de los toggles IVA / Crédito */
+    #posCartPanel > div[style*="display:flex"][style*="align-items:center"][style*="gap:8px"] {
+        padding: 2px 14px !important;
+    }
+}
