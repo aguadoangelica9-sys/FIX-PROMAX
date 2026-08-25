@@ -8892,6 +8892,7 @@
                 <td style="white-space:nowrap;">
                     <button class="btn btn-sm" onclick="printSaleReceipt('${s.id}')" title="Ver/Imprimir">🖨️</button>
                     ${s.status !== 'Anulada' ? `<button class="btn btn-sm btn-danger" onclick="voidSale('${s.id}')">Anular</button>` : ''}
+                    ${s.status === 'Anulada' ? `<button class="btn btn-sm btn-danger" onclick="deleteSale('${s.id}')" title="Eliminar venta anulada">🗑️ Eliminar</button>` : ''}
                     <button class="btn btn-sm" onclick="openReturnModal('${s.id}', null)" title="Devolución">↩️</button>
                 </td>
             </tr>`).join('');
@@ -8971,40 +8972,43 @@
             inventoryAccount.balance = (inventoryAccount.balance || 0) + costEstimate;
         }
         sale.status = 'Anulada';
-
         // Anular factura asociada
         const inv = data.invoices.find(i => i.number === sale.invoice);
         if (inv) inv.status = 'Anulada';
+        logAudit('void', 'sale', saleId, { invoice: sale.invoice });
+        renderAll();
+        _persistAndNotify('Venta anulada correctamente', 'Cambio guardado localmente');
+    }
 
-        // Eliminar CxC en accountMovements vinculada a esta venta (si era a crédito)
-        if (sale.isCredit || sale.method === 'CREDITO' || sale.status === 'Crédito') {
-            // Revertir balance del cliente
-            if (sale.customerId) {
-                const clientIdx = data.customers.findIndex(c => c.id === sale.customerId);
-                if (clientIdx !== -1) {
-                    data.customers[clientIdx].balance =
-                        Math.round(((data.customers[clientIdx].balance || 0) - sale.total) * 100) / 100;
-                }
-            }
-            // Revertir cuenta CxC en contabilidad
-            const cxcAccount = data.chartOfAccounts.find(a => a.code === '1-02');
-            if (cxcAccount) {
-                cxcAccount.balance = Math.max(0, Math.round(((cxcAccount.balance || 0) - sale.total) * 100) / 100);
-            }
-        }
+    async function deleteSale(saleId) {
+        if (!confirm('¿Eliminar esta venta anulada? Esta acción no se puede deshacer.')) return;
 
-        // Eliminar accountMovements vinculados a esta venta (por invoiceId o reference)
-        const invId = inv ? inv.id : null;
+        const sale = data.sales.find(s => s.id === saleId);
+        if (!sale) return;
+        if (sale.status !== 'Anulada') { showToast('⚠️', 'Solo se pueden eliminar ventas anuladas'); return; }
+
+        // Eliminar la venta
+        data.sales = data.sales.filter(s => s.id !== saleId);
+
+        // Eliminar la factura asociada
+        const inv = data.invoices.find(i => i.number === sale.invoice);
+        if (inv) data.invoices = data.invoices.filter(i => i.id !== inv.id);
+
+        // Eliminar accountMovements vinculados (CxC de crédito)
         ensureAM();
+        const invId = inv ? inv.id : null;
         data.accountMovements = data.accountMovements.filter(m => {
             const matchInvoice = invId && m.invoiceId === invId;
             const matchRef     = m.reference === sale.invoice || m.concept === `Venta POS ${sale.invoice}`;
             return !(matchInvoice || matchRef);
         });
 
-        logAudit('void', 'sale', saleId, { invoice: sale.invoice });
+        // Eliminar pagos asociados
+        data.payments = (data.payments || []).filter(p => p.reference !== sale.invoice && p.invoiceId !== (inv?.id));
+
+        logAudit('delete', 'sale', saleId, { invoice: sale.invoice });
         renderAll();
-        _persistAndNotify('Venta anulada correctamente', 'Cambio guardado localmente');
+        await _persistAndNotify('Venta eliminada correctamente', 'Cambio guardado localmente');
     }
 
     function renderInvoices() {
