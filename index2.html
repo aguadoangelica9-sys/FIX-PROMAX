@@ -8971,9 +8971,37 @@
             inventoryAccount.balance = (inventoryAccount.balance || 0) + costEstimate;
         }
         sale.status = 'Anulada';
+
         // Anular factura asociada
         const inv = data.invoices.find(i => i.number === sale.invoice);
         if (inv) inv.status = 'Anulada';
+
+        // Eliminar CxC en accountMovements vinculada a esta venta (si era a crédito)
+        if (sale.isCredit || sale.method === 'CREDITO' || sale.status === 'Crédito') {
+            // Revertir balance del cliente
+            if (sale.customerId) {
+                const clientIdx = data.customers.findIndex(c => c.id === sale.customerId);
+                if (clientIdx !== -1) {
+                    data.customers[clientIdx].balance =
+                        Math.round(((data.customers[clientIdx].balance || 0) - sale.total) * 100) / 100;
+                }
+            }
+            // Revertir cuenta CxC en contabilidad
+            const cxcAccount = data.chartOfAccounts.find(a => a.code === '1-02');
+            if (cxcAccount) {
+                cxcAccount.balance = Math.max(0, Math.round(((cxcAccount.balance || 0) - sale.total) * 100) / 100);
+            }
+        }
+
+        // Eliminar accountMovements vinculados a esta venta (por invoiceId o reference)
+        const invId = inv ? inv.id : null;
+        ensureAM();
+        data.accountMovements = data.accountMovements.filter(m => {
+            const matchInvoice = invId && m.invoiceId === invId;
+            const matchRef     = m.reference === sale.invoice || m.concept === `Venta POS ${sale.invoice}`;
+            return !(matchInvoice || matchRef);
+        });
+
         logAudit('void', 'sale', saleId, { invoice: sale.invoice });
         renderAll();
         _persistAndNotify('Venta anulada correctamente', 'Cambio guardado localmente');
