@@ -7326,13 +7326,24 @@
 
     function openNewProductModal() {
         // Verificar límite de productos del plan
-        const subCache = localStorage.getItem('fixpromax_sub_cache');
+        // Lee directamente el caché de subscription.js (que usa ts, no _ts)
         try {
-            const cached = JSON.parse(subCache || '{}');
-            const maxProd = cached.data?.maxProducts ?? -1;
+            let maxProd = -1;
+            const subCache = localStorage.getItem('fixpromax_sub_cache');
+            if (subCache) {
+                const cached = JSON.parse(subCache);
+                // El caché de subscription.js usa { data: {...}, ts: timestamp }
+                const age = Date.now() - (cached.ts || 0);
+                // Solo aplicar límite si el caché es fresco (< 15 min) y tiene maxProducts
+                if (age < 900000 && cached.data?.maxProducts !== undefined) {
+                    maxProd = cached.data.maxProducts;
+                }
+                // Caché vencido o sin dato → no bloquear (dejar que el servidor decida)
+            }
+
             if (maxProd !== -1 && data.products.length >= maxProd) {
-                showToast('🔒', `Tu plan permite hasta ${maxProd} productos. Actualiza a un plan sin límite.`);
-                window.startSubscription();
+                showToast('🔒', `Tu plan permite hasta ${maxProd} productos (tienes ${data.products.length}). Actualiza para continuar.`);
+                window.startSubscription?.();
                 return;
             }
         } catch {}
