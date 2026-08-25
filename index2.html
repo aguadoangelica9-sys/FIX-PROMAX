@@ -8236,10 +8236,11 @@
         });
 
         // Factura — totales en USD, consistentes con la venta
+        const newInvId = generateId();
         data.invoices.push({
-            id: generateId(),
+            id: newInvId,
             number: invoice,
-            customerId: null,
+            customerId: esCredito ? posSelectedCustomerId : null,
             date: new Date().toISOString().slice(0, 10),
             dueDate: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
             items: sale.items,
@@ -8254,21 +8255,59 @@
             updatedAt: new Date().toISOString(),
         });
 
+        // Si es venta a crédito: crear CxC automáticamente vinculada al cliente
+        if (esCredito && posSelectedCustomerId) {
+            ensureAM();
+            const cxcSeq = data.accountMovements.filter(m => m.type === 'receivable').length + 1;
+            const cxcNum = `CXC-${String(cxcSeq).padStart(6, '0')}`;
+            data.accountMovements.push({
+                id:          generateId(),
+                type:        'receivable',
+                entityId:    posSelectedCustomerId,
+                number:      cxcNum,
+                date:        new Date().toISOString().slice(0, 10),
+                dueDate:     new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+                concept:     `Venta POS ${invoice}`,
+                description: '',
+                reference:   invoice,
+                invoiceId:   newInvId,
+                amount:      grandTotal,
+                currency:    'USD',
+                paid:        0,
+                status:      'Pendiente',
+                notes:       '',
+                source:      'pos',
+                createdAt:   new Date().toISOString(),
+                updatedAt:   new Date().toISOString(),
+                payments:    [],
+            });
+        }
+
         // Asientos contables — todos en USD
         const cashAccount      = data.chartOfAccounts.find(a => a.code === '1-01-001');
+        const cxcAccount       = data.chartOfAccounts.find(a => a.code === '1-02');
         const revenueAccount   = data.chartOfAccounts.find(a => a.code === '4-01');
         const taxAccount       = data.chartOfAccounts.find(a => a.code === '2-02');
         const costAccount      = data.chartOfAccounts.find(a => a.code === '5-01');
         const inventoryAccount = data.chartOfAccounts.find(a => a.code === '1-03');
-        if (cashAccount && revenueAccount && taxAccount && costAccount && inventoryAccount) {
-            cashAccount.balance      = Math.round(((cashAccount.balance    || 0) + paidToSave)   * 100) / 100;
+        if (revenueAccount && taxAccount && costAccount && inventoryAccount) {
+            // Crédito: débito CxC; contado: débito Caja
+            if (esCredito) {
+                if (cxcAccount) cxcAccount.balance = Math.round(((cxcAccount.balance || 0) + grandTotal) * 100) / 100;
+            } else {
+                if (cashAccount) cashAccount.balance = Math.round(((cashAccount.balance || 0) + paidToSave) * 100) / 100;
+            }
             revenueAccount.balance   = Math.round(((revenueAccount.balance || 0) + subtotal)     * 100) / 100;
             taxAccount.balance       = Math.round(((taxAccount.balance     || 0) + tax)          * 100) / 100;
             const costEstimate       = Math.round(subtotal * 0.6 * 100) / 100;
             costAccount.balance      = Math.round(((costAccount.balance      || 0) + costEstimate) * 100) / 100;
             inventoryAccount.balance = Math.round(((inventoryAccount.balance || 0) - costEstimate) * 100) / 100;
             const today = new Date().toISOString().slice(0, 10);
-            data.journalEntries.push({ date: today, ref: invoice, desc: 'Venta POS — Cobro',          debit: paidToSave,   credit: null        });
+            if (esCredito) {
+                data.journalEntries.push({ date: today, ref: invoice, desc: 'Venta POS — CxC (crédito)',    debit: grandTotal,   credit: null        });
+            } else {
+                data.journalEntries.push({ date: today, ref: invoice, desc: 'Venta POS — Cobro',           debit: paidToSave,   credit: null        });
+            }
             data.journalEntries.push({ date: today, ref: invoice, desc: 'Venta POS — Ingresos',       debit: null,         credit: subtotal     });
             data.journalEntries.push({ date: today, ref: invoice, desc: 'Venta POS — IVA',            debit: null,         credit: tax          });
             data.journalEntries.push({ date: today, ref: invoice, desc: 'Costo de venta',             debit: costEstimate, credit: null         });
