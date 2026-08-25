@@ -7326,19 +7326,25 @@
 
     function openNewProductModal() {
         // Verificar límite de productos del plan
-        // Lee directamente el caché de subscription.js (que usa ts, no _ts)
+        // Prioridad: 1) estado fresco de subscription.js  2) caché local reciente
         try {
             let maxProd = -1;
-            const subCache = localStorage.getItem('fixpromax_sub_cache');
-            if (subCache) {
-                const cached = JSON.parse(subCache);
-                // El caché de subscription.js usa { data: {...}, ts: timestamp }
-                const age = Date.now() - (cached.ts || 0);
-                // Solo aplicar límite si el caché es fresco (< 15 min) y tiene maxProducts
-                if (age < 900000 && cached.data?.maxProducts !== undefined) {
-                    maxProd = cached.data.maxProducts;
+
+            // 1. Estado fresco en memoria (subscription.js lo actualiza cada 15 min)
+            const liveStatus = typeof window._getSubStatus === 'function' ? window._getSubStatus() : null;
+            if (liveStatus && liveStatus.maxProducts !== undefined) {
+                maxProd = liveStatus.maxProducts;
+            } else {
+                // 2. Caché local — solo si es reciente (< 15 min)
+                const subCache = localStorage.getItem('fixpromax_sub_cache');
+                if (subCache) {
+                    const cached = JSON.parse(subCache);
+                    const age = Date.now() - (cached.ts || 0);
+                    if (age < 900000 && cached.data?.maxProducts !== undefined) {
+                        maxProd = cached.data.maxProducts;
+                    }
+                    // Caché vencido → no bloquear
                 }
-                // Caché vencido o sin dato → no bloquear (dejar que el servidor decida)
             }
 
             if (maxProd !== -1 && data.products.length >= maxProd) {

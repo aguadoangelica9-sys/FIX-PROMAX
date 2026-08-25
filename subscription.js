@@ -139,6 +139,12 @@
     }
     window.checkSubscriptionAccess = checkAccess;
 
+    // Exponer el estado de suscripción actual al resto de la app
+    window._getSubStatus = function() { return _subStatus; };
+    window._clearSubCache = function() {
+        localStorage.removeItem('fixpromax_sub_cache');
+    };
+
     // ── SSE — escuchar eventos del servidor en tiempo real ──────────────────────
     (function _connectAppSSE() {
         const token = localStorage.getItem('fixpromax_token');
