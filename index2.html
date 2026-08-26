@@ -684,162 +684,505 @@
             background: transparent;
         }
 
-        /* ── POS ── */
+        /* ══════════════════════════════════════════════════════
+           POS — Rediseño profesional FIX PRO MAX
+           ══════════════════════════════════════════════════════ */
+
+        /* Layout principal */
         .pos-grid {
             display: grid;
-            grid-template-columns: 1fr 360px;
-            gap: 22px;
-            height: calc(100vh - 220px);
-            min-height: 500px;
+            grid-template-columns: 1fr 380px;
+            gap: 0;
+            height: calc(100vh - 130px);
+            min-height: 560px;
+            background: var(--bg);
         }
+
+        /* ── Columna izquierda: catálogo ── */
+        #posProductsPanel {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            padding-right: 1px;
+            overflow: hidden;
+        }
+
+        /* Barra de búsqueda premium */
+        #posSearchBar {
+            padding: 0 0 12px 0;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        #posSearch {
+            flex: 1;
+            padding: 11px 16px 11px 42px;
+            border-radius: 10px;
+            border: 1.5px solid var(--border);
+            background: var(--surface);
+            color: var(--text);
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color .15s, box-shadow .15s;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: 13px center;
+        }
+        #posSearch:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79,70,229,.12);
+        }
+
+        /* Filtro de categorías */
+        #posCatBar {
+            display: flex;
+            gap: 6px;
+            padding-bottom: 12px;
+            overflow-x: auto;
+            flex-shrink: 0;
+            scrollbar-width: none;
+        }
+        #posCatBar::-webkit-scrollbar { display: none; }
+        .pos-cat-btn {
+            padding: 5px 14px;
+            border-radius: 6px;
+            border: 1.5px solid var(--border);
+            background: var(--surface);
+            color: var(--text-2);
+            font-size: 12px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all .15s;
+            flex-shrink: 0;
+        }
+        .pos-cat-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .pos-cat-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
+        }
+
+        /* Grid de productos */
         .pos-products {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 14px;
+            grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+            gap: 10px;
             overflow-y: auto;
-            padding-right: 6px;
+            flex: 1;
+            padding-right: 4px;
+            padding-bottom: 12px;
+            align-content: start;
         }
+        .pos-products::-webkit-scrollbar { width: 4px; }
+        .pos-products::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+        /* Tarjeta de producto */
         .pos-product {
             background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 16px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            padding: 14px 12px 12px;
             cursor: pointer;
-            transition: all var(--transition);
-            text-align: center;
-            box-shadow: var(--shadow);
+            transition: border-color .15s, transform .15s, box-shadow .15s;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+        .pos-product::after {
+            content: '+';
+            position: absolute;
+            top: 8px; right: 10px;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--border);
+            line-height: 1;
+            transition: color .15s;
         }
         .pos-product:hover {
             border-color: var(--primary);
-            box-shadow: var(--shadow-lg);
-            transform: translateY(-4px);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(79,70,229,.12);
         }
+        .pos-product:hover::after { color: var(--primary); }
+        .pos-product:active { transform: scale(.97); }
         .pos-product .name {
             font-weight: 600;
-            font-size: 14px;
+            font-size: 13px;
             color: var(--text);
-            white-space: nowrap;
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
             overflow: hidden;
-            text-overflow: ellipsis;
+            min-height: 34px;
+            padding-right: 18px;
+        }
+        .pos-product .sku {
+            font-size: 10px;
+            color: var(--text-3);
+            font-weight: 500;
         }
         .pos-product .price {
-            font-weight: 700;
-            font-size: 20px;
+            font-weight: 800;
+            font-size: 17px;
             color: var(--primary);
-            margin: 6px 0 2px;
-        }
-        .pos-product .stock {
-            font-size: 12px;
-            color: var(--text-2);
-        }
-        .pos-product .stock.low {
-            color: var(--danger);
-            font-weight: 600;
+            margin-top: 4px;
+            line-height: 1;
         }
         .pos-product .price-bs {
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 600;
             color: var(--text-3);
             margin-top: 1px;
         }
+        .pos-product .stock {
+            font-size: 11px;
+            color: var(--text-3);
+            margin-top: 2px;
+        }
+        .pos-product .stock.low { color: var(--danger); font-weight: 700; }
+        .pos-product .stock.out {
+            color: #fff;
+            background: var(--danger);
+            font-weight: 700;
+            padding: 1px 7px;
+            border-radius: 4px;
+            width: fit-content;
+            font-size: 10px;
+        }
 
+        /* ── Columna derecha: carrito ── */
         .pos-cart {
             background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 18px;
+            border-left: 1.5px solid var(--border);
             display: flex;
             flex-direction: column;
             height: 100%;
-            box-shadow: var(--shadow);
+            overflow: hidden;
         }
-        .pos-cart .cart-items {
+
+        /* Header del carrito */
+        .pos-cart-header {
+            padding: 14px 18px 12px;
+            border-bottom: 1.5px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .pos-cart-header .title {
+            font-weight: 700;
+            font-size: 14px;
+            color: var(--text);
+            letter-spacing: .3px;
+        }
+        .pos-cart-header .count {
+            font-size: 11px;
+            font-weight: 700;
+            background: var(--primary);
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 20px;
+            min-width: 28px;
+            text-align: center;
+        }
+
+        /* Selector cliente en carrito */
+        .pos-client-row {
+            padding: 10px 18px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        /* Items del carrito */
+        .cart-items {
             flex: 1;
             overflow-y: auto;
-            margin: 12px 0;
-            border-top: 1px solid var(--border);
-            border-bottom: 1px solid var(--border);
-            padding: 8px 0;
+            padding: 4px 0;
         }
+        .cart-items::-webkit-scrollbar { width: 3px; }
+        .cart-items::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        /* Item del carrito */
         .pos-cart .cart-item {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 8px 4px;
+            gap: 8px;
+            padding: 9px 18px;
             border-bottom: 1px solid var(--border);
-            font-size: 14px;
+            font-size: 13px;
+            transition: background .12s;
+        }
+        .pos-cart .cart-item:hover { background: rgba(79,70,229,.04); }
+        .pos-cart .cart-item:last-child { border-bottom: none; }
+        .pos-cart .cart-item .item-name {
+            flex: 1;
+            font-weight: 600;
+            color: var(--text);
+            font-size: 13px;
+            line-height: 1.3;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .pos-cart .cart-item .item-price {
+            font-size: 12px;
+            color: var(--text-3);
+            white-space: nowrap;
         }
         .pos-cart .cart-item .qty {
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 0;
+            background: var(--bg);
+            border: 1.5px solid var(--border);
+            border-radius: 7px;
+            overflow: hidden;
+            flex-shrink: 0;
         }
         .pos-cart .cart-item .qty button {
-            width: 26px;
-            height: 26px;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-            background: var(--surface-2);
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: transparent;
             cursor: pointer;
-            font-weight: 700;
-            color: var(--text);
-            font-size: 14px;
-            transition: all var(--transition);
+            font-weight: 800;
+            color: var(--text-2);
+            font-size: 15px;
+            transition: background .12s, color .12s;
+            font-family: inherit;
         }
         .pos-cart .cart-item .qty button:hover {
-            background: var(--primary-light);
-            border-color: var(--primary);
-            color: var(--primary);
+            background: var(--primary);
+            color: #fff;
+        }
+        .pos-cart .cart-item .qty span {
+            min-width: 28px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 13px;
+            color: var(--text);
+        }
+        .pos-cart .cart-item .item-total {
+            font-weight: 700;
+            font-size: 13px;
+            color: var(--text);
+            min-width: 52px;
+            text-align: right;
         }
         .pos-cart .cart-item .remove {
-            margin-left: auto;
-            color: var(--danger);
-            cursor: pointer;
-            font-size: 16px;
-            background: none;
+            width: 24px;
+            height: 24px;
             border: none;
-            padding: 4px 8px;
+            background: transparent;
+            color: var(--text-3);
+            cursor: pointer;
+            font-size: 14px;
             border-radius: 4px;
-            transition: all var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background .12s, color .12s;
+            flex-shrink: 0;
+            padding: 0;
         }
         .pos-cart .cart-item .remove:hover {
-            background: #fee2e2;
+            background: rgba(239,68,68,.12);
+            color: var(--danger);
         }
-        .pos-cart .cart-total {
+
+        /* Empty cart */
+        .pos-cart-empty {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: var(--text-3);
+            padding: 24px;
+        }
+        .pos-cart-empty .icon { font-size: 36px; opacity: .4; }
+        .pos-cart-empty .msg { font-size: 13px; font-weight: 500; }
+
+        /* Panel de resumen y pago */
+        .pos-summary {
+            padding: 12px 18px 0;
+            border-top: 1.5px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        /* Líneas del resumen */
+        .pos-summary-line {
             display: flex;
             justify-content: space-between;
-            font-weight: 700;
-            font-size: 20px;
-            padding: 12px 0 8px;
-            color: var(--text);
-        }
-        .pos-cart .cart-total .tax {
-            font-weight: 400;
-            font-size: 14px;
+            align-items: center;
+            font-size: 13px;
+            padding: 3px 0;
             color: var(--text-2);
         }
-        .pos-cart .payment-row {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px;
+        .pos-summary-line .lbl { font-weight: 500; }
+        .pos-summary-line .val { font-weight: 600; color: var(--text); }
+        .pos-summary-line .val.discount { color: var(--danger); }
+        .pos-summary-line.total-line {
+            padding: 10px 0 8px;
+            margin-top: 4px;
+            border-top: 1.5px solid var(--border);
         }
-        .pos-cart .payment-row select,
-        .pos-cart .payment-row input {
+        .pos-summary-line.total-line .lbl {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .pos-summary-line.total-line .val {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text);
+        }
+
+        /* Controles del carrito (IVA, crédito, descuento) */
+        .pos-cart-controls {
+            padding: 8px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .pos-ctrl-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-2);
+        }
+        .pos-toggle {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .pos-toggle-track {
+            position: relative;
+            width: 34px;
+            height: 19px;
+            border-radius: 10px;
+            transition: background .2s;
+            flex-shrink: 0;
+        }
+        .pos-toggle-thumb {
+            position: absolute;
+            top: 2px;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #fff;
+            transition: left .2s;
+            pointer-events: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,.25);
+        }
+
+        /* Panel de pago */
+        .pos-pay-panel {
+            padding: 10px 18px 14px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .pos-pay-method {
+            display: flex;
+            gap: 6px;
+        }
+        .pos-pay-method select {
             flex: 1;
-            padding: 10px 12px;
-            border-radius: var(--radius-sm);
-            border: 1px solid var(--border);
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1.5px solid var(--border);
             background: var(--bg);
             color: var(--text);
+            font-size: 13px;
             font-family: inherit;
-            font-size: 14px;
             outline: none;
-            transition: all var(--transition);
+            transition: border-color .15s;
+            cursor: pointer;
         }
-        .pos-cart .payment-row select:focus,
-        .pos-cart .payment-row input:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px var(--primary-light);
+        .pos-pay-method select:focus { border-color: var(--primary); }
+        .pos-received-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .pos-received-row .lbl {
+            font-size: 12px;
+            color: var(--text-2);
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+        .pos-received-row input {
+            flex: 1;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1.5px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+            font-weight: 700;
+            font-family: inherit;
+            outline: none;
+            transition: border-color .15s;
+            min-width: 0;
+        }
+        .pos-received-row input:focus { border-color: var(--primary); }
+        .pos-cambio-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: var(--text-2);
+            min-height: 20px;
+        }
+        .pos-cambio-row strong { font-size: 14px; font-weight: 700; color: var(--success); }
+        .pos-cambio-row strong.faltante { color: var(--danger); }
+
+        /* Botón cobrar */
+        .btn-pos-cobrar {
+            width: 100%;
+            padding: 13px;
+            border-radius: 10px;
+            border: none;
+            background: var(--primary);
+            color: #fff;
+            font-size: 15px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background .15s, transform .1s, box-shadow .15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            letter-spacing: .2px;
+        }
+        .btn-pos-cobrar:hover {
+            background: var(--primary-h);
+            box-shadow: 0 4px 16px rgba(79,70,229,.3);
+        }
+        .btn-pos-cobrar:active { transform: scale(.98); }
+        .btn-pos-cobrar:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
         /* ── AI Chat ── */
@@ -4267,182 +4610,207 @@
         MÓDULO POS (sin cambios)
         ═══════════════════════════════════════════════════════════ -->
         <div class="module-panel" id="module-pos">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
-                <div>
-                    <h2 style="font-size:20px;font-weight:700;">🛒 Punto de Venta</h2>
-                    <p class="text-muted text-sm">Escanea, busca y vende en segundos</p>
-                </div>
-                <div class="flex gap-2">
-                    <input type="text" placeholder="Código de barras" id="barcodeInput" style="padding:8px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit;width:180px;outline:none;transition:all var(--transition);" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter') barcodeScan()" />
-                    <button class="btn btn-sm" onclick="barcodeScan()">📷 Escanear</button>
-                    <!-- ── Selector de cliente POS ── -->
-                    <div style="position:relative;display:inline-block;" id="posClientWrapper">
-                        <input type="text" id="posClientSearch" placeholder="👤 Cliente..."
-                            autocomplete="off"
-                            style="padding:7px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit;font-size:13px;width:160px;outline:none;transition:border-color var(--transition);"
-                            onfocus="this.style.borderColor='var(--primary)';posClientShowDropdown()"
-                            onblur="setTimeout(posClientHideDropdown,200)"
-                            oninput="posClientFilter(this.value)" />
-                        <div id="posClientDropdown"
-                            style="display:none;position:absolute;top:calc(100% + 4px);right:0;min-width:240px;max-height:220px;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:1000;">
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- ── Tabs móvil: Productos / Carrito (mobile.css los controla) ── -->
+
+            <!-- ── Tabs móvil ── -->
             <div id="posMobileTabs">
-                <button id="posMobileTabProds" class="pos-mobile-tab active"
-                        onclick="showPOSPanel('products')">
+                <button id="posMobileTabProds" class="pos-mobile-tab active" onclick="showPOSPanel('products')">
                     📦 Productos
                 </button>
-                <button id="posMobileTabCart" class="pos-mobile-tab"
-                        onclick="showPOSPanel('cart')">
+                <button id="posMobileTabCart" class="pos-mobile-tab" onclick="showPOSPanel('cart')">
                     🛒 Carrito
-                    <span id="posMobileCartCount"
-                          style="background:var(--danger);color:#fff;border-radius:20px;
-                                 font-size:11px;padding:1px 7px;margin-left:4px;display:none;">0</span>
+                    <span id="posMobileCartCount" style="background:var(--danger);color:#fff;border-radius:20px;font-size:11px;padding:1px 7px;margin-left:4px;display:none;">0</span>
                 </button>
             </div>
+
             <div class="pos-grid">
+
+                <!-- ════════════════════════════════
+                     COLUMNA IZQUIERDA — Catálogo
+                     ════════════════════════════════ -->
                 <div id="posProductsPanel">
-                    <div id="posSearchBar" style="display:flex;gap:10px;margin-bottom:14px;">
-                        <input type="text" placeholder="Buscar producto..." id="posSearch" style="flex:1;padding:10px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit;font-size:14px;outline:none;transition:all var(--transition);" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'" oninput="filterPOS()" />
-                        <button class="btn btn-primary btn-sm" onclick="openModal('product')">+ Producto</button>
+
+                    <!-- Barra superior: búsqueda + barcode + nuevo producto -->
+                    <div id="posSearchBar">
+                        <input type="text" id="posSearch" placeholder="Buscar producto, SKU o código de barras..."
+                            autocomplete="off" oninput="filterPOS()"
+                            onfocus="this.style.borderColor='var(--primary)'"
+                            onblur="this.style.borderColor='var(--border)'" />
+                        <input type="text" id="barcodeInput" placeholder="Código"
+                            style="width:110px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border-color .15s;"
+                            onfocus="this.style.borderColor='var(--primary)'"
+                            onblur="this.style.borderColor='var(--border)'"
+                            onkeydown="if(event.key==='Enter') barcodeScan()" />
+                        <button class="btn btn-primary btn-sm" onclick="openModal('product')" title="Nuevo producto">+ Producto</button>
                     </div>
+
+                    <!-- Filtro de categorías -->
+                    <div id="posCatBar">
+                        <button class="pos-cat-btn active" onclick="posFilterCat(this, '')" data-cat="">Todos</button>
+                    </div>
+
+                    <!-- Grid de productos -->
                     <div class="pos-products" id="posProducts">
                         <!-- Renderizado por JS -->
                     </div>
+
                 </div>
+
+                <!-- ════════════════════════════════
+                     COLUMNA DERECHA — Carrito
+                     ════════════════════════════════ -->
                 <div id="posCartPanel" class="pos-cart">
-                    <div style="font-weight:600;display:flex;justify-content:space-between;font-size:15px;">
-                        <span>🧾 Carrito</span>
-                        <span id="cartCount">0 items</span>
+
+                    <!-- Header carrito -->
+                    <div class="pos-cart-header">
+                        <span class="title">Venta</span>
+                        <span class="count" id="cartCount">0</span>
                     </div>
-                    <!-- Badge cliente seleccionado -->
-                    <div id="posClientBadge"
-                        style="display:none;align-items:center;gap:6px;margin:6px 0 2px;
-                               padding:5px 10px;border-radius:20px;
-                               background:var(--surface-2);border:1px solid var(--border);
-                               font-size:13px;width:fit-content;max-width:100%;">
+
+                    <!-- Selector de cliente -->
+                    <div class="pos-client-row">
+                        <div id="posClientBadge" style="display:none;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;background:rgba(79,70,229,.08);border:1px solid rgba(79,70,229,.2);font-size:13px;margin-bottom:6px;"></div>
+                        <div style="position:relative;" id="posClientWrapper">
+                            <input type="text" id="posClientSearch" placeholder="👤 Buscar o seleccionar cliente..."
+                                autocomplete="off"
+                                style="width:100%;padding:8px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border-color .15s;"
+                                onfocus="this.style.borderColor='var(--primary)';posClientShowDropdown()"
+                                onblur="setTimeout(posClientHideDropdown,200)"
+                                oninput="posClientFilter(this.value)" />
+                            <div id="posClientDropdown"
+                                style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;max-height:200px;overflow-y:auto;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.2);z-index:1000;"></div>
+                        </div>
                     </div>
+
+                    <!-- Items del carrito -->
                     <div class="cart-items" id="cartItems">
-                        <div class="text-muted text-sm text-center" style="padding:30px 0;">El carrito está vacío</div>
-                    </div>
-                    <div class="cart-total">
-                        <span>Total</span>
-                        <div style="text-align:right;line-height:1.2;">
-                            <div id="cartTotal" style="font-size:20px;font-weight:700;color:var(--text);">$0.00</div>
-                            <div id="cartTotalBs" style="font-size:12px;font-weight:600;color:var(--text-3);">Bs. 0</div>
+                        <div class="pos-cart-empty">
+                            <div class="icon">🛒</div>
+                            <div class="msg">El carrito está vacío</div>
                         </div>
                     </div>
-                    <div style="font-size:13px;color:var(--text-2);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-                        <div>
-                            <div>Subtotal: <span id="cartSubtotal" style="font-weight:600;color:var(--text);">$0.00</span></div>
-                            <div style="font-size:11px;color:var(--text-3);">= <span id="cartSubtotalBs">Bs. 0</span></div>
+
+                    <!-- Controles: IVA, crédito, descuento -->
+                    <div class="pos-cart-controls">
+
+                        <!-- IVA + Crédito en la misma fila -->
+                        <div class="pos-ctrl-row">
+                            <label class="pos-toggle" onclick="posToggleIVA()">
+                                <div class="pos-toggle-track" id="posIvaTrack" style="background:var(--primary);">
+                                    <div class="pos-toggle-thumb" id="posIvaThumb" style="left:17px;"></div>
+                                </div>
+                                <span id="posIvaLabel" style="font-size:12px;">IVA 16%</span>
+                            </label>
+                            <label class="pos-toggle" onclick="posToggleCredito()">
+                                <div class="pos-toggle-track" id="posCreditTrack" style="background:var(--border);">
+                                    <div class="pos-toggle-thumb" id="posCreditThumb" style="left:2px;"></div>
+                                </div>
+                                <span id="posCreditLabel" style="font-size:12px;">Crédito</span>
+                                <span id="posCreditBadge" style="display:none;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;background:#fef9c3;color:#ca8a04;border:1px solid #fde047;"></span>
+                            </label>
                         </div>
-                        <div style="text-align:right;">
-                            <div id="cartTaxRow">IVA (16%): <span id="cartTax" style="font-weight:600;color:var(--text);">$0.00</span></div>
-                            <div id="cartTaxBsRow" style="font-size:11px;color:var(--text-3);">= <span id="cartTaxBs">Bs. 0</span></div>
-                        </div>
-                    </div>
-                    <!-- Toggle IVA -->
-                    <div style="display:flex;align-items:center;gap:8px;margin:4px 0;font-size:13px;color:var(--text-2);">
-                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;" onclick="posToggleIVA()">
-                            <div id="posIvaTrack" style="position:relative;width:40px;height:22px;border-radius:11px;background:var(--primary);transition:background .2s;flex-shrink:0;">
-                                <div id="posIvaThumb" style="position:absolute;top:3px;left:21px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;pointer-events:none;"></div>
+
+                        <!-- Descuento -->
+                        <div class="pos-ctrl-row" style="align-items:flex-start;flex-direction:column;gap:5px;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+                                <span style="font-size:12px;font-weight:600;color:var(--text-2);">Descuento</span>
+                                <span id="posDiscountBadge" style="display:none;font-size:11px;font-weight:700;padding:1px 8px;border-radius:20px;background:rgba(239,68,68,.1);color:var(--danger);border:1px solid rgba(239,68,68,.2);"></span>
                             </div>
-                            <span id="posIvaLabel">Cobrar IVA (16%)</span>
-                        </label>
-                    </div>
-                    <!-- Toggle CRÉDITO -->
-                    <div style="display:flex;align-items:center;gap:8px;margin:4px 0;font-size:13px;color:var(--text-2);">
-                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;" onclick="posToggleCredito()">
-                            <div id="posCreditTrack" style="position:relative;width:40px;height:22px;border-radius:11px;background:var(--border);transition:background .2s;flex-shrink:0;">
-                                <div id="posCreditThumb" style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.2);"></div>
+                            <div style="display:flex;align-items:center;gap:6px;width:100%;">
+                                <!-- Pills % / $ + input unificado -->
+                                <div style="display:flex;align-items:center;border:1.5px solid var(--border);border-radius:8px;overflow:hidden;background:var(--bg);flex:1;" id="discInputWrapper"
+                                     onfocusin="this.style.borderColor='var(--primary)'"
+                                     onfocusout="this.style.borderColor='var(--border)'">
+                                    <button type="button" id="discModeBtn_pct" onclick="posSetDiscountMode('pct')"
+                                        style="padding:6px 9px;border:none;border-right:1.5px solid var(--border);background:var(--primary);color:#fff;font-size:11px;font-weight:800;cursor:pointer;transition:.15s;line-height:1;flex-shrink:0;">%</button>
+                                    <button type="button" id="discModeBtn_fixed" onclick="posSetDiscountMode('fixed')"
+                                        style="padding:6px 9px;border:none;border-right:1.5px solid var(--border);background:var(--surface);color:var(--text-3);font-size:11px;font-weight:800;cursor:pointer;transition:.15s;line-height:1;flex-shrink:0;">$</button>
+                                    <input type="number" id="discValueInput" min="0" step="any" placeholder="0"
+                                        inputmode="decimal"
+                                        style="flex:1;padding:6px 8px;border:none;background:transparent;color:var(--text);font-size:13px;font-weight:700;outline:none;min-width:0;"
+                                        oninput="posHandleDiscountInput(this.value)"
+                                        onfocus="this.select()" />
+                                    <button type="button" id="discClearBtn" onclick="posResetDiscount()"
+                                        style="display:none;padding:6px 8px;border:none;background:transparent;color:var(--text-3);font-size:13px;cursor:pointer;flex-shrink:0;">✕</button>
+                                </div>
+                                <!-- Botones rápidos % -->
+                                <div id="discPctButtons" style="display:flex;gap:4px;">
+                                    <button type="button" class="pos-disc-btn" onclick="posSetDiscount(10)"
+                                        style="padding:5px 7px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-2);font-size:11px;font-weight:700;cursor:pointer;transition:.15s;white-space:nowrap;">10%</button>
+                                    <button type="button" class="pos-disc-btn" onclick="posSetDiscount(20)"
+                                        style="padding:5px 7px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-2);font-size:11px;font-weight:700;cursor:pointer;transition:.15s;white-space:nowrap;">20%</button>
+                                    <button type="button" class="pos-disc-btn" onclick="posSetDiscount(30)"
+                                        style="padding:5px 7px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-2);font-size:11px;font-weight:700;cursor:pointer;transition:.15s;white-space:nowrap;">30%</button>
+                                </div>
                             </div>
-                            <span id="posCreditLabel">Venta a crédito</span>
-                        </label>
-                        <!-- Indicador de saldo del cliente cuando crédito está activo -->
-                        <span id="posCreditBadge" style="display:none;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:#fef9c3;color:#ca8a04;border:1px solid #fde047;"></span>
-                    </div>
-                    <!-- Descuento — pill selector integrado con input -->
-                    <div style="margin:8px 0 4px 0;">
-                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-                            <span style="font-size:12px;font-weight:700;color:var(--text-2);letter-spacing:.4px;text-transform:uppercase;">Descuento</span>
-                            <span id="posDiscountBadge" style="display:none;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:rgba(239,68,68,.12);color:var(--danger);border:1px solid rgba(239,68,68,.25);"></span>
                         </div>
-                        <!-- Input + toggle tipo unificado -->
-                        <div style="display:flex;align-items:center;border:1.5px solid var(--border);border-radius:10px;overflow:hidden;background:var(--bg);transition:border-color .15s;" id="discInputWrapper"
-                             onfocusin="this.style.borderColor='var(--primary)'"
-                             onfocusout="this.style.borderColor='var(--border)'">
-                            <!-- Pills de tipo -->
-                            <div style="display:flex;border-right:1.5px solid var(--border);flex-shrink:0;">
-                                <button type="button" id="discModeBtn_pct" onclick="posSetDiscountMode('pct')"
-                                    style="padding:7px 10px;border:none;background:var(--primary);color:#fff;font-size:12px;font-weight:800;cursor:pointer;transition:.15s;line-height:1;">%</button>
-                                <button type="button" id="discModeBtn_fixed" onclick="posSetDiscountMode('fixed')"
-                                    style="padding:7px 10px;border:none;background:var(--surface2);color:var(--text-3);font-size:12px;font-weight:800;cursor:pointer;transition:.15s;line-height:1;">$</button>
+
+                    </div>
+
+                    <!-- Resumen de totales -->
+                    <div class="pos-summary">
+                        <div class="pos-summary-line">
+                            <span class="lbl">Subtotal</span>
+                            <span class="val" id="cartSubtotal">$0.00</span>
+                        </div>
+                        <div class="pos-summary-line" id="cartDiscountRow" style="display:none;">
+                            <span class="lbl">Descuento</span>
+                            <span class="val discount" id="cartDiscountVal">-$0.00</span>
+                        </div>
+                        <div class="pos-summary-line" id="cartTaxRow">
+                            <span class="lbl" id="cartTaxLabel">IVA (16%)</span>
+                            <span class="val" id="cartTax">$0.00</span>
+                        </div>
+                        <div class="pos-summary-line total-line">
+                            <span class="lbl">Total</span>
+                            <div style="text-align:right;line-height:1.1;">
+                                <div class="val" id="cartTotal">$0.00</div>
+                                <div style="font-size:11px;font-weight:600;color:var(--text-3);" id="cartTotalBs"></div>
                             </div>
-                            <!-- Input de valor -->
-                            <input type="number" id="discValueInput" min="0" step="any" placeholder="0"
+                        </div>
+                    </div>
+
+                    <!-- Panel de pago -->
+                    <div class="pos-pay-panel">
+                        <div class="pos-pay-method">
+                            <select id="paymentMethod">
+                                <option value="CASH">💵 Efectivo</option>
+                                <option value="CREDIT_CARD">💳 Tarjeta Crédito</option>
+                                <option value="DEBIT_CARD">💳 Tarjeta Débito</option>
+                                <option value="ZELLE">⚡ Zelle</option>
+                                <option value="USDT">🟡 USDT</option>
+                                <option value="BANK_TRANSFER">🏦 Transferencia</option>
+                            </select>
+                        </div>
+                        <div class="pos-received-row">
+                            <span class="lbl">Recibido</span>
+                            <input type="number" id="paidAmount" value="0" placeholder="0.00"
                                 inputmode="decimal"
-                                style="flex:1;padding:7px 10px;border:none;background:transparent;color:var(--text);font-size:15px;font-weight:700;outline:none;min-width:0;width:60px;"
-                                oninput="posHandleDiscountInput(this.value)"
-                                onfocus="this.select()" />
-                            <!-- Botón limpiar -->
-                            <button type="button" id="discClearBtn" onclick="posResetDiscount()" title="Quitar descuento"
-                                style="display:none;padding:7px 10px;border:none;background:transparent;color:var(--text-3);font-size:14px;cursor:pointer;transition:.15s;flex-shrink:0;">✕</button>
-                        </div>
-                        <!-- Botones rápidos % -->
-                        <div id="discPctButtons" style="display:flex;gap:5px;margin-top:6px;">
-                            <button type="button" class="pos-disc-btn" onclick="posSetDiscount(10)"
-                                style="flex:1;padding:5px 0;border-radius:7px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;transition:.15s;">10%</button>
-                            <button type="button" class="pos-disc-btn" onclick="posSetDiscount(20)"
-                                style="flex:1;padding:5px 0;border-radius:7px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;transition:.15s;">20%</button>
-                            <button type="button" class="pos-disc-btn" onclick="posSetDiscount(30)"
-                                style="flex:1;padding:5px 0;border-radius:7px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;transition:.15s;">30%</button>
-                            <button type="button" class="pos-disc-btn" onclick="posSetDiscount(70)"
-                                style="flex:1;padding:5px 0;border-radius:7px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;transition:.15s;">70%</button>
-                        </div>
-                    </div>
-                    <div class="payment-row" style="flex-wrap:wrap;gap:8px;">
-                        <select id="paymentMethod" style="flex:1;">
-                            <option value="CASH">💵 Efectivo</option>
-                            <option value="CREDIT_CARD">💳 Tarjeta Crédito</option>
-                            <option value="DEBIT_CARD">💳 Tarjeta Débito</option>
-                            <option value="ZELLE">⚡ Zelle</option>
-                            <option value="USDT">🟡 USDT</option>
-                            <option value="BANK_TRANSFER">🏦 Transferencia</option>
-                        </select>
-                    </div>
-                    <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;gap:8px;">
-                        <div style="flex:1;">
-                            <div style="color:var(--text-2);margin-bottom:3px;">Monto recibido</div>
-                            <input type="number" placeholder="0.00" id="paidAmount" value="0"
-                                inputmode="decimal"
-                                style="width:100%;padding:7px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-weight:700;outline:none;transition:border-color .15s;"
                                 onfocus="this.style.borderColor='var(--primary)'"
                                 onblur="this.style.borderColor='var(--border)'"
                                 oninput="updateCambio()" />
                         </div>
-                        <div style="text-align:right;flex-shrink:0;">
-                            <div style="color:var(--text-2);margin-bottom:3px;">Cambio</div>
-                            <strong id="cartCambio" style="font-size:15px;color:var(--success);">—</strong>
-                            <div id="cartCambioBs" style="font-size:11px;color:var(--text-3);display:none;"></div>
+                        <div class="pos-cambio-row">
+                            <span>Cambio</span>
+                            <div style="text-align:right;">
+                                <strong id="cartCambio">—</strong>
+                                <div id="cartCambioBs" style="font-size:10px;color:var(--text-3);display:none;"></div>
+                            </div>
                         </div>
+                        <button class="btn-pos-cobrar" onclick="saveSafe(this, completeSale)" id="btnCobrar">
+                            Cobrar <span id="btnCobrarTotal">$0.00</span>
+                        </button>
                     </div>
-                    <button class="btn btn-success w-full mt-2" onclick="saveSafe(this, completeSale)">✅ Completar Venta</button>
-                </div>
-            </div>
 
-            <!-- ── FAB flotante del carrito (solo móvil) ── -->
+                </div><!-- /pos-cart -->
+            </div><!-- /pos-grid -->
+
+            <!-- FAB flotante (solo móvil) -->
             <button id="mobCartFab" class="mob-only" onclick="showPOSPanel('cart')" aria-label="Ver carrito">
-                <span id="mobCartFabLeft">
-                    <span>🛒</span>
-                    <span id="mobCartFabCount">0</span>
-                </span>
+                <span id="mobCartFabLeft"><span>🛒</span><span id="mobCartFabCount">0</span></span>
                 <span id="mobCartFabTotal">$0.00</span>
             </button>
-        </div>
+
+        </div><!-- /module-pos -->
 
         <!-- ═══════════════════════════════════════════════════════════
         MÓDULO VENTAS (historial)
@@ -7736,8 +8104,8 @@
         const thumb = document.getElementById('posIvaThumb');
         const label = document.getElementById('posIvaLabel');
         if (track) track.style.background = posIvaActivo ? 'var(--primary)' : 'var(--text-3)';
-        if (thumb) thumb.style.left       = posIvaActivo ? '21px' : '3px';
-        if (label) label.textContent      = posIvaActivo ? 'Cobrar IVA (16%)' : 'Sin IVA';
+        if (thumb) thumb.style.left       = posIvaActivo ? '17px' : '2px';
+        if (label) label.textContent      = posIvaActivo ? 'IVA 16%' : 'Sin IVA';
         updateCartUI();
     }
 
@@ -7753,7 +8121,7 @@
         const paidEl = document.getElementById('paidAmount');
 
         if (track) track.style.background = posCreditoActivo ? 'var(--warning)' : 'var(--border)';
-        if (thumb) thumb.style.left       = posCreditoActivo ? '21px' : '3px';
+        if (thumb) thumb.style.left       = posCreditoActivo ? '17px' : '2px';
         if (label) label.textContent      = posCreditoActivo ? '🟡 Venta a crédito (ACTIVO)' : 'Venta a crédito';
         if (label) label.style.fontWeight = posCreditoActivo ? '700' : '400';
         if (label) label.style.color      = posCreditoActivo ? 'var(--warning)' : '';
@@ -7996,34 +8364,74 @@
     function renderPOS() {
         const container = document.getElementById('posProducts');
         if (!container) return;
-        const search = document.getElementById('posSearch')?.value.toLowerCase() || '';
+        const search = (document.getElementById('posSearch')?.value || '').toLowerCase().trim();
+        const activeCat = document.querySelector('.pos-cat-btn.active')?.dataset?.cat || '';
+
+        // Actualizar barra de categorías si aún no tiene categorías reales
+        _renderPosCatBar();
+
         let filtered = data.products.filter(p => p.status !== 'anulado');
+        if (activeCat) filtered = filtered.filter(p => (p.category || '') === activeCat);
         if (search) {
-            filtered = filtered.filter(p => p.name.toLowerCase().includes(search) || (p.sku && p.sku.toLowerCase()
-                .includes(search)));
+            filtered = filtered.filter(p =>
+                p.name.toLowerCase().includes(search) ||
+                (p.sku   && p.sku.toLowerCase().includes(search)) ||
+                (p.barcode && p.barcode.toLowerCase().includes(search)) ||
+                (p.reference && p.reference.toLowerCase().includes(search))
+            );
         }
+
         const _disp = (window._displayCurrency || 'USD').toUpperCase();
+
+        if (filtered.length === 0) {
+            container.innerHTML = `<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--text-3);font-size:14px;">
+                ${search ? `Sin resultados para "<b>${search}</b>"` : 'No hay productos disponibles'}
+            </div>`;
+            return;
+        }
+
         container.innerHTML = filtered.map(p => {
-            // Precio principal en la moneda de visualización activa
             const mainPrice = dcFmt(p.price, p.currency);
-            // Precio secundario en Bs (solo si la moneda activa no es VES)
-            let bsPrice = '';
+            let bsLine = '';
             if (_disp !== 'VES') {
                 const inVES = dc(p.price, p.currency);
-                const bsFmt = window.CurrencySystem
-                    ? window.CurrencySystem.format(inVES, 'VES')
-                    : 'Bs.\u00a0' + Math.round(inVES).toLocaleString('es-VE');
-                bsPrice = `<div class="price-bs">${bsFmt}</div>`;
+                bsLine = `<div class="price-bs">${window.CurrencySystem ? window.CurrencySystem.format(inVES,'VES') : 'Bs.\u00a0'+Math.round(inVES).toLocaleString('es-VE')}</div>`;
             }
-            return `
-            <div class="pos-product" onclick="addToCart('${p.id}')">
+            const stockClass = p.stock <= 0 ? 'out' : p.stock < 5 ? 'low' : '';
+            const stockLabel = p.stock <= 0 ? 'Agotado' : `${p.stock} en stock`;
+            const skuLine    = p.sku ? `<div class="sku">${p.sku}</div>` : '';
+            return `<div class="pos-product${p.stock <= 0 ? ' out-of-stock' : ''}" onclick="${p.stock > 0 ? `addToCart('${p.id}')` : `showToast('⚠️','"${p.name.replace(/'/g,"\\'")} está agotado')`}" style="${p.stock<=0?'opacity:.55;cursor:not-allowed;':''}">
                 <div class="name">${p.name}</div>
+                ${skuLine}
                 <div class="price">${mainPrice}</div>
-                ${bsPrice}
-                <div class="stock ${p.stock < 5 ? 'low' : ''}">${p.stock} en stock</div>
+                ${bsLine}
+                <div class="stock ${stockClass}">${stockLabel}</div>
             </div>`;
         }).join('');
-        updateCartUI();
+    }
+
+    // Renderiza la barra de categorías (una sola vez hasta que cambien los productos)
+    let _posCatBarRendered = false;
+    function _renderPosCatBar() {
+        if (_posCatBarRendered) return;
+        _posCatBarRendered = true;
+        const bar = document.getElementById('posCatBar');
+        if (!bar) return;
+        const cats = [...new Set(
+            data.products.filter(p => p.status !== 'anulado' && p.category)
+                         .map(p => p.category)
+        )].sort();
+        if (cats.length === 0) return;
+        const extras = cats.map(c =>
+            `<button class="pos-cat-btn" onclick="posFilterCat(this,'${c.replace(/'/g,"\\'")}'" data-cat="${c.replace(/"/g,'&quot;')}">${c}</button>`
+        ).join('');
+        bar.innerHTML = `<button class="pos-cat-btn active" onclick="posFilterCat(this,'')" data-cat="">Todos</button>${extras}`;
+    }
+
+    function posFilterCat(btn, cat) {
+        document.querySelectorAll('.pos-cat-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderPOS();
     }
 
     function filterPOS() { renderPOS(); }
@@ -8070,119 +8478,98 @@
         const totalEl    = document.getElementById('cartTotal');
         const totalBsEl  = document.getElementById('cartTotalBs');
         const subtotalEl = document.getElementById('cartSubtotal');
-        const subBsEl    = document.getElementById('cartSubtotalBs');
         const taxEl      = document.getElementById('cartTax');
-        const taxBsEl    = document.getElementById('cartTaxBs');
+        const btnTotal   = document.getElementById('btnCobrarTotal');
 
         if (!container) return;
 
         if (cart.length === 0) {
-            container.innerHTML =
-                `<div class="text-muted text-sm text-center" style="padding:30px 0;">El carrito está vacío</div>`;
-            countEl.textContent = '0 items';
-            if (totalEl)    totalEl.textContent    = '$0.00';
-            if (totalBsEl)  totalBsEl.textContent  = 'Bs. 0';
+            container.innerHTML = `<div class="pos-cart-empty"><div class="icon">🛒</div><div class="msg">El carrito está vacío</div></div>`;
+            if (countEl)    countEl.textContent  = '0';
+            if (totalEl)    totalEl.textContent  = '$0.00';
+            if (totalBsEl)  totalBsEl.textContent = '';
             if (subtotalEl) subtotalEl.textContent = '$0.00';
-            if (subBsEl)    subBsEl.textContent    = 'Bs. 0';
-            if (taxEl)      taxEl.textContent      = '$0.00';
-            if (taxBsEl)    taxBsEl.textContent    = 'Bs. 0';
+            if (taxEl)      taxEl.textContent    = '$0.00';
+            if (btnTotal)   btnTotal.textContent = '$0.00';
+            const discRow = document.getElementById('cartDiscountRow');
+            if (discRow) discRow.style.display = 'none';
+            _updateDiscountBadge(0);
             updateCambio();
             return;
         }
 
-        let html = '';
+        const rUSD = window.CurrencySystem?.getRateFor('USD','VES') || 36;
+        const rEUR = window.CurrencySystem?.getRateFor('EUR','VES') || 40;
+        const fmtU = (n) => window.CurrencySystem ? window.CurrencySystem.format(n,'USD') : '$'+n.toFixed(2);
+        const fmtV = (n) => window.CurrencySystem ? window.CurrencySystem.format(n,'VES') : 'Bs.\u00a0'+Math.round(n).toLocaleString('es-VE');
 
+        let html = '';
         cart.forEach(item => {
             const prod    = data.products.find(p => p.id === item.id);
-            const curr    = prod?.currency || data?.settings?.defaultCurrency || 'USD';
+            const curr    = (prod?.currency || 'USD').toUpperCase();
             const lineAmt = item.qty * item.price;
-            // Mostrar el precio de la línea en USD y Bs
-            const rUSD = window.CurrencySystem?.getRateFor('USD', 'VES') || 36;
-            const rEUR = window.CurrencySystem?.getRateFor('EUR', 'VES') || 40;
-            const currUp = curr.toUpperCase();
-            let lineUSD = currUp === 'USD' ? lineAmt
-                : currUp === 'VES' ? lineAmt / rUSD
-                : (lineAmt * rEUR) / rUSD;
-            lineUSD = Math.round(lineUSD * 100) / 100;
-            const lineVES = Math.round(lineUSD * rUSD * 100) / 100;
-            const fmtLine = (n, c) => window.CurrencySystem
-                ? window.CurrencySystem.format(n, c)
-                : (c === 'USD' ? '$' : 'Bs.\u00a0') + n.toFixed(2);
+            let lineUSD = curr==='USD' ? lineAmt : curr==='VES' ? lineAmt/rUSD : (lineAmt*rEUR)/rUSD;
+            lineUSD = Math.round(lineUSD*100)/100;
 
-            html += `
-                <div class="cart-item">
-                    <span style="flex:1;">${item.name}</span>
-                    <div class="qty">
-                        <button onclick="updateQty('${item.id}',-1)">−</button>
-                        <span>${item.qty}</span>
-                        <button onclick="updateQty('${item.id}',1)">+</button>
-                    </div>
-                    <div style="text-align:right;min-width:70px;line-height:1.2;">
-                        <div style="font-weight:700;font-size:13px;">${fmtLine(lineUSD,'USD')}</div>
-                        <div style="font-size:10px;color:var(--text-3);">${fmtLine(lineVES,'VES')}</div>
-                    </div>
-                    <button class="remove" onclick="removeFromCart('${item.id}')">✕</button>
+            html += `<div class="cart-item">
+                <div style="display:flex;flex-direction:column;flex:1;min-width:0;gap:1px;">
+                    <span class="item-name">${item.name}</span>
+                    <span class="item-price">${fmtU(item.price)} c/u</span>
                 </div>
-            `;
+                <div class="qty">
+                    <button onclick="updateQty('${item.id}',-1)">−</button>
+                    <span>${item.qty}</span>
+                    <button onclick="updateQty('${item.id}',1)">+</button>
+                </div>
+                <span class="item-total">${fmtU(lineUSD)}</span>
+                <button class="remove" onclick="removeFromCart('${item.id}')" title="Eliminar">✕</button>
+            </div>`;
         });
         container.innerHTML = html;
-        countEl.textContent = `${cart.reduce((s,i) => s + i.qty, 0)} items`;
 
-        // ── Usar _posCartTotals() — mismos valores que usará completeSale ──
         const { subtotalUSD: sUSD, discountUSD: dUSD, discPct: dPct, discType: dType, taxUSD: tUSD, totalUSD: totUSD, rateUSD } = _posCartTotals();
-        const subtotalVES = Math.round(sUSD   * rateUSD * 100) / 100;
-        const discountVES = Math.round(dUSD   * rateUSD * 100) / 100;
-        const taxVES      = Math.round(tUSD   * rateUSD * 100) / 100;
-        const totalVES    = Math.round(totUSD * rateUSD * 100) / 100;
+        const totalVES = Math.round(totUSD * rateUSD * 100) / 100;
 
-        const fmtU = (n) => window.CurrencySystem ? window.CurrencySystem.format(n, 'USD')
-            : '$' + n.toFixed(2);
-        const fmtV = (n) => window.CurrencySystem ? window.CurrencySystem.format(n, 'VES')
-            : 'Bs.\u00a0' + Math.round(n).toLocaleString('es-VE');
-
+        if (countEl)    countEl.textContent    = cart.reduce((s,i)=>s+i.qty,0).toString();
         if (subtotalEl) subtotalEl.textContent = fmtU(sUSD);
-        if (subBsEl)    subBsEl.textContent    = fmtV(subtotalVES);
         if (taxEl)      taxEl.textContent      = fmtU(tUSD);
-        if (taxBsEl)    taxBsEl.textContent    = fmtV(taxVES);
         if (totalEl)    totalEl.textContent    = fmtU(totUSD);
         if (totalBsEl)  totalBsEl.textContent  = fmtV(totalVES);
+        if (btnTotal)   btnTotal.textContent   = fmtU(totUSD);
 
-        // ── Fila descuento ────────────────────────────────────────────────────
-        let discRow = document.getElementById('cartDiscountRow');
-        if (!discRow) {
-            // Crear la fila si no existe aún
-            const taxRowEl = document.getElementById('cartTaxRow')?.parentElement;
-            if (taxRowEl) {
-                discRow = document.createElement('div');
-                discRow.id = 'cartDiscountRow';
-                discRow.style.cssText = 'text-align:right;color:var(--danger);font-size:13px;';
-                taxRowEl.parentElement.insertBefore(discRow, taxRowEl);
-            }
-        }
+        // Fila de descuento
+        const discRow = document.getElementById('cartDiscountRow');
+        const discVal = document.getElementById('cartDiscountVal');
         if (discRow) {
             if (dUSD > 0) {
-                const label = dType === 'fixed'
-                    ? `Descuento (-$${dUSD.toFixed(2)})`
-                    : `Descuento (${dPct}%)`;
-                discRow.innerHTML = `${label}: <span style="font-weight:600;">-${fmtU(dUSD)}</span>`;
+                const label = dType==='fixed' ? `-${fmtU(dUSD)}` : `-${fmtU(dUSD)} (${dPct}%)`;
+                if (discVal) discVal.textContent = label;
                 discRow.style.display = '';
             } else {
                 discRow.style.display = 'none';
             }
         }
 
-        // ── Badge y botón limpiar del descuento ───────────────────────────────
+        // Badge de descuento y botón limpiar
         _updateDiscountBadge(dUSD);
 
-        // ── Actualizar visual del toggle IVA ──────────────────────────────────
+        // IVA toggle visual
+        const taxRow   = document.getElementById('cartTaxRow');
         const ivaTrack = document.getElementById('posIvaTrack');
         const ivaThumb = document.getElementById('posIvaThumb');
-        const taxRow   = document.getElementById('cartTaxRow');
-        const taxBsRow = document.getElementById('cartTaxBsRow');
         if (ivaTrack) ivaTrack.style.background = posIvaActivo ? 'var(--primary)' : 'var(--text-3)';
-        if (ivaThumb) ivaThumb.style.left        = posIvaActivo ? '21px' : '3px';
-        if (taxRow)   taxRow.style.opacity        = posIvaActivo ? '1' : '0.35';
-        if (taxBsRow) taxBsRow.style.opacity      = posIvaActivo ? '1' : '0.35';
+        if (ivaThumb) ivaThumb.style.left       = posIvaActivo ? '17px' : '2px';
+        if (taxRow)   taxRow.style.opacity      = posIvaActivo ? '1' : '0.3';
+
+        // FAB móvil
+        const fab = document.getElementById('mobCartFab');
+        const fabTotal = document.getElementById('mobCartFabTotal');
+        const fabCount = document.getElementById('mobCartFabCount');
+        const totalItems = cart.reduce((s,i)=>s+i.qty,0);
+        if (fab) fab.className = totalItems > 0 ? 'mob-only visible' : 'mob-only';
+        if (fabTotal) fabTotal.textContent = fmtU(totUSD);
+        if (fabCount) fabCount.textContent = totalItems;
+        updatePOSCartBadge(totalItems);
 
         updateCambio();
     }
@@ -8595,7 +8982,7 @@
         const cBadge = document.getElementById('posCreditBadge');
         const paidEl = document.getElementById('paidAmount');
         if (cTrack) cTrack.style.background = 'var(--border)';
-        if (cThumb) cThumb.style.left = '3px';
+        if (cThumb) cThumb.style.left = '2px';
         if (cLabel) { cLabel.textContent = 'Venta a crédito'; cLabel.style.fontWeight = '400'; cLabel.style.color = ''; }
         if (cBadge) cBadge.style.display = 'none';
         if (paidEl) { paidEl.disabled = false; paidEl.style.opacity = '1'; }
@@ -15153,6 +15540,7 @@
         // ESF se re-renderiza automáticamente si el tab está activo
         if (document.querySelector('#accTabs .tab[data-acc="esf"]')?.classList.contains('active')) renderESF();
         renderAlerts();
+        _posCatBarRendered = false; // refrescar categorías del POS al recargar datos
         renderPOS();
         renderFinance();
         // runDiagnostic solo se ejecuta cuando el usuario lo pide manualmente
