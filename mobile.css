@@ -877,11 +877,13 @@
         padding-right: 0 !important;
     }
 
-    /* pos-grid pasa a block para que los paneles fluyan */
+    /* pos-grid: una sola columna, altura automática */
     #module-pos .pos-grid {
-        display: block !important;
+        display: flex !important;
+        flex-direction: column !important;
         height: auto !important;
         min-height: unset !important;
+        gap: 0 !important;
     }
 
     /* ── 2. TABS — diseño limpio sin fondo activo pesado ── */
@@ -905,7 +907,7 @@
         justify-content: center;
         gap: 6px;
         border: none;
-        background: transparent !important;   /* sin fondo en ningún estado */
+        background: transparent !important;
         font-family: inherit;
         font-size: 14px;
         font-weight: 600;
@@ -921,27 +923,31 @@
     .pos-mobile-tab.active {
         color: var(--primary) !important;
         border-bottom-color: var(--primary) !important;
-        background: transparent !important;   /* sin fondo morado */
+        background: transparent !important;
     }
 
-    /* ── 3. PANEL PRODUCTOS — visible por defecto ── */
+    /* ── 3. PANEL PRODUCTOS — visible por defecto, fluye normalmente ── */
     #posProductsPanel {
-        display: block !important;
+        display: flex !important;
+        flex-direction: column !important;
         padding: 0 14px !important;
+        height: auto !important;
+        overflow: visible !important;
     }
 
-    /* Barra de búsqueda — NO sticky, fluye normalmente */
+    /* Barra de búsqueda */
     #posSearchBar {
         position: relative !important;
         top: auto !important;
         z-index: auto !important;
         background: transparent !important;
-        padding: 10px 0 10px 0 !important;
+        padding: 10px 0 !important;
         margin: 0 !important;
         border-bottom: none !important;
         display: flex !important;
         align-items: center !important;
         gap: 8px !important;
+        flex-shrink: 0 !important;
     }
 
     /* Ocultar botón + Producto en móvil */
@@ -961,17 +967,17 @@
         color: var(--text) !important;
     }
 
-    /* ── 4. GRID DE PRODUCTOS — sin overflow ni altura fija ── */
+    /* ── 4. GRID DE PRODUCTOS ── */
     #posProductsPanel .pos-products,
     #posProducts {
         display: grid !important;
         grid-template-columns: repeat(2, 1fr) !important;
         gap: 10px !important;
-        padding: 0 0 100px 0 !important;
+        padding: 0 0 16px 0 !important;
         overflow: visible !important;
-        overflow-y: visible !important;
         max-height: none !important;
         height: auto !important;
+        flex: none !important;
     }
 
     /* ── 5. CARD DE PRODUCTO ── */
@@ -1041,8 +1047,11 @@
         flex-direction: column !important;
         background: var(--surface) !important;
         border: none !important;
+        border-left: none !important;
         box-shadow: none !important;
         padding: 0 !important;
+        height: auto !important;
+        overflow: visible !important;
     }
 
     /* Cuando JS lo muestra */
@@ -1057,6 +1066,7 @@
         border-bottom: none !important;
         margin: 0 !important;
         padding: 4px 0 !important;
+        flex: none !important;
     }
 
     #posCartPanel .cart-item {
@@ -1143,9 +1153,10 @@
 /* ── Landscape: layout lado a lado ── */
 @media (max-width: 900px) and (orientation: landscape) {
     #module-pos > div:first-child:not(#posMobileTabs) { display: none !important; }
-    #module-pos .pos-grid  { display: grid !important; grid-template-columns: 1fr 300px !important; gap: 0 !important; }
-    #posProductsPanel      { display: block !important; }
-    #posCartPanel          { display: flex !important; height: 100% !important; }
+    #module-pos .pos-grid  { display: grid !important; grid-template-columns: 1fr 300px !important; gap: 0 !important; height: calc(100dvh - 60px) !important; }
+    #posProductsPanel      { display: flex !important; flex-direction: column !important; height: 100% !important; overflow: hidden !important; }
+    #posProductsPanel .pos-products { max-height: none !important; flex: 1 !important; overflow-y: auto !important; }
+    #posCartPanel          { display: flex !important; height: 100% !important; overflow-y: auto !important; }
     #posMobileTabs         { display: none !important; }
     #mobCartFab            { display: none !important; }
     #posProducts           { padding-bottom: 8px !important; }
