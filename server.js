@@ -97,6 +97,42 @@ app.use(express.urlencoded({ extended: true }));
 // Protege TODOS los endpoints del ERP aunque no tengan requireAuth explícito.
 // Exentas: /auth/, /subscription/, /admin/, /demo/, /config/payment-methods
 // ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
+
+// ══ MIDDLEWARE: Modo Mantenimiento ══════════════════════════════════════════
+// Si el admin activa maintenanceMode, bloquea TODOS los endpoints /api/*
+// excepto /api/auth/login, /api/admin/* y /api/ping.
+// Así el admin puede seguir operando mientras los usuarios están bloqueados.
+app.use('/api', async (req, res, next) => {
+    const p = req.path;
+    // Rutas siempre permitidas aunque haya mantenimiento
+    const exempt = ['/auth/login', '/auth/register', '/ping', '/admin'];
+    if (exempt.some(e => p === e || p.startsWith(e + '/'))) return next();
+    try {
+        const cfg = await getConfig();
+        if (cfg && cfg.maintenanceMode === true) {
+            // Admins pueden pasar siempre
+            const header = req.headers['authorization'] || '';
+            const token  = header.replace('Bearer ', '').trim();
+            if (token) {
+                const sessions = await readSessions();
+                const entry    = sessions[token];
+                const userId   = entry ? (typeof entry === 'object' ? entry.userId : entry) : null;
+                if (userId) {
+                    const users = await readUsers();
+                    const user  = users.find(u => u.id === userId);
+                    if (user && user.role === 'admin') return next();
+                }
+            }
+            return res.status(503).json({
+                ok: false,
+                error: 'Sistema en mantenimiento. Volveremos pronto. Disculpa las molestias.',
+                code:  'MAINTENANCE_MODE',
+            });
+        }
+    } catch { /* si falla la lectura de config, dejar pasar */ }
+    next();
+});
+
 app.use('/api', async (req, res, next) => {
     const exemptPrefixes = ['/auth/', '/subscription/', '/admin/', '/demo/', '/events'];
     // Rutas públicas explícitas que no necesitan suscripción
@@ -2015,6 +2051,18 @@ async function requireAuth(req, res, next) {
 
 // ❌”€❌”€ REGISTRO ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.post('/api/auth/register', async (req, res) => {
+    // Verificar si el registro está abierto (configurable desde el panel admin)
+    try {
+        const cfg = await getConfig();
+        if (cfg && cfg.registrationOpen === false) {
+            return res.status(403).json({
+                ok: false,
+                error: 'El registro de nuevos usuarios está temporalmente desactivado.',
+                code:  'REGISTRATION_CLOSED',
+            });
+        }
+    } catch { /* si falla la lectura de config, permitir registro */ }
+
     const { name, email, password, company } = req.body;
     if (!name || !email || !password) {
         return err(res, 'Nombre, email y contraseÁ±a son obligatorios');
@@ -2305,7 +2353,16 @@ app.get('/entrar-como', async (req, res) => {
 // SUSCRIPCIÁ“N "” Trial gratuito 3 días + planes de pago
 // La validación se hace en el servidor para evitar manipulación del cliente.
 // ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
-const TRIAL_DAYS = 3;
+// _TRIAL_DAYS_DEFAULT es una función async para leer de config en tiempo real.
+// Si el admin cambia los días de prueba, el cambio se aplica de inmediato.
+// Para backward-compat, también se mantiene el valor default 3 en la constante.
+const _TRIAL_DAYS_DEFAULT = 3;
+async function getTrialDays() {
+    try {
+        const cfg = await getConfig();
+        return (cfg && cfg.trialDays > 0) ? Number(cfg.trialDays) : _TRIAL_DAYS_DEFAULT;
+    } catch { return _TRIAL_DAYS_DEFAULT; }
+}
 
 // ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 // CONFIG GLOBAL "” planes y métodos de pago persistentes en config.json
@@ -2334,9 +2391,25 @@ async function getConfig()       { return DB.getConfig(); }
 async function applyPlansOverrides() {
     const cfg = await getConfig();
     const overrides = cfg.plansOverride || {};
+    // Aplicar overrides a planes existentes
     Object.keys(overrides).forEach(planId => {
         if (PLANS[planId]) {
             Object.assign(PLANS[planId], overrides[planId]);
+        } else {
+            // Plan nuevo creado por el admin que no existe en los defaults:
+            // reconstruirlo completamente desde el override
+            const p = overrides[planId];
+            if (p && p.id && p.name) {
+                PLANS[planId] = Object.assign({
+                    id: planId, active: true, order: 99,
+                    modules: { pos:true, sales:true, invoices:true, products:true,
+                               inventory:true, customers:true, suppliers:true,
+                               expenses:true, purchases:true, returns:true,
+                               reports:true, finance:false, accounting:false,
+                               payables:false, receivables:false, ai:false, team:false },
+                    features: [], notIncluded: [],
+                }, p);
+            }
         }
     });
 }
@@ -2510,7 +2583,7 @@ const NO_ACCESS_MODULES = {
     team: false,
 };
 
-function getAccessStatus(user) {
+async function getAccessStatus(user) {
     const now = Date.now();
     if (user.role === 'admin') {
         return { status: 'admin', access: true, daysLeft: null, multiUser: true, maxUsers: 99, maxProducts: -1, plan: 'admin', planName: 'Administrador', modules: Object.fromEntries(Object.keys(TRIAL_MODULES).map(k => [k, true])) };
@@ -2543,7 +2616,8 @@ function getAccessStatus(user) {
 
     const trialBase = user.trialStart || user.createdAt;
     if (trialBase) {
-        const trialEnd = new Date(trialBase).getTime() + TRIAL_DAYS * 86400000;
+        const _td = await getTrialDays();
+        const trialEnd = new Date(trialBase).getTime() + _td * 86400000;
         const msLeft   = trialEnd - now;
         if (msLeft > 0) {
             return { status: 'trial', access: true, daysLeft: Math.ceil(msLeft / 86400000), trialEnd: new Date(trialEnd).toISOString(), multiUser: false, maxUsers: 1, maxProducts: 500, modules: TRIAL_MODULES };
@@ -3398,6 +3472,8 @@ const DEFAULT_EMPLOYEE_PERMISSIONS = {
 };
 
 // Middleware de permisos: verifica que el empleado tenga acceso a un módulo/acción
+// Owners y admins siempre pasan. Si el empleado no tiene permissions definidos
+// se aplican los DEFAULT_EMPLOYEE_PERMISSIONS.
 function requirePermission(module, action) {
     return async (req, res, next) => {
         const u = req.user;
@@ -3405,12 +3481,60 @@ function requirePermission(module, action) {
         if (u.teamRole === 'owner' || u.role === 'admin') { next(); return; }
         const users = await readUsers();
         const full  = users.find(x => x.id === u.id);
-        const perms = full?.permissions?.[module];
+        // Si el usuario fue suspendido después de hacer login, bloquearlo
+        if (full && full.active === false) {
+            return res.status(403).json({ ok: false, error: 'Tu cuenta fue suspendida. Contacta al administrador.', code: 'ACCOUNT_SUSPENDED' });
+        }
+        // Leer permisos: los del usuario o los DEFAULT si no tiene personalizados
+        const perms = full?.permissions?.[module] || DEFAULT_EMPLOYEE_PERMISSIONS[module];
         if (!perms || !perms[action]) {
-            return res.status(403).json({ ok: false, error: `Sin permiso para: ${module}.${action}` });
+            return res.status(403).json({ ok: false, error: `Sin permiso para: ${module}.${action}`, code: 'PERMISSION_DENIED', module, action });
         }
         next();
     };
+}
+
+// Middleware de escritura de empleado: valida permisos para POST/PUT/DELETE
+// en los módulos críticos de la app. Se aplica globalmente sobre /api/*
+// para que cualquier intento de escritura sin permiso sea rechazado en backend.
+const WRITE_PERMISSION_MAP = {
+    '/api/products':           { module: 'inventory',  actions: { POST: 'create', PUT: 'edit', DELETE: 'delete' } },
+    '/api/sales':              { module: 'sales',      actions: { POST: 'create', PUT: 'edit', DELETE: 'cancel' } },
+    '/api/invoices':           { module: 'invoices',   actions: { POST: 'create', PUT: 'edit', DELETE: 'cancel' } },
+    '/api/expenses':           { module: 'expenses',   actions: { POST: 'create', PUT: 'edit', DELETE: 'delete' } },
+    '/api/customers':          { module: 'customers',  actions: { POST: 'create', PUT: 'edit', DELETE: 'delete' } },
+    '/api/suppliers':          { module: 'suppliers',  actions: { POST: 'create', PUT: 'edit', DELETE: 'delete' } },
+    '/api/purchases':          { module: 'purchases',  actions: { POST: 'create', PUT: 'edit', DELETE: 'delete' } },
+    '/api/account-movements':  { module: 'receivables',actions: { POST: 'create', PUT: 'edit', DELETE: 'delete' } },
+    '/api/categories':         { module: 'inventory',  actions: { POST: 'create', PUT: 'edit', DELETE: 'delete' } },
+    '/api/warehouses':         { module: 'inventory',  actions: { POST: 'create', PUT: 'edit', DELETE: 'delete' } },
+    '/api/journal':            { module: 'accounting', actions: { POST: 'create', PUT: 'edit', DELETE: 'delete' } },
+};
+
+function employeeWriteGuard(req, res, next) {
+    // Solo aplicar en métodos de escritura
+    if (!['POST','PUT','DELETE','PATCH'].includes(req.method)) return next();
+    const u = req.user;
+    if (!u) return next();  // requireAuth ya lo bloqueó si no hay usuario
+    if (u.teamRole === 'owner' || u.role === 'admin') return next();
+    // Buscar si la ruta coincide con alguna entrada del mapa
+    const base = req.path.replace(/\/[^/]+$/, '') || req.path; // quitar :id del final
+    const rule  = WRITE_PERMISSION_MAP[req.path] || WRITE_PERMISSION_MAP[base];
+    if (!rule) return next();  // ruta no mapeada, dejar pasar
+    const action = rule.actions[req.method];
+    if (!action) return next();
+    // Validar permiso
+    readUsers().then(users => {
+        const full  = users.find(x => x.id === u.id);
+        if (full && full.active === false) {
+            return res.status(403).json({ ok: false, error: 'Tu cuenta fue suspendida.', code: 'ACCOUNT_SUSPENDED' });
+        }
+        const perms = full?.permissions?.[rule.module] || DEFAULT_EMPLOYEE_PERMISSIONS[rule.module];
+        if (!perms || !perms[action]) {
+            return res.status(403).json({ ok: false, error: `Sin permiso para: ${rule.module}.${action}`, code: 'PERMISSION_DENIED', module: rule.module, action });
+        }
+        next();
+    }).catch(() => next());
 }
 // readDB / writeDB: async, usan el companyId del contexto async (AsyncLocalStorage).
 // reqContext declarado al inicio del archivo (línea ~18) para evitar Temporal Dead Zone.
@@ -3902,7 +4026,7 @@ app.get('/api/admin/stats', requireAdmin, async (req, res) => {
         if (u.subscriptionStatus === 'cancelled' && u.subscriptionEnd && new Date(u.subscriptionEnd).getTime() > now) return 'cancelled_active';
         const base = u.trialStart || u.createdAt;
         if (base) {
-            const end = new Date(base).getTime() + TRIAL_DAYS * 86400000;
+            const end = new Date(base).getTime() + _TRIAL_DAYS_DEFAULT * 86400000;
             return end > now ? 'trial' : 'trial_expired';
         }
         return 'no_access';
@@ -3947,7 +4071,7 @@ app.get('/api/admin/stats', requireAdmin, async (req, res) => {
             expiring:  users.filter(u => {
                 const base = u.trialStart || u.createdAt;
                 if (!base) return false;
-                const end  = new Date(base).getTime() + TRIAL_DAYS * 86400000;
+                const end  = new Date(base).getTime() + _TRIAL_DAYS_DEFAULT * 86400000;
                 const days = (end - now) / 86400000;
                 return days > 0 && days <= 1;
             }).length,
@@ -3987,7 +4111,7 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
 
     let list = users.map(u => {
         const base     = u.trialStart || u.createdAt;
-        const trialEnd = base ? new Date(base).getTime() + TRIAL_DAYS * 86400000 : null;
+        const trialEnd = base ? new Date(base).getTime() + _TRIAL_DAYS_DEFAULT * 86400000 : null;
         const status   = getAccessStatus(u);
         return {
             id:                 u.id,
@@ -4089,13 +4213,33 @@ app.post('/api/admin/users/:id/action', requireAdmin, async (req, res) => {
         target.active = false;
         target.suspendedAt = new Date().toISOString();
         target.suspendReason = reason || '';
+        // Invalidar TODAS las sesiones activas del usuario suspendido inmediatamente
+        const sessionsSusp = await readSessions();
+        Object.keys(sessionsSusp).forEach(tok => {
+            const e   = sessionsSusp[tok];
+            const uid = typeof e === 'object' ? e.userId : e;
+            if (uid === target.id) delete sessionsSusp[tok];
+        });
+        await writeSessions(sessionsSusp);
+        // Enviar SSE de sesión revocada (el cliente lo captura y hace logout)
+        setImmediate(() => {
+            if (typeof sseUser === 'function') {
+                sseUser(target.id, 'session_revoked', {
+                    reason:    reason || 'Cuenta suspendida por el administrador',
+                    action:    'suspend',
+                    changedBy: 'admin',
+                    ts:        new Date().toISOString(),
+                });
+            }
+        });
     } else if (action === 'reactivate') {
         target.active = true;
         delete target.suspendedAt;
         delete target.suspendReason;
     } else if (action === 'grant_access') {
         // Extender trial 7 días
-        target.trialStart = new Date(Date.now() - (TRIAL_DAYS - 7) * 86400000).toISOString();
+        const _tdg = await getTrialDays();
+        target.trialStart = new Date(Date.now() - (_tdg - 7) * 86400000).toISOString();
     } else if (action === 'revoke_access') {
         target.trialStart = new Date(Date.now() - 10 * 86400000).toISOString();
     } else if (action === 'force_logout') {
@@ -5591,6 +5735,16 @@ app.put('/api/admin/employees/:empId/permissions', requireAdmin, async (req, res
         await writeUsers(users);
         await logAdminAction(req.admin.id, req.admin.email, 'permission', users[idx].id, users[idx].email,
             `Permisos actualizados desde panel admin`);
+        // Notificar al empleado en tiempo real para que recargue sus permisos
+        setImmediate(() => {
+            if (typeof sseUser === 'function') {
+                sseUser(users[idx].id, 'permissions_updated', {
+                    permissions: users[idx].permissions,
+                    updatedBy:   'admin',
+                    ts:          new Date().toISOString(),
+                });
+            }
+        });
         ok(res, { done: true, permissions: users[idx].permissions });
     } catch (e) {
         err(res, 'Error actualizando permisos: ' + e.message, 500);
@@ -5695,6 +5849,18 @@ app.put('/api/admin/global-settings', requireAdmin, async (req, res) => {
         await writeConfig(cfg);
         await logAdminAction(req.admin.id, req.admin.email, 'global_settings', null, null,
             `trialDays=${cfg.trialDays} registrationOpen=${cfg.registrationOpen} maintenance=${cfg.maintenanceMode}`);
+        // Notificar a todos los clientes conectados que la config global cambió
+        setImmediate(() => {
+            if (typeof broadcastSSE === 'function') {
+                broadcastSSE('config_updated', {
+                    trialDays:        cfg.trialDays,
+                    maintenanceMode:  cfg.maintenanceMode,
+                    registrationOpen: cfg.registrationOpen,
+                    appName:          cfg.appName,
+                    ts:               new Date().toISOString(),
+                });
+            }
+        });
 
         ok(res, {
             trialDays:        cfg.trialDays,
@@ -5711,6 +5877,22 @@ app.put('/api/admin/global-settings', requireAdmin, async (req, res) => {
 // ══════════════════════════════════════════════════════════════════════════════
 // FIN ENDPOINTS ADMIN FALTANTES
 // ══════════════════════════════════════════════════════════════════════════════
+
+// ── Endpoint público: config global leída por la app principal ──────────────
+// La app principal lo llama al iniciar para saber los días de trial, nombre, etc.
+app.get('/api/config/global', async (req, res) => {
+    try {
+        const cfg = await getConfig();
+        ok(res, {
+            trialDays:        cfg.trialDays        ?? 3,
+            appName:          cfg.appName          ?? 'FIX PRO MAX',
+            maintenanceMode:  cfg.maintenanceMode  === true,
+            registrationOpen: cfg.registrationOpen !== false,
+        });
+    } catch (e) {
+        ok(res, { trialDays: 3, appName: 'FIX PRO MAX', maintenanceMode: false, registrationOpen: true });
+    }
+});
 
 // Iniciar servidor
 startServer(PORT);

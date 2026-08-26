@@ -866,8 +866,8 @@
 /* ── 1. Ocultar encabezado original ── */
 @media (max-width: 768px) {
 
-    /* Ocultar el div de título/barcode/botones del POS (tiene h2 + flex gap-2) */
-    #module-pos > div:first-child {
+    /* El header del POS ya no existe como div separado — los tabs son el primer elemento */
+    #module-pos > div:first-child:not(#posMobileTabs) {
         display: none !important;
     }
 
@@ -1056,19 +1056,13 @@
         border-top: none !important;
         border-bottom: none !important;
         margin: 0 !important;
-        padding: 4px 14px !important;
+        padding: 4px 0 !important;
     }
 
     #posCartPanel .cart-item {
-        padding: 10px 0 !important;
+        padding: 10px 14px !important;
         gap: 10px !important;
-        border-radius: 0 !important;
-        margin-bottom: 0 !important;
-        background: transparent !important;
         border-bottom: 1px solid var(--border) !important;
-        border-left: none !important;
-        border-right: none !important;
-        border-top: none !important;
     }
 
     #posCartPanel .cart-item:last-child {
@@ -1079,44 +1073,37 @@
         width: 34px !important;
         height: 34px !important;
         font-size: 17px !important;
-        border-radius: 50% !important;
         -webkit-tap-highlight-color: transparent !important;
     }
 
-    #posCartPanel .cart-total {
-        font-size: 20px !important;
-        padding: 14px 14px 10px !important;
-        margin: 0 !important;
-        border-top: 2px solid var(--border) !important;
-        border-radius: 0 !important;
-        background: transparent !important;
+    /* Resumen en móvil */
+    #posCartPanel .pos-summary {
+        padding: 10px 14px 0 !important;
     }
 
-    #posCartPanel .payment-row {
-        flex-direction: column !important;
-        gap: 8px !important;
-        padding: 12px 14px !important;
-        background: var(--surface-2) !important;
+    /* Panel de pago en móvil */
+    #posCartPanel .pos-pay-panel {
+        padding: 10px 14px 14px !important;
     }
-
-    #posCartPanel .payment-row select,
-    #posCartPanel .payment-row input {
+    #posCartPanel .pos-pay-method select {
         width: 100% !important;
-        border-radius: var(--mob-radius-xs) !important;
+        min-height: 44px !important;
+        font-size: 15px !important;
+    }
+    #posCartPanel .pos-received-row input {
         min-height: 44px !important;
         font-size: 15px !important;
     }
 
-    /* Botón Completar Venta */
-    #posCartPanel .btn-success.w-full,
-    #module-pos .btn-success.w-full {
-        margin: 12px 14px !important;
-        width: calc(100% - 28px) !important;
+    /* Botón Cobrar */
+    #posCartPanel .btn-pos-cobrar,
+    #module-pos .btn-pos-cobrar {
+        margin: 0 !important;
+        border-radius: 0 !important;
         height: 52px !important;
         font-size: 16px !important;
         font-weight: 700 !important;
-        border-radius: var(--mob-radius-sm) !important;
-        box-shadow: 0 4px 16px rgba(16,185,129,0.35) !important;
+        box-shadow: 0 -4px 16px rgba(79,70,229,.2) !important;
     }
 
     /* ── 7. FAB FLOTANTE DEL CARRITO ── */
@@ -1695,10 +1682,5 @@
         padding: 3px 10px !important;
         border-radius: 20px !important;
         display: inline-block;
-    }
-
-    /* Fila de los toggles IVA / Crédito */
-    #posCartPanel > div[style*="display:flex"][style*="align-items:center"][style*="gap:8px"] {
-        padding: 2px 14px !important;
     }
 }

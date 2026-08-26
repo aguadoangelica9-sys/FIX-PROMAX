@@ -818,6 +818,7 @@
             line-height: 1.3;
             display: -webkit-box;
             -webkit-line-clamp: 2;
+            line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
             min-height: 34px;
@@ -1707,12 +1708,10 @@
             .sidebar { width: 220px; padding: 16px 12px; }
             .main { padding: 16px 20px; }
             .grid-2 { grid-template-columns: 1fr; }
-            .pos-grid { grid-template-columns: 1fr; height: auto; }
+            .pos-grid { grid-template-columns: 1fr 340px; height: calc(100vh - 130px); }
             .pos-products {
-                grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-                max-height: 300px;
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
             }
-            .pos-cart { height: 420px; }
             .modal-box { max-width: 96%; padding: 20px; }
             .modal-box .form-row { flex-direction: column; gap: 0; }
             .grid-3 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
@@ -1832,16 +1831,15 @@
             .stat .icon-box { width: 40px; height: 40px; font-size: 18px; }
             .stat .content .value { font-size: 18px; }
             .stat .content .label { font-size: 12px; }
-            /* POS en móvil */
-            .pos-grid { gap: 12px; }
+            /* POS en tablet pequeña: mantener lado a lado */
+            .pos-grid { gap: 0; }
             .pos-products {
-                grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
                 gap: 8px;
             }
             .pos-product { padding: 10px 8px; }
-            .pos-product .price { font-size: 16px; }
+            .pos-product .price { font-size: 15px; }
             .pos-product .name { font-size: 12px; }
-            .pos-cart { height: auto; min-height: 320px; }
             /* Tablas → scroll horizontal mínimo */
             .table-wrap { -webkit-overflow-scrolling: touch; }
             table { min-width: 500px; }
@@ -2942,54 +2940,39 @@
         border: 1px solid var(--border);
     }
 
-    /* ── POS: ancho fijo barcodeInput y paidAmount corregidos ── */
+    /* ── POS: ajustes responsive ≤768px ── */
     @media (max-width: 768px) {
         #barcodeInput { width: 100% !important; max-width: 100% !important; }
         #paidAmount   { width: 100% !important; max-width: 100% !important; }
-        /* Cart en tablet pequeña — altura automática */
-        .pos-cart { height: auto !important; min-height: 280px; }
-        /* Fila de pago: stack vertical */
-        .pos-cart .payment-row {
-            flex-direction: column;
-            gap: 8px;
-        }
-        .pos-cart .payment-row select,
-        .pos-cart .payment-row input {
-            width: 100% !important;
-            flex: none;
-        }
-        /* Botón Completar Venta siempre visible */
-        .pos-cart .btn-success {
-            position: sticky;
-            bottom: 0;
-            z-index: 2;
-            margin-top: 12px;
-        }
+        /* Cart: altura automática en tablet */
+        .pos-cart { height: auto !important; min-height: auto; }
+        /* Panel de pago: stack vertical */
+        .pos-pay-method select { width: 100% !important; }
+        .pos-received-row input { width: 100% !important; }
     }
     @media (max-width: 640px) {
-        /* POS layout: columna única en móvil */
+        /* POS layout: columna única en móvil — los tabs se encargan de mostrar productos o carrito */
         .pos-grid {
-            display: flex !important;
-            flex-direction: column !important;
+            display: grid !important;
+            grid-template-columns: 1fr !important;
             height: auto !important;
-            gap: 12px;
+            gap: 0;
         }
-        /* Productos grid más compacto */
+        /* Productos grid compacto */
         .pos-products {
-            max-height: 280px;
-            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)) !important;
-            gap: 6px !important;
+            max-height: none;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)) !important;
+            gap: 8px !important;
         }
-        .pos-product { padding: 8px 6px !important; }
-        .pos-product .name { font-size: 11px !important; }
+        .pos-product { padding: 10px 8px !important; }
+        .pos-product .name { font-size: 12px !important; }
         .pos-product .price { font-size: 14px !important; }
-        /* Cart: mostrar colapsado con toggle */
+        /* Cart en móvil: height auto */
         .pos-cart {
-            min-height: 220px !important;
-            border-radius: var(--radius) !important;
+            min-height: auto !important;
+            border-left: none !important;
+            border-top: 1.5px solid var(--border) !important;
         }
-        /* Header del cart más compacto */
-        .pos-cart > div:first-child { font-size: 14px !important; }
     }
 
     /* ── Tablas: scroll horizontal garantizado en todos los tamaños ── */
@@ -3701,56 +3684,40 @@
         }
     }
 
-    /* ── POS Cart: layout mejorado en móvil ── */
+    /* ── POS Cart: layout en móvil ── */
     @media (max-width: 768px) {
-        /* Cart: no superponer el botón final */
         .pos-cart {
             position: relative;
             padding-bottom: 0 !important;
         }
-        /* Botón Completar Venta: sticky al fondo del cart */
-        .pos-cart > .btn-success {
+        /* Botón cobrar: sticky al fondo */
+        .btn-pos-cobrar {
             position: sticky !important;
             bottom: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
             z-index: 10 !important;
-            border-radius: 0 0 var(--radius) var(--radius) !important;
-            margin: 8px -18px -1px -18px !important;
-            padding: 14px 20px !important;
-            font-size: 16px !important;
-            font-weight: 700 !important;
-            min-height: 52px !important;
-            box-shadow: 0 -4px 16px rgba(16,185,129,0.25) !important;
-        }
-        /* Payment row: columna en móvil */
-        .pos-cart .payment-row {
-            flex-direction: column !important;
-            gap: 8px !important;
-        }
-        .pos-cart .payment-row > select,
-        .pos-cart .payment-row > input {
-            width: 100% !important;
-            flex: none !important;
+            border-radius: 0 !important;
+            margin: 0 !important;
         }
         /* POS search bar */
         #posSearch { font-size: 16px !important; }
+        /* Payment row: columna en móvil */
+        .pos-pay-method { flex-direction: column !important; }
+        .pos-pay-method select { width: 100% !important; }
     }
 
     /* ── POS: pantalla muy pequeña ── */
     @media (max-width: 480px) {
         .pos-products {
-            grid-template-columns: repeat(auto-fill, minmax(75px, 1fr)) !important;
-            gap: 6px !important;
-            max-height: 240px !important;
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)) !important;
+            gap: 7px !important;
         }
-        .pos-product { padding: 6px 5px !important; }
-        .pos-product .name { font-size: 10px !important; }
+        .pos-product { padding: 9px 8px !important; }
+        .pos-product .name { font-size: 11px !important; }
         .pos-product .price { font-size: 13px !important; }
         .pos-product .stock { font-size: 10px !important; }
         .pos-product .price-bs { font-size: 10px !important; }
-        /* Cart total: más compacto */
-        .pos-cart .cart-total { font-size: 18px !important; padding: 8px 0 6px !important; }
+        /* Total compacto */
+        .pos-summary-line.total-line .val { font-size: 18px !important; }
         #cartTotal { font-size: 18px !important; }
     }
 
