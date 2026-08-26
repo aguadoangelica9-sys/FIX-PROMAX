@@ -4413,13 +4413,20 @@
                             <option value="USDT">🟡 USDT</option>
                             <option value="BANK_TRANSFER">🏦 Transferencia</option>
                         </select>
-                        <input type="number" placeholder="Monto en $" id="paidAmount" value="0"
-                            inputmode="decimal" style="width:110px;" oninput="updateCambio()" />
                     </div>
-                    <div style="display:flex;justify-content:space-between;align-items:flex-start;font-size:13px;padding:4px 0;min-height:20px;">
-                        <span style="color:var(--text-2);">Cambio / Vuelto:</span>
-                        <div style="text-align:right;line-height:1.3;">
-                            <strong id="cartCambio" style="color:var(--success);">—</strong>
+                    <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;gap:8px;">
+                        <div style="flex:1;">
+                            <div style="color:var(--text-2);margin-bottom:3px;">Monto recibido</div>
+                            <input type="number" placeholder="0.00" id="paidAmount" value="0"
+                                inputmode="decimal"
+                                style="width:100%;padding:7px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-weight:700;outline:none;transition:border-color .15s;"
+                                onfocus="this.style.borderColor='var(--primary)'"
+                                onblur="this.style.borderColor='var(--border)'"
+                                oninput="updateCambio()" />
+                        </div>
+                        <div style="text-align:right;flex-shrink:0;">
+                            <div style="color:var(--text-2);margin-bottom:3px;">Cambio</div>
+                            <strong id="cartCambio" style="font-size:15px;color:var(--success);">—</strong>
                             <div id="cartCambioBs" style="font-size:11px;color:var(--text-3);display:none;"></div>
                         </div>
                     </div>
