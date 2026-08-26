@@ -4365,42 +4365,43 @@
                         <!-- Indicador de saldo del cliente cuando crédito está activo -->
                         <span id="posCreditBadge" style="display:none;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:#fef9c3;color:#ca8a04;border:1px solid #fde047;"></span>
                     </div>
-                    <!-- Descuento -->
-                    <div style="margin:6px 0 4px 0;">
-                        <div style="font-size:12px;color:var(--text-2);margin-bottom:5px;font-weight:600;">🏷️ Descuento</div>
-                        <!-- Selector tipo -->
-                        <div style="display:flex;gap:4px;margin-bottom:6px;">
-                            <button type="button" id="discModeBtn_pct" onclick="posSetDiscountMode('pct')"
-                                style="flex:1;padding:5px 0;border-radius:6px;border:1.5px solid var(--primary);background:var(--primary);color:#fff;font-size:12px;font-weight:700;cursor:pointer;transition:.15s;">
-                                % Porcentaje
-                            </button>
-                            <button type="button" id="discModeBtn_fixed" onclick="posSetDiscountMode('fixed')"
-                                style="flex:1;padding:5px 0;border-radius:6px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;transition:.15s;">
-                                $ Monto fijo
-                            </button>
+                    <!-- Descuento — pill selector integrado con input -->
+                    <div style="margin:8px 0 4px 0;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                            <span style="font-size:12px;font-weight:700;color:var(--text-2);letter-spacing:.4px;text-transform:uppercase;">Descuento</span>
+                            <span id="posDiscountBadge" style="display:none;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:rgba(239,68,68,.12);color:var(--danger);border:1px solid rgba(239,68,68,.25);"></span>
+                        </div>
+                        <!-- Input + toggle tipo unificado -->
+                        <div style="display:flex;align-items:center;border:1.5px solid var(--border);border-radius:10px;overflow:hidden;background:var(--bg);transition:border-color .15s;" id="discInputWrapper"
+                             onfocusin="this.style.borderColor='var(--primary)'"
+                             onfocusout="this.style.borderColor='var(--border)'">
+                            <!-- Pills de tipo -->
+                            <div style="display:flex;border-right:1.5px solid var(--border);flex-shrink:0;">
+                                <button type="button" id="discModeBtn_pct" onclick="posSetDiscountMode('pct')"
+                                    style="padding:7px 10px;border:none;background:var(--primary);color:#fff;font-size:12px;font-weight:800;cursor:pointer;transition:.15s;line-height:1;">%</button>
+                                <button type="button" id="discModeBtn_fixed" onclick="posSetDiscountMode('fixed')"
+                                    style="padding:7px 10px;border:none;background:var(--surface2);color:var(--text-3);font-size:12px;font-weight:800;cursor:pointer;transition:.15s;line-height:1;">$</button>
+                            </div>
+                            <!-- Input de valor -->
+                            <input type="number" id="discValueInput" min="0" step="any" placeholder="0"
+                                inputmode="decimal"
+                                style="flex:1;padding:7px 10px;border:none;background:transparent;color:var(--text);font-size:15px;font-weight:700;outline:none;min-width:0;width:60px;"
+                                oninput="posHandleDiscountInput(this.value)"
+                                onfocus="this.select()" />
+                            <!-- Botón limpiar -->
+                            <button type="button" id="discClearBtn" onclick="posResetDiscount()" title="Quitar descuento"
+                                style="display:none;padding:7px 10px;border:none;background:transparent;color:var(--text-3);font-size:14px;cursor:pointer;transition:.15s;flex-shrink:0;">✕</button>
                         </div>
                         <!-- Botones rápidos % -->
-                        <div id="discPctButtons" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:4px;">
-                            <button type="button" class="pos-disc-btn" onclick="posSetDiscount(10)"  style="padding:5px 14px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;transition:.15s;">10%</button>
-                            <button type="button" class="pos-disc-btn" onclick="posSetDiscount(20)"  style="padding:5px 14px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;transition:.15s;">20%</button>
-                            <button type="button" class="pos-disc-btn" onclick="posSetDiscount(30)"  style="padding:5px 14px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;transition:.15s;">30%</button>
-                            <button type="button" class="pos-disc-btn" onclick="posSetDiscount(70)"  style="padding:5px 14px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;transition:.15s;">70%</button>
-                        </div>
-                        <!-- Input monto fijo (oculto por defecto) -->
-                        <div id="discFixedRow" style="display:none;align-items:center;gap:6px;">
-                            <span style="font-size:13px;color:var(--text-2);font-weight:600;">$</span>
-                            <input type="number" id="discFixedInput" min="0" step="0.01" placeholder="0.00"
-                                inputmode="decimal"
-                                style="flex:1;padding:6px 10px;border-radius:6px;border:1.5px solid var(--border);
-                                       background:var(--bg);color:var(--text);font-size:14px;font-weight:600;
-                                       outline:none;max-width:120px;"
-                                oninput="posSetDiscountFixed(parseFloat(this.value)||0)"
-                                onfocus="this.style.borderColor='var(--primary)'"
-                                onblur="this.style.borderColor='var(--border)'" />
-                            <button type="button" onclick="posSetDiscountFixed(0);document.getElementById('discFixedInput').value='';"
-                                style="padding:5px 10px;border-radius:6px;border:1.5px solid var(--border);
-                                       background:var(--surface2);color:var(--text-2);font-size:12px;cursor:pointer;"
-                                title="Quitar descuento">✕</button>
+                        <div id="discPctButtons" style="display:flex;gap:5px;margin-top:6px;">
+                            <button type="button" class="pos-disc-btn" onclick="posSetDiscount(10)"
+                                style="flex:1;padding:5px 0;border-radius:7px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;transition:.15s;">10%</button>
+                            <button type="button" class="pos-disc-btn" onclick="posSetDiscount(20)"
+                                style="flex:1;padding:5px 0;border-radius:7px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;transition:.15s;">20%</button>
+                            <button type="button" class="pos-disc-btn" onclick="posSetDiscount(30)"
+                                style="flex:1;padding:5px 0;border-radius:7px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;transition:.15s;">30%</button>
+                            <button type="button" class="pos-disc-btn" onclick="posSetDiscount(70)"
+                                style="flex:1;padding:5px 0;border-radius:7px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;transition:.15s;">70%</button>
                         </div>
                     </div>
                     <div class="payment-row" style="flex-wrap:wrap;gap:8px;">
@@ -7785,21 +7786,18 @@
         const btnPct   = document.getElementById('discModeBtn_pct');
         const btnFixed = document.getElementById('discModeBtn_fixed');
         const pctBtns  = document.getElementById('discPctButtons');
-        const fixedRow = document.getElementById('discFixedRow');
 
         if (mode === 'pct') {
-            if (btnPct)   { btnPct.style.background = 'var(--primary)';  btnPct.style.color = '#fff';          btnPct.style.borderColor = 'var(--primary)'; }
-            if (btnFixed) { btnFixed.style.background = 'var(--surface2)'; btnFixed.style.color = 'var(--text)'; btnFixed.style.borderColor = 'var(--border)'; }
+            if (btnPct)   { btnPct.style.background = 'var(--primary)';    btnPct.style.color = '#fff';          }
+            if (btnFixed) { btnFixed.style.background = 'var(--surface2)'; btnFixed.style.color = 'var(--text-3)'; }
             if (pctBtns)  pctBtns.style.display = 'flex';
-            if (fixedRow) fixedRow.style.display = 'none';
-            // Limpiar monto fijo al cambiar de modo
+            // Al cambiar a %, si había monto fijo limpiarlo
             posDiscountFixed = 0;
         } else {
-            if (btnFixed) { btnFixed.style.background = 'var(--primary)';  btnFixed.style.color = '#fff';          btnFixed.style.borderColor = 'var(--primary)'; }
-            if (btnPct)   { btnPct.style.background = 'var(--surface2)'; btnPct.style.color = 'var(--text)'; btnPct.style.borderColor = 'var(--border)'; }
+            if (btnFixed) { btnFixed.style.background = 'var(--primary)';  btnFixed.style.color = '#fff';        }
+            if (btnPct)   { btnPct.style.background = 'var(--surface2)';   btnPct.style.color = 'var(--text-3)'; }
             if (pctBtns)  pctBtns.style.display = 'none';
-            if (fixedRow) fixedRow.style.display = 'flex';
-            // Limpiar porcentaje al cambiar de modo
+            // Al cambiar a $, limpiar porcentaje y desmarcar botones
             posDiscountPct = 0;
             document.querySelectorAll('.pos-disc-btn').forEach(btn => {
                 btn.style.background  = 'var(--surface2)';
@@ -7807,17 +7805,42 @@
                 btn.style.borderColor = 'var(--border)';
             });
         }
+        // Limpiar el input visual
+        const inp = document.getElementById('discValueInput');
+        if (inp) inp.value = '';
+        _updateDiscountBadge(0);
         updateCartUI();
+    }
+
+    // Manejador unificado del input — decide si es % o $
+    function posHandleDiscountInput(val) {
+        const v = parseFloat(val) || 0;
+        if (posDiscountMode === 'fixed') {
+            posSetDiscountFixed(v);
+        } else {
+            posDiscountPct = Math.min(100, Math.max(0, v));
+            // Desmarcar botones rápidos cuando se escribe manualmente
+            document.querySelectorAll('.pos-disc-btn').forEach(btn => {
+                const active = parseFloat(btn.textContent) === posDiscountPct;
+                btn.style.background  = active ? 'var(--primary)' : 'var(--surface2)';
+                btn.style.color       = active ? '#fff'           : 'var(--text)';
+                btn.style.borderColor = active ? 'var(--primary)' : 'var(--border)';
+            });
+            updateCartUI();
+        }
     }
 
     // Descuento por porcentaje — toggle: mismo botón lo quita
     function posSetDiscount(pct) {
         posDiscountPct = (posDiscountPct === pct) ? 0 : Math.min(100, Math.max(0, parseFloat(pct) || 0));
 
+        // Sincronizar input visual
+        const inp = document.getElementById('discValueInput');
+        if (inp) inp.value = posDiscountPct > 0 ? posDiscountPct : '';
+
         // Resaltar el botón activo y desmarcar los demás
         document.querySelectorAll('.pos-disc-btn').forEach(btn => {
-            const btnPct = parseFloat(btn.textContent);
-            const active = btnPct === posDiscountPct;
+            const active = parseFloat(btn.textContent) === posDiscountPct;
             btn.style.background  = active ? 'var(--primary)' : 'var(--surface2)';
             btn.style.color       = active ? '#fff'           : 'var(--text)';
             btn.style.borderColor = active ? 'var(--primary)' : 'var(--border)';
@@ -7834,7 +7857,7 @@
         const { subtotalUSD } = _posCartTotalsRaw();
         if (posDiscountFixed > subtotalUSD) {
             posDiscountFixed = subtotalUSD;
-            const input = document.getElementById('discFixedInput');
+            const input = document.getElementById('discValueInput');
             if (input) input.value = posDiscountFixed.toFixed(2);
             showToast('⚠️', 'El descuento no puede superar el subtotal de la venta');
         }
@@ -7842,19 +7865,43 @@
         updateCartUI();
     }
 
+    // Actualiza el badge visual del descuento y el botón limpiar
+    function _updateDiscountBadge(discUSD) {
+        const badge    = document.getElementById('posDiscountBadge');
+        const clearBtn = document.getElementById('discClearBtn');
+        if (badge) {
+            if (discUSD > 0) {
+                const fmtU = (n) => window.CurrencySystem ? window.CurrencySystem.format(n, 'USD') : '$' + n.toFixed(2);
+                badge.textContent   = `-${fmtU(discUSD)}`;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+        if (clearBtn) clearBtn.style.display = discUSD > 0 ? 'block' : 'none';
+    }
+
     // Reset completo del descuento (ambos modos)
     function posResetDiscount() {
         posDiscountPct   = 0;
         posDiscountFixed = 0;
         posDiscountMode  = 'pct';
+        // Resetear UI
+        const inp = document.getElementById('discValueInput');
+        if (inp) inp.value = '';
         document.querySelectorAll('.pos-disc-btn').forEach(btn => {
             btn.style.background  = 'var(--surface2)';
             btn.style.color       = 'var(--text)';
             btn.style.borderColor = 'var(--border)';
         });
-        const input = document.getElementById('discFixedInput');
-        if (input) input.value = '';
-        posSetDiscountMode('pct');
+        _updateDiscountBadge(0);
+        const pctBtns = document.getElementById('discPctButtons');
+        if (pctBtns) pctBtns.style.display = 'flex';
+        const btnPct   = document.getElementById('discModeBtn_pct');
+        const btnFixed = document.getElementById('discModeBtn_fixed');
+        if (btnPct)   { btnPct.style.background = 'var(--primary)';    btnPct.style.color = '#fff';           }
+        if (btnFixed) { btnFixed.style.background = 'var(--surface2)'; btnFixed.style.color = 'var(--text-3)'; }
+        updateCartUI();
     }
 
     // ── POS: lógica del buscador de clientes ────────────────────────────────
@@ -8117,6 +8164,9 @@
                 discRow.style.display = 'none';
             }
         }
+
+        // ── Badge y botón limpiar del descuento ───────────────────────────────
+        _updateDiscountBadge(dUSD);
 
         // ── Actualizar visual del toggle IVA ──────────────────────────────────
         const ivaTrack = document.getElementById('posIvaTrack');
