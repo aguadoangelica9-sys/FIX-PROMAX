@@ -167,7 +167,7 @@ app.use('/api', async (req, res, next) => {
 
     // Verificar suscripción del owner de la empresa
     const owner  = users.find(u => u.companyId === user.companyId && u.teamRole === 'owner') || user;
-    const status = getAccessStatus(owner);
+    const status = await getAccessStatus(owner);
     if (!status.access) {
         return res.status(403).json({
             ok: false,
@@ -526,9 +526,9 @@ app.use(express.static(__dirname, {
 function requireSubscription(req, res, next) {
     if (!req.user) return next();
     if (req.user.role === 'admin') return next();
-    readUsers().then(users => {
+    readUsers().then(async users => {
         const owner  = users.find(u => u.companyId === req.user.companyId && u.teamRole === 'owner') || req.user;
-        const status = getAccessStatus(owner);
+        const status = await getAccessStatus(owner);
         if (!status.access) {
             return res.status(403).json({
                 ok: false,
@@ -600,7 +600,7 @@ app.post('/api/products', requireAuth, async (req, res) => {
     // ❌”€❌”€ Validar límite de productos según plan ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
     const users   = await readUsers();
     const owner   = users.find(u => u.companyId === req.user.companyId && u.teamRole === 'owner') || req.user;
-    const status  = getAccessStatus(owner);
+    const status  = await getAccessStatus(owner);
     const maxProd = status.maxProducts ?? -1;
     if (maxProd !== -1 && db.products.length >= maxProd) {
         return err(res, `Tu plan permite hasta ${maxProd} productos. Actualiza tu plan para agregar más.`, 403);
@@ -2545,21 +2545,18 @@ function getPlan(planId) {
     return PLANS[planId] || null;
 }
 
-function getMaxTeamByPlan(user) {
+async function getMaxTeamByPlan(user) {
     if (!user) return 1;
     if (user.role === 'admin') return 99;
-    // Usar getAccessStatus como fuente de verdad única — evita inconsistencias
-    // entre subscriptionPlan, subscriptionStatus y subscriptionEnd
-    const status = getAccessStatus(user);
+    const status = await getAccessStatus(user);
     if (!status.access) return 1;
     return status.maxUsers || 1;
 }
 
-function planAllowsMultiUser(user) {
+async function planAllowsMultiUser(user) {
     if (!user) return false;
     if (user.role === 'admin') return true;
-    // Usar getAccessStatus como fuente de verdad única
-    const status = getAccessStatus(user);
+    const status = await getAccessStatus(user);
     if (!status.access) return false;
     return status.multiUser === true;
 }
@@ -2635,7 +2632,7 @@ function requireModule(moduleName) {
         if (req.user.role === 'admin') return next();
         const users  = await readUsers();
         const owner  = users.find(u => u.companyId === req.user.companyId && u.teamRole === 'owner') || req.user;
-        const status = getAccessStatus(owner);
+        const status = await getAccessStatus(owner);
         if (status.modules && status.modules[moduleName] === false) {
             return res.status(403).json({ ok: false, error: `Tu plan no incluye acceso a este módulo. Actualiza tu suscripción para desbloquearlo.` });
         }
@@ -2731,13 +2728,13 @@ app.get('/api/admin/plans/stats', requireAdmin, async (req, res) => {
     const byPlan   = {};
     let revenue30d = 0, revenue7d = 0, revenueTotal = 0;
 
-    users.forEach(u => {
-        const s = getAccessStatus(u);
+    await Promise.all(users.map(async u => {
+        const s = await getAccessStatus(u);
         byStatus[s.status] = (byStatus[s.status] || 0) + 1;
         if (s.status === 'subscribed' || s.status === 'cancelled_active') {
             byPlan[s.plan] = (byPlan[s.plan] || 0) + 1;
         }
-    });
+    }));
 
     payments.forEach(p => {
         if (p.status === 'completed') {
@@ -2902,7 +2899,7 @@ app.post('/api/subscription/restore', requireAuth, async (req, res) => {
     const users = await readUsers();
     const user  = users.find(u => u.id === req.user.id);
     if (!user) return err(res, 'Usuario no encontrado', 404);
-    const status = getAccessStatus(user);
+    const status = await getAccessStatus(user);
     ok(res, { restored: status.access, ...status });
 });
 
@@ -3320,11 +3317,11 @@ app.get('/api/admin/subscriptions', requireAdmin, async (req, res) => {
     const now      = Date.now();
     const { filter } = req.query;
 
-    let list = users
+    let list = await Promise.all(users
         .filter(u => u.role !== 'admin')
-        .map(u => {
-            const status = getAccessStatus(u);
-            // Ášltimo pago del usuario
+        .map(async u => {
+            const status = await getAccessStatus(u);
+            // Último pago del usuario
             const lastPay = payments.filter(p => p.userId === u.id && p.status === 'completed')
                                     .sort((a,b) => new Date(b.ts)-new Date(a.ts))[0];
             return {
@@ -3341,7 +3338,7 @@ app.get('/api/admin/subscriptions', requireAdmin, async (req, res) => {
                 lastPayment: lastPay ? { amount: lastPay.amount, method: lastPay.method, ts: lastPay.ts } : null,
                 source:    u.subscriptionSource || null,
             };
-        });
+        }));
 
     if (filter === 'active')    list = list.filter(u => u.status === 'subscribed' || u.status === 'cancelled_active');
     else if (filter === 'trial')    list = list.filter(u => u.status === 'trial');
@@ -3598,7 +3595,7 @@ app.get('/api/team/members', requireAuth, async (req, res) => {
                     || allUsers.find(u => u.id === req.user.id);
 
     // getAccessStatus como fuente de verdad unica para maxUsers y multiUser
-    const subStatus  = ownerFull ? getAccessStatus(ownerFull) : { maxUsers: 1, multiUser: false };
+    const subStatus  = ownerFull ? await getAccessStatus(ownerFull) : { maxUsers: 1, multiUser: false };
     const maxAllowed = subStatus.maxUsers || 1;
     const multiUser  = subStatus.multiUser === true;
 
@@ -3659,9 +3656,7 @@ app.post('/api/team/invite', requireAuth, async (req, res) => {
     if (!ownerFull) return err(res, 'No se encontro el propietario de la empresa', 500);
 
     // Evaluar acceso real usando getAccessStatus (fuente de verdad unica).
-    // Esta funcion evalua subscriptionStatus + subscriptionEnd + subscriptionPlan juntos,
-    // evitando falsos negativos por campos desincronizados.
-    const subStatus = getAccessStatus(ownerFull);
+    const subStatus = await getAccessStatus(ownerFull);
 
     // Verificar que el plan permita multiusuario
     if (!subStatus.multiUser) {
@@ -3864,7 +3859,7 @@ app.get('/api/team/company', requireAuth, async (req, res) => {
     const users     = await readUsers();
     const owner     = users.find(u => u.companyId === req.user.companyId && u.teamRole === 'owner');
     const team      = users.filter(u => u.companyId === req.user.companyId);
-    const subStatus = owner ? getAccessStatus(owner) : { status: 'no_access', access: false, maxUsers: 1, multiUser: false };
+    const subStatus = owner ? await getAccessStatus(owner) : { status: 'no_access', access: false, maxUsers: 1, multiUser: false };
     const activeCount = team.filter(u => u.active !== false).length;
     const maxMembers  = subStatus.maxUsers || 1;
     ok(res, {
@@ -3972,7 +3967,7 @@ app.get('/api/admin/companies/overview', requireAdmin, async (req, res) => {
 
     const companies = await Promise.all(
         Object.entries(byCompany).map(async ([companyId, { owner, members }]) => {
-            const sub      = getAccessStatus(owner);
+            const sub      = await getAccessStatus(owner);
             const plan     = getPlan(owner.subscriptionPlan) || {};
 
             // Intentar leer ventas totales de la BD de la empresa
@@ -4165,7 +4160,7 @@ app.get('/api/admin/users/:id', requireAdmin, async (req, res) => {
     const users  = await readUsers();
     const user   = users.find(u => u.id === req.params.id);
     if (!user) return err(res, 'Usuario no encontrado', 404);
-    const status = getAccessStatus(user);
+    const status = await getAccessStatus(user);
     const tickets = (await readTickets()).filter(t => t.userId === user.id);
     ok(res, {
         id: user.id, name: user.name, email: user.email, role: user.role,
