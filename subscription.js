@@ -11,7 +11,7 @@
 
     /* ── Constantes ─────────────────────────────────────────────── */
     const SUB_CACHE_KEY   = 'fixpromax_sub_cache';
-    const SUB_CACHE_TTL   = 15 * 60 * 1000;     // 15 minutos de caché
+    const SUB_CACHE_TTL   = 0;                    // Sin caché — siempre consultar servidor
     const OFFLINE_GRACE   = 48 * 60 * 60 * 1000; // 48 h sin conexión antes de bloquear
     const TRIAL_DAYS      = 3;
 
@@ -33,6 +33,8 @@
     async function _fetchStatus() {
         const token = localStorage.getItem('fixpromax_token');
         if (!token) return null;
+        // Limpiar siempre cualquier caché anterior — siempre consultar servidor fresco
+        localStorage.removeItem(SUB_CACHE_KEY);
         try {
             const ctrl = new AbortController();
             setTimeout(() => ctrl.abort(), 6000);
