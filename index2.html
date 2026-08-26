@@ -7786,18 +7786,19 @@
         const btnPct   = document.getElementById('discModeBtn_pct');
         const btnFixed = document.getElementById('discModeBtn_fixed');
         const pctBtns  = document.getElementById('discPctButtons');
+        const inp      = document.getElementById('discValueInput');
 
         if (mode === 'pct') {
-            if (btnPct)   { btnPct.style.background = 'var(--primary)';    btnPct.style.color = '#fff';          }
+            if (btnPct)   { btnPct.style.background = 'var(--primary)';    btnPct.style.color = '#fff';           }
             if (btnFixed) { btnFixed.style.background = 'var(--surface2)'; btnFixed.style.color = 'var(--text-3)'; }
             if (pctBtns)  pctBtns.style.display = 'flex';
-            // Al cambiar a %, si había monto fijo limpiarlo
+            if (inp)      inp.placeholder = '0';
             posDiscountFixed = 0;
         } else {
-            if (btnFixed) { btnFixed.style.background = 'var(--primary)';  btnFixed.style.color = '#fff';        }
-            if (btnPct)   { btnPct.style.background = 'var(--surface2)';   btnPct.style.color = 'var(--text-3)'; }
-            if (pctBtns)  pctBtns.style.display = 'none';
-            // Al cambiar a $, limpiar porcentaje y desmarcar botones
+            if (btnFixed) { btnFixed.style.background = 'var(--primary)';  btnFixed.style.color = '#fff';         }
+            if (btnPct)   { btnPct.style.background = 'var(--surface2)';   btnPct.style.color = 'var(--text-3)';  }
+            if (pctBtns)  pctBtns.style.display = 'none';  // botones % no aplican en monto fijo
+            if (inp)      inp.placeholder = '0.00';
             posDiscountPct = 0;
             document.querySelectorAll('.pos-disc-btn').forEach(btn => {
                 btn.style.background  = 'var(--surface2)';
@@ -7805,8 +7806,6 @@
                 btn.style.borderColor = 'var(--border)';
             });
         }
-        // Limpiar el input visual
-        const inp = document.getElementById('discValueInput');
         if (inp) inp.value = '';
         _updateDiscountBadge(0);
         updateCartUI();
