@@ -1713,9 +1713,6 @@
             .pos-products {
                 grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
             }
-            .modal-box { max-width: 96%; padding: 20px; }
-            .modal-box .form-row { flex-direction: column; gap: 0; }
-            .grid-3 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
         }
 
         /* ── Tablet pequeña (≤768px) ── */
@@ -1832,7 +1829,7 @@
             .stat .icon-box { width: 40px; height: 40px; font-size: 18px; }
             .stat .content .value { font-size: 18px; }
             .stat .content .label { font-size: 12px; }
-            /* POS en tablet pequeña: mantener lado a lado */
+            /* POS en tablet pequeña — solo ajuste de gap */
             .pos-grid { gap: 0; }
             .pos-products {
                 grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
@@ -2163,8 +2160,6 @@
            ORIENTACIÓN HORIZONTAL en teléfono
            ══════════════════════════════════════════════════════════════ */
         @media (max-width: 768px) and (orientation: landscape) {
-            .pos-grid { grid-template-columns: 1fr 320px; height: calc(100vh - 120px); }
-            .pos-products { max-height: none; }
             .mobile-bottom-nav {
                 /* En landscape el espacio es muy reducido, usar barra lateral */
                 flex-direction: column;
@@ -2941,40 +2936,7 @@
         border: 1px solid var(--border);
     }
 
-    /* ── POS: ajustes responsive ≤768px ── */
-    @media (max-width: 768px) {
-        #barcodeInput { width: 100% !important; max-width: 100% !important; }
-        #paidAmount   { width: 100% !important; max-width: 100% !important; }
-        /* Cart: altura automática en tablet */
-        .pos-cart { height: auto !important; min-height: auto; }
-        /* Panel de pago: stack vertical */
-        .pos-pay-method select { width: 100% !important; }
-        .pos-received-row input { width: 100% !important; }
-    }
-    @media (max-width: 640px) {
-        /* POS layout: columna única en móvil — los tabs se encargan de mostrar productos o carrito */
-        .pos-grid {
-            display: grid !important;
-            grid-template-columns: 1fr !important;
-            height: auto !important;
-            gap: 0;
-        }
-        /* Productos grid compacto */
-        .pos-products {
-            max-height: none;
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)) !important;
-            gap: 8px !important;
-        }
-        .pos-product { padding: 10px 8px !important; }
-        .pos-product .name { font-size: 12px !important; }
-        .pos-product .price { font-size: 14px !important; }
-        /* Cart en móvil: height auto */
-        .pos-cart {
-            min-height: auto !important;
-            border-left: none !important;
-            border-top: 1.5px solid var(--border) !important;
-        }
-    }
+    /* ── POS responsive: manejado completamente en mobile.css ── */
 
     /* ── Tablas: scroll horizontal garantizado en todos los tamaños ── */
     .table-wrap {
@@ -3357,14 +3319,9 @@
         }
     }
 
-    /* ── Sidebar en landscape ── */
+    /* ── POS landscape sidebar: manejado en mobile.css ── */
     @media (max-width: 768px) and (orientation: landscape) {
         .sidebar { width: 240px !important; }
-        /* Cart en landscape: usar todo el alto disponible */
-        .pos-grid {
-            grid-template-columns: 1fr 260px !important;
-            height: calc(100dvh - 110px) !important;
-        }
     }
 
     /* ── Tarjetas de módulos básicos: responsive ── */
@@ -3685,42 +3642,9 @@
         }
     }
 
-    /* ── POS Cart: layout en móvil ── */
-    @media (max-width: 768px) {
-        .pos-cart {
-            position: relative;
-            padding-bottom: 0 !important;
-        }
-        /* Botón cobrar: sticky al fondo */
-        .btn-pos-cobrar {
-            position: sticky !important;
-            bottom: 0 !important;
-            z-index: 10 !important;
-            border-radius: 0 !important;
-            margin: 0 !important;
-        }
-        /* POS search bar */
-        #posSearch { font-size: 16px !important; }
-        /* Payment row: columna en móvil */
-        .pos-pay-method { flex-direction: column !important; }
-        .pos-pay-method select { width: 100% !important; }
-    }
+    /* ── POS Cart móvil: manejado en mobile.css ── */
 
-    /* ── POS: pantalla muy pequeña ── */
-    @media (max-width: 480px) {
-        .pos-products {
-            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)) !important;
-            gap: 7px !important;
-        }
-        .pos-product { padding: 9px 8px !important; }
-        .pos-product .name { font-size: 11px !important; }
-        .pos-product .price { font-size: 13px !important; }
-        .pos-product .stock { font-size: 10px !important; }
-        .pos-product .price-bs { font-size: 10px !important; }
-        /* Total compacto */
-        .pos-summary-line.total-line .val { font-size: 18px !important; }
-        #cartTotal { font-size: 18px !important; }
-    }
+    /* ── POS 480px: manejado en mobile.css ── */
 
     /* ── Inventario: header responsive ── */
     @media (max-width: 768px) {
