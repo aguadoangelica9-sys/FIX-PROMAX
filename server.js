@@ -2785,7 +2785,8 @@ app.get('/api/subscription/status', requireAuth, async (req, res) => {
     }
     if (changed) await writeUsers(users);
 
-    ok(res, { ...getAccessStatus(owner), plans: getActivePlans() });
+    const accessStatus = await getAccessStatus(owner);
+    ok(res, { ...accessStatus, plans: getActivePlans() });
 });
 
 app.post('/api/subscription/activate', requireAuth, async (req, res) => {
@@ -2866,7 +2867,7 @@ app.post('/api/subscription/activate', requireAuth, async (req, res) => {
             ? 'Solicitud recibida. Verificaremos tu pago y activaremos el plan en menos de 2 horas.'
             : '¡Suscripción activada!',
         pending: isManualPayment,
-        ...getAccessStatus(users[idx]),
+        ...(await getAccessStatus(users[idx])),
     });
 });
 
@@ -2891,7 +2892,7 @@ app.post('/api/subscription/cancel', requireAuth, async (req, res) => {
     ok(res, {
         message: `Suscripción cancelada. Mantendrás acceso hasta ${new Date(users[idx].subscriptionEnd).toLocaleDateString('es')}.`,
         end: users[idx].subscriptionEnd,
-        ...getAccessStatus(users[idx]),
+        ...(await getAccessStatus(users[idx])),
     });
 });
 
@@ -3425,7 +3426,7 @@ app.post('/api/subscription/verify-google-play', requireAuth, async (req, res) =
         method: 'google_play', status: 'completed', source: 'google_play',
         orderId: purchaseToken,
     });
-    ok(res, { verified: true, ...getAccessStatus(users[idx]) });
+    ok(res, { verified: true, ...(await getAccessStatus(users[idx])) });
 });
 
 // ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
