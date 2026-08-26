@@ -4366,13 +4366,41 @@
                         <span id="posCreditBadge" style="display:none;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:#fef9c3;color:#ca8a04;border:1px solid #fde047;"></span>
                     </div>
                     <!-- Descuento -->
-                    <div style="margin:6px 0 2px 0;">
-                        <div style="font-size:12px;color:var(--text-2);margin-bottom:4px;">🏷️ Descuento</div>
-                        <div style="display:flex;gap:5px;flex-wrap:wrap;">
+                    <div style="margin:6px 0 4px 0;">
+                        <div style="font-size:12px;color:var(--text-2);margin-bottom:5px;font-weight:600;">🏷️ Descuento</div>
+                        <!-- Selector tipo -->
+                        <div style="display:flex;gap:4px;margin-bottom:6px;">
+                            <button type="button" id="discModeBtn_pct" onclick="posSetDiscountMode('pct')"
+                                style="flex:1;padding:5px 0;border-radius:6px;border:1.5px solid var(--primary);background:var(--primary);color:#fff;font-size:12px;font-weight:700;cursor:pointer;transition:.15s;">
+                                % Porcentaje
+                            </button>
+                            <button type="button" id="discModeBtn_fixed" onclick="posSetDiscountMode('fixed')"
+                                style="flex:1;padding:5px 0;border-radius:6px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;transition:.15s;">
+                                $ Monto fijo
+                            </button>
+                        </div>
+                        <!-- Botones rápidos % -->
+                        <div id="discPctButtons" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:4px;">
                             <button type="button" class="pos-disc-btn" onclick="posSetDiscount(10)"  style="padding:5px 14px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;transition:.15s;">10%</button>
                             <button type="button" class="pos-disc-btn" onclick="posSetDiscount(20)"  style="padding:5px 14px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;transition:.15s;">20%</button>
                             <button type="button" class="pos-disc-btn" onclick="posSetDiscount(30)"  style="padding:5px 14px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;transition:.15s;">30%</button>
                             <button type="button" class="pos-disc-btn" onclick="posSetDiscount(70)"  style="padding:5px 14px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;transition:.15s;">70%</button>
+                        </div>
+                        <!-- Input monto fijo (oculto por defecto) -->
+                        <div id="discFixedRow" style="display:none;align-items:center;gap:6px;">
+                            <span style="font-size:13px;color:var(--text-2);font-weight:600;">$</span>
+                            <input type="number" id="discFixedInput" min="0" step="0.01" placeholder="0.00"
+                                inputmode="decimal"
+                                style="flex:1;padding:6px 10px;border-radius:6px;border:1.5px solid var(--border);
+                                       background:var(--bg);color:var(--text);font-size:14px;font-weight:600;
+                                       outline:none;max-width:120px;"
+                                oninput="posSetDiscountFixed(parseFloat(this.value)||0)"
+                                onfocus="this.style.borderColor='var(--primary)'"
+                                onblur="this.style.borderColor='var(--border)'" />
+                            <button type="button" onclick="posSetDiscountFixed(0);document.getElementById('discFixedInput').value='';"
+                                style="padding:5px 10px;border-radius:6px;border:1.5px solid var(--border);
+                                       background:var(--surface2);color:var(--text-2);font-size:12px;cursor:pointer;"
+                                title="Quitar descuento">✕</button>
                         </div>
                     </div>
                     <div class="payment-row" style="flex-wrap:wrap;gap:8px;">
@@ -7690,7 +7718,9 @@
     let cart = [];
     let posSelectedCustomerId = null;
     let posIvaActivo  = true;  // estado del toggle IVA — true = cobrar IVA
-    let posDiscountPct = 0;    // porcentaje de descuento activo (0 = sin descuento)
+    let posDiscountPct   = 0;    // porcentaje de descuento activo (0 = sin descuento)
+    let posDiscountFixed = 0;    // monto fijo de descuento en USD (0 = sin descuento)
+    let posDiscountMode  = 'pct'; // 'pct' | 'fixed'
 
     function posToggleIVA() {
         posIvaActivo = !posIvaActivo;
@@ -7748,8 +7778,40 @@
     }
 
     // ── POS: descuento ───────────────────────────────────────────────────────
+
+    // Cambia entre modo porcentaje y monto fijo
+    function posSetDiscountMode(mode) {
+        posDiscountMode = mode;
+        const btnPct   = document.getElementById('discModeBtn_pct');
+        const btnFixed = document.getElementById('discModeBtn_fixed');
+        const pctBtns  = document.getElementById('discPctButtons');
+        const fixedRow = document.getElementById('discFixedRow');
+
+        if (mode === 'pct') {
+            if (btnPct)   { btnPct.style.background = 'var(--primary)';  btnPct.style.color = '#fff';          btnPct.style.borderColor = 'var(--primary)'; }
+            if (btnFixed) { btnFixed.style.background = 'var(--surface2)'; btnFixed.style.color = 'var(--text)'; btnFixed.style.borderColor = 'var(--border)'; }
+            if (pctBtns)  pctBtns.style.display = 'flex';
+            if (fixedRow) fixedRow.style.display = 'none';
+            // Limpiar monto fijo al cambiar de modo
+            posDiscountFixed = 0;
+        } else {
+            if (btnFixed) { btnFixed.style.background = 'var(--primary)';  btnFixed.style.color = '#fff';          btnFixed.style.borderColor = 'var(--primary)'; }
+            if (btnPct)   { btnPct.style.background = 'var(--surface2)'; btnPct.style.color = 'var(--text)'; btnPct.style.borderColor = 'var(--border)'; }
+            if (pctBtns)  pctBtns.style.display = 'none';
+            if (fixedRow) fixedRow.style.display = 'flex';
+            // Limpiar porcentaje al cambiar de modo
+            posDiscountPct = 0;
+            document.querySelectorAll('.pos-disc-btn').forEach(btn => {
+                btn.style.background  = 'var(--surface2)';
+                btn.style.color       = 'var(--text)';
+                btn.style.borderColor = 'var(--border)';
+            });
+        }
+        updateCartUI();
+    }
+
+    // Descuento por porcentaje — toggle: mismo botón lo quita
     function posSetDiscount(pct) {
-        // Toggle: si el mismo porcentaje ya está activo, lo quita
         posDiscountPct = (posDiscountPct === pct) ? 0 : Math.min(100, Math.max(0, parseFloat(pct) || 0));
 
         // Resaltar el botón activo y desmarcar los demás
@@ -7761,8 +7823,38 @@
             btn.style.borderColor = active ? 'var(--primary)' : 'var(--border)';
         });
 
-        // Recalcular totales en pantalla
         updateCartUI();
+    }
+
+    // Descuento por monto fijo en USD
+    function posSetDiscountFixed(amount) {
+        posDiscountFixed = Math.max(0, Math.round((parseFloat(amount) || 0) * 100) / 100);
+
+        // Validar que no supere el subtotal actual
+        const { subtotalUSD } = _posCartTotalsRaw();
+        if (posDiscountFixed > subtotalUSD) {
+            posDiscountFixed = subtotalUSD;
+            const input = document.getElementById('discFixedInput');
+            if (input) input.value = posDiscountFixed.toFixed(2);
+            showToast('⚠️', 'El descuento no puede superar el subtotal de la venta');
+        }
+
+        updateCartUI();
+    }
+
+    // Reset completo del descuento (ambos modos)
+    function posResetDiscount() {
+        posDiscountPct   = 0;
+        posDiscountFixed = 0;
+        posDiscountMode  = 'pct';
+        document.querySelectorAll('.pos-disc-btn').forEach(btn => {
+            btn.style.background  = 'var(--surface2)';
+            btn.style.color       = 'var(--text)';
+            btn.style.borderColor = 'var(--border)';
+        });
+        const input = document.getElementById('discFixedInput');
+        if (input) input.value = '';
+        posSetDiscountMode('pct');
     }
 
     // ── POS: lógica del buscador de clientes ────────────────────────────────
@@ -7984,7 +8076,7 @@
         countEl.textContent = `${cart.reduce((s,i) => s + i.qty, 0)} items`;
 
         // ── Usar _posCartTotals() — mismos valores que usará completeSale ──
-        const { subtotalUSD: sUSD, discountUSD: dUSD, discPct: dPct, taxUSD: tUSD, totalUSD: totUSD, rateUSD } = _posCartTotals();
+        const { subtotalUSD: sUSD, discountUSD: dUSD, discPct: dPct, discType: dType, taxUSD: tUSD, totalUSD: totUSD, rateUSD } = _posCartTotals();
         const subtotalVES = Math.round(sUSD   * rateUSD * 100) / 100;
         const discountVES = Math.round(dUSD   * rateUSD * 100) / 100;
         const taxVES      = Math.round(tUSD   * rateUSD * 100) / 100;
@@ -8016,7 +8108,10 @@
         }
         if (discRow) {
             if (dUSD > 0) {
-                discRow.innerHTML = `Descuento (${dPct}%): <span style="font-weight:600;">-${fmtU(dUSD)}</span>`;
+                const label = dType === 'fixed'
+                    ? `Descuento (-$${dUSD.toFixed(2)})`
+                    : `Descuento (${dPct}%)`;
+                discRow.innerHTML = `${label}: <span style="font-weight:600;">-${fmtU(dUSD)}</span>`;
                 discRow.style.display = '';
             } else {
                 discRow.style.display = 'none';
@@ -8064,16 +8159,49 @@
         // Redondear a centavos para evitar acumulación de errores floating-point
         subtotalUSD = Math.round(subtotalUSD * 100) / 100;
 
-        // Aplicar descuento
-        const discPct     = Math.min(100, Math.max(0, typeof posDiscountPct !== 'undefined' ? posDiscountPct : 0));
-        const discountUSD = Math.round(subtotalUSD * (discPct / 100) * 100) / 100;
+        // ── Aplicar descuento según el modo activo ────────────────────────────
+        let discountUSD, discPct, discType;
+        if (posDiscountMode === 'fixed') {
+            // Monto fijo: clampeado a no superar el subtotal
+            discountUSD = Math.min(
+                Math.round((posDiscountFixed || 0) * 100) / 100,
+                subtotalUSD
+            );
+            // Calcular el porcentaje equivalente para guardar en la venta
+            discPct  = subtotalUSD > 0 ? Math.round(discountUSD / subtotalUSD * 10000) / 100 : 0;
+            discType = 'fixed';
+        } else {
+            // Porcentaje: clampeado 0–100
+            discPct     = Math.min(100, Math.max(0, posDiscountPct || 0));
+            discountUSD = Math.round(subtotalUSD * (discPct / 100) * 100) / 100;
+            discType    = 'pct';
+        }
+
         const subtotalAfterDisc = Math.round((subtotalUSD - discountUSD) * 100) / 100;
 
         const ivaActivo = posIvaActivo;
         const taxUSD   = ivaActivo ? Math.round(subtotalAfterDisc * 0.16 * 100) / 100 : 0;
         const totalUSD = Math.round((subtotalAfterDisc + taxUSD) * 100) / 100;
 
-        return { subtotalUSD, discountUSD, discPct, subtotalAfterDisc, taxUSD, totalUSD, rateUSD, rateEUR };
+        return { subtotalUSD, discountUSD, discPct, discType, subtotalAfterDisc, taxUSD, totalUSD, rateUSD, rateEUR };
+    }
+
+    // ── Subtotal bruto sin descuento (para validar límite de monto fijo) ────
+    function _posCartTotalsRaw() {
+        const rateUSD = window.CurrencySystem?.getRateFor('USD', 'VES') || 36;
+        const rateEUR = window.CurrencySystem?.getRateFor('EUR', 'VES') || 40;
+        let subtotalUSD = 0;
+        cart.forEach(item => {
+            const prod = data.products.find(p => p.id === item.id);
+            const curr = (prod?.currency || data?.settings?.defaultCurrency || 'USD').toUpperCase();
+            const lineAmt = item.qty * item.price;
+            let lineUSD;
+            if (curr === 'USD')      lineUSD = lineAmt;
+            else if (curr === 'VES') lineUSD = lineAmt / rateUSD;
+            else                     lineUSD = (lineAmt * rateEUR) / rateUSD;
+            subtotalUSD += lineUSD;
+        });
+        return { subtotalUSD: Math.round(subtotalUSD * 100) / 100 };
     }
 
     // ── Convierte un monto USD a la moneda del selector posCurrency ─────────────────────────
@@ -8190,7 +8318,7 @@
             return;
         }
         // ── Usar _posCartTotals() — calcula en USD directo sin doble conversión VES ──
-        const { subtotalUSD, discountUSD, discPct, subtotalAfterDisc, taxUSD, totalUSD, rateUSD, rateEUR } = _posCartTotals();
+        const { subtotalUSD, discountUSD, discPct, discType, subtotalAfterDisc, taxUSD, totalUSD, rateUSD, rateEUR } = _posCartTotals();
 
         const posCurr     = document.getElementById('posCurrency')?.value || 'USD';
         const totalInCurr = _posToPosCurr(totalUSD, posCurr, rateUSD, rateEUR);
@@ -8248,6 +8376,7 @@
             subtotal,
             discount,
             discountPct: discPct,
+            discountType: discType,  // 'pct' | 'fixed'
             tax,
             total:    grandTotal,
             paid:     paidToSave,
@@ -8307,6 +8436,7 @@
             subtotal,
             discount,
             discountPct: discPct,
+            discountType: discType,  // 'pct' | 'fixed'
             tax,
             total:  grandTotal,
             paid:   paidToSave,   // en USD — mismo que sale.paid
@@ -8414,7 +8544,7 @@
         if (cBadge) cBadge.style.display = 'none';
         if (paidEl) { paidEl.disabled = false; paidEl.style.opacity = '1'; }
         // Resetear descuento para la siguiente venta
-        posSetDiscount(0);
+        posResetDiscount();
         updateCartUI();
         document.getElementById('paidAmount').value = '0';
         renderAll();
@@ -8983,6 +9113,7 @@
             </table>
             <div style="text-align:right;margin-top:12px;border-top:2px solid #e2e8f0;padding-top:8px;">
                 <div>Subtotal: ${formatCurrency(sale.subtotal||sale.total,sale.currency)}</div>
+                ${(sale.discount||0)>0 ? `<div style="color:#ef4444;">Descuento${sale.discountType==='pct' ? ` (${sale.discountPct}%)` : ''}: -${formatCurrency(sale.discount,sale.currency)}</div>` : ''}
                 ${(sale.tax||0)>0?`<div>IVA: ${formatCurrency(sale.tax,sale.currency)}</div>`:''}
                 <div style="font-size:18px;font-weight:800;">TOTAL: ${formatCurrency(sale.total,sale.currency)}</div>
                 <div style="font-size:12px;color:#64748b;">Método: ${sale.method||'—'} · Moneda: ${sale.currency||'VES'}</div>
