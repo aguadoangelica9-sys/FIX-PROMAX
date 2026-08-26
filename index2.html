@@ -4365,6 +4365,25 @@
                         <!-- Indicador de saldo del cliente cuando crédito está activo -->
                         <span id="posCreditBadge" style="display:none;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:#fef9c3;color:#ca8a04;border:1px solid #fde047;"></span>
                     </div>
+                    <!-- Descuento -->
+                    <div style="margin:6px 0 2px 0;">
+                        <div style="font-size:12px;color:var(--text-2);margin-bottom:4px;display:flex;align-items:center;gap:6px;">
+                            <span>🏷️ Descuento</span>
+                            <span id="posDiscountBadge" style="display:none;font-size:11px;font-weight:700;padding:1px 8px;border-radius:20px;background:rgba(239,68,68,.15);color:var(--danger);border:1px solid rgba(239,68,68,.3);"></span>
+                        </div>
+                        <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;">
+                            <button type="button" class="pos-disc-btn" onclick="posSetDiscount(10)"  style="padding:4px 10px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:.15s;">10%</button>
+                            <button type="button" class="pos-disc-btn" onclick="posSetDiscount(20)"  style="padding:4px 10px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:.15s;">20%</button>
+                            <button type="button" class="pos-disc-btn" onclick="posSetDiscount(30)"  style="padding:4px 10px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:.15s;">30%</button>
+                            <button type="button" class="pos-disc-btn" onclick="posSetDiscount(70)"  style="padding:4px 10px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:.15s;">70%</button>
+                            <input  type="number" id="posDiscountInput" min="0" max="100" placeholder="%" inputmode="decimal"
+                                    style="width:62px;padding:4px 8px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:12px;text-align:center;outline:none;"
+                                    oninput="posSetDiscount(parseFloat(this.value)||0)"
+                                    onfocus="this.style.borderColor='var(--primary)'"
+                                    onblur="this.style.borderColor='var(--border)'" />
+                            <button type="button" onclick="posSetDiscount(0)" style="padding:4px 8px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text-2);font-size:12px;cursor:pointer;" title="Quitar descuento">✕</button>
+                        </div>
+                    </div>
                     <div class="payment-row" style="flex-wrap:wrap;gap:8px;">
                         <select id="paymentMethod" style="flex:1;">
                             <option value="CASH">💵 Efectivo</option>
@@ -7679,7 +7698,8 @@
     /* ─── POS (existente) ─── */
     let cart = [];
     let posSelectedCustomerId = null;
-    let posIvaActivo = true; // estado del toggle IVA — true = cobrar IVA
+    let posIvaActivo  = true;  // estado del toggle IVA — true = cobrar IVA
+    let posDiscountPct = 0;    // porcentaje de descuento activo (0 = sin descuento)
 
     function posToggleIVA() {
         posIvaActivo = !posIvaActivo;
@@ -7734,6 +7754,40 @@
         }
 
         updateCambio();
+    }
+
+    // ── POS: descuento ───────────────────────────────────────────────────────
+    function posSetDiscount(pct) {
+        posDiscountPct = Math.min(100, Math.max(0, parseFloat(pct) || 0));
+
+        // Sincronizar el input con el valor actual
+        const input = document.getElementById('posDiscountInput');
+        if (input && parseFloat(input.value) !== posDiscountPct) {
+            input.value = posDiscountPct > 0 ? posDiscountPct : '';
+        }
+
+        // Resaltar el botón rápido activo
+        document.querySelectorAll('.pos-disc-btn').forEach(btn => {
+            const btnPct = parseFloat(btn.textContent);
+            btn.style.background   = btnPct === posDiscountPct ? 'var(--primary)' : 'var(--surface2)';
+            btn.style.color        = btnPct === posDiscountPct ? '#fff'           : 'var(--text)';
+            btn.style.borderColor  = btnPct === posDiscountPct ? 'var(--primary)' : 'var(--border)';
+        });
+
+        // Actualizar badge
+        const badge = document.getElementById('posDiscountBadge');
+        if (badge) {
+            if (posDiscountPct > 0) {
+                badge.textContent    = `-${posDiscountPct}%`;
+                badge.style.display  = 'inline-block';
+            } else {
+                badge.style.display  = 'none';
+                if (input) input.value = '';
+            }
+        }
+
+        // Recalcular totales en pantalla
+        updateCartUI();
     }
 
     // ── POS: lógica del buscador de clientes ────────────────────────────────
@@ -7955,8 +8009,9 @@
         countEl.textContent = `${cart.reduce((s,i) => s + i.qty, 0)} items`;
 
         // ── Usar _posCartTotals() — mismos valores que usará completeSale ──
-        const { subtotalUSD: sUSD, taxUSD: tUSD, totalUSD: totUSD, rateUSD } = _posCartTotals();
+        const { subtotalUSD: sUSD, discountUSD: dUSD, discPct: dPct, taxUSD: tUSD, totalUSD: totUSD, rateUSD } = _posCartTotals();
         const subtotalVES = Math.round(sUSD   * rateUSD * 100) / 100;
+        const discountVES = Math.round(dUSD   * rateUSD * 100) / 100;
         const taxVES      = Math.round(tUSD   * rateUSD * 100) / 100;
         const totalVES    = Math.round(totUSD * rateUSD * 100) / 100;
 
@@ -7971,6 +8026,27 @@
         if (taxBsEl)    taxBsEl.textContent    = fmtV(taxVES);
         if (totalEl)    totalEl.textContent    = fmtU(totUSD);
         if (totalBsEl)  totalBsEl.textContent  = fmtV(totalVES);
+
+        // ── Fila descuento ────────────────────────────────────────────────────
+        let discRow = document.getElementById('cartDiscountRow');
+        if (!discRow) {
+            // Crear la fila si no existe aún
+            const taxRowEl = document.getElementById('cartTaxRow')?.parentElement;
+            if (taxRowEl) {
+                discRow = document.createElement('div');
+                discRow.id = 'cartDiscountRow';
+                discRow.style.cssText = 'text-align:right;color:var(--danger);font-size:13px;';
+                taxRowEl.parentElement.insertBefore(discRow, taxRowEl);
+            }
+        }
+        if (discRow) {
+            if (dUSD > 0) {
+                discRow.innerHTML = `Descuento (${dPct}%): <span style="font-weight:600;">-${fmtU(dUSD)}</span>`;
+                discRow.style.display = '';
+            } else {
+                discRow.style.display = 'none';
+            }
+        }
 
         // ── Actualizar visual del toggle IVA ──────────────────────────────────
         const ivaTrack = document.getElementById('posIvaTrack');
@@ -8012,11 +8088,17 @@
 
         // Redondear a centavos para evitar acumulación de errores floating-point
         subtotalUSD = Math.round(subtotalUSD * 100) / 100;
-        const ivaActivo = posIvaActivo;
-        const taxUSD   = ivaActivo ? Math.round(subtotalUSD * 0.16 * 100) / 100 : 0;
-        const totalUSD = Math.round((subtotalUSD + taxUSD) * 100) / 100;
 
-        return { subtotalUSD, taxUSD, totalUSD, rateUSD, rateEUR };
+        // Aplicar descuento
+        const discPct     = Math.min(100, Math.max(0, typeof posDiscountPct !== 'undefined' ? posDiscountPct : 0));
+        const discountUSD = Math.round(subtotalUSD * (discPct / 100) * 100) / 100;
+        const subtotalAfterDisc = Math.round((subtotalUSD - discountUSD) * 100) / 100;
+
+        const ivaActivo = posIvaActivo;
+        const taxUSD   = ivaActivo ? Math.round(subtotalAfterDisc * 0.16 * 100) / 100 : 0;
+        const totalUSD = Math.round((subtotalAfterDisc + taxUSD) * 100) / 100;
+
+        return { subtotalUSD, discountUSD, discPct, subtotalAfterDisc, taxUSD, totalUSD, rateUSD, rateEUR };
     }
 
     // ── Convierte un monto USD a la moneda del selector posCurrency ─────────────────────────
@@ -8133,7 +8215,7 @@
             return;
         }
         // ── Usar _posCartTotals() — calcula en USD directo sin doble conversión VES ──
-        const { subtotalUSD, taxUSD, totalUSD, rateUSD, rateEUR } = _posCartTotals();
+        const { subtotalUSD, discountUSD, discPct, subtotalAfterDisc, taxUSD, totalUSD, rateUSD, rateEUR } = _posCartTotals();
 
         const posCurr     = document.getElementById('posCurrency')?.value || 'USD';
         const totalInCurr = _posToPosCurr(totalUSD, posCurr, rateUSD, rateEUR);
@@ -8172,11 +8254,12 @@
         }
 
         // ── Todos los valores almacenados en USD (moneda base) ─────────────────
-        const subtotal   = Math.round(subtotalUSD * 100) / 100;
-        const tax        = Math.round(taxUSD      * 100) / 100;
-        const grandTotal = Math.round(totalUSD    * 100) / 100;
-        const paidToSave = esCredito ? 0 : Math.round(paidUSD * 100) / 100;
-        const cambioUSD  = esCredito ? 0 : (paidCents - totalCents) / 100;
+        const subtotal    = Math.round(subtotalUSD      * 100) / 100;
+        const discount    = Math.round(discountUSD      * 100) / 100;
+        const tax         = Math.round(taxUSD           * 100) / 100;
+        const grandTotal  = Math.round(totalUSD         * 100) / 100;
+        const paidToSave  = esCredito ? 0 : Math.round(paidUSD * 100) / 100;
+        const cambioUSD   = esCredito ? 0 : (paidCents - totalCents) / 100;
 
         const invoice = `INV-${Date.now().toString().slice(-6)}`;
         const saleId = generateId();
@@ -8188,6 +8271,8 @@
             customerId: posSelectedCustomerId,
             items: cart.map(i => ({ productId: i.id, qty: i.qty, price: i.price })),
             subtotal,
+            discount,
+            discountPct: discPct,
             tax,
             total:    grandTotal,
             paid:     paidToSave,
@@ -8245,6 +8330,8 @@
             dueDate: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
             items: sale.items,
             subtotal,
+            discount,
+            discountPct: discPct,
             tax,
             total:  grandTotal,
             paid:   paidToSave,   // en USD — mismo que sale.paid
@@ -8351,6 +8438,8 @@
         if (cLabel) { cLabel.textContent = 'Venta a crédito'; cLabel.style.fontWeight = '400'; cLabel.style.color = ''; }
         if (cBadge) cBadge.style.display = 'none';
         if (paidEl) { paidEl.disabled = false; paidEl.style.opacity = '1'; }
+        // Resetear descuento para la siguiente venta
+        posSetDiscount(0);
         updateCartUI();
         document.getElementById('paidAmount').value = '0';
         renderAll();
