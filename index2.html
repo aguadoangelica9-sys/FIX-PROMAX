@@ -3953,7 +3953,7 @@
 
     </style>
     <!-- ── Interfaz Móvil Profesional — carga DESPUÉS del style ERP para ganar cascade ── -->
-    <link rel="stylesheet" href="/mobile.css" />
+    <link rel="stylesheet" href="/mobile.css?v=9178bf4" />
 </head>
 <body>
 
@@ -17478,7 +17478,7 @@
                 tabCart?.classList.add('active');
                 if (fab) fab.style.display = 'none';
             } else {
-                prodsPanel.style.display = '';   // mobile.css lo pone en block
+                prodsPanel.style.display = 'flex';   // mostrar panel productos
                 cartPanel.classList.remove('mob-visible');
                 tabProds?.classList.add('active');
                 tabCart?.classList.remove('active');
