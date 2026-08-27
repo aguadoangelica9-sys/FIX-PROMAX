@@ -502,6 +502,10 @@ app.get('/icons/:file', async (req, res) => {
 
 // ❌”€❌”€ Archivos estáticos restantes (CSS, JS externos, imágenes) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 // index: false para que GET / no sea interceptado aquí
+
+// Validacion de permisos de empleado en escritura (enforcement en backend)
+app.use('/api', requireAuth, employeeWriteGuard);
+
 app.use(express.static(__dirname, {
     index:    false,
     maxAge:   '1d',

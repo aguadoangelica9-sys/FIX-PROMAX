@@ -862,6 +862,9 @@
                 window._updateSidebarByPlan(subStatus.modules);
             }
 
+            // Iniciar SSE para eventos en tiempo real del servidor
+            if (typeof window._startAppSSE === 'function') window._startAppSSE();
+
             // Toast de bienvenida
             _toast('👋', '¡Hola, ' + user.name.split(' ')[0] + '!');
 
