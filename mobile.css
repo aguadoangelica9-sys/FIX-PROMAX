@@ -914,9 +914,10 @@
         border-bottom-color: var(--primary) !important;
     }
 
-    /* ── Grid principal: una columna, altura automática ── */
+    /* ── Grid principal: columna única en móvil ── */
     #module-pos .pos-grid {
-        display: block !important;
+        display: grid !important;
+        grid-template-columns: 1fr !important;
         height: auto !important;
         min-height: unset !important;
         gap: 0 !important;
@@ -924,7 +925,8 @@
 
     /* ── Panel de productos: visible por defecto ── */
     #posProductsPanel {
-        display: block !important;
+        display: flex !important;
+        flex-direction: column !important;
         padding: 12px 14px 0 14px !important;
         overflow: visible !important;
         height: auto !important;
