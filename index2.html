@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
@@ -17303,42 +17303,28 @@
     /* ─── Registro del Service Worker (PWA) ─── */
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', async () => {
-            // LIMPIEZA FORZADA: borrar TODOS los caches y SWs viejos incondicionalmente
-            // Esto garantiza que nunca se sirva una versión cacheada con encoding roto
+            // LIMPIEZA NUCLEAR: borrar TODOS los caches y SWs sin excepción
             try {
-                // 1. Borrar TODOS los caches existentes
+                // 1. Borrar absolutamente TODOS los caches
                 const cacheKeys = await caches.keys();
-                const oldCaches = cacheKeys.filter(k => k !== 'fixpromax-v6-nocache-html');
-                if (oldCaches.length > 0) {
-                    await Promise.all(oldCaches.map(k => caches.delete(k)));
-                    console.log('🧹 Caches viejos borrados:', oldCaches.join(', '));
+                if (cacheKeys.length > 0) {
+                    await Promise.all(cacheKeys.map(k => caches.delete(k)));
+                    console.log('🧹 TODOS los caches borrados:', cacheKeys.join(', '));
                 }
 
-                // 2. Desregistrar cualquier SW que no sea el actual
+                // 2. Desregistrar TODOS los service workers
                 const regs = await navigator.serviceWorker.getRegistrations();
                 for (const reg of regs) {
-                    const sw = reg.active || reg.waiting || reg.installing;
-                    if (sw && !sw.scriptURL.includes('/sw.js')) {
-                        await reg.unregister();
-                        console.log('🧹 SW externo desregistrado');
-                    }
+                    await reg.unregister();
+                    console.log('🧹 SW desregistrado:', reg.scope);
                 }
             } catch(e) { console.warn('SW cleanup error:', e.message); }
 
-            // 3. Registrar el SW actual con updateViaCache:none para siempre verificar actualizaciones
+            // 3. Registrar el SW nuevo
             navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' })
                 .then(reg => {
-                    console.log('✅ Service Worker registrado:', reg.scope);
-                    // Forzar verificación de actualización inmediatamente
+                    console.log('✅ Service Worker v7 registrado:', reg.scope);
                     reg.update().catch(() => {});
-                    reg.addEventListener('updatefound', () => {
-                        const newWorker = reg.installing;
-                        newWorker.addEventListener('statechange', () => {
-                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                showToast('🔄', 'Nueva versión disponible — recarga para actualizar');
-                            }
-                        });
-                    });
                 })
                 .catch(err => console.warn('SW no registrado:', err));
 

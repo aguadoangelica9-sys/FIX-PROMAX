@@ -22,13 +22,25 @@ self.addEventListener('install', event => {
     );
 });
 
-// ── Activación: borrar TODOS los caches viejos ───────────────────────────────
+// ── Activación: borrar ABSOLUTAMENTE TODOS los caches ────────────────────────
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys()
-            .then(keys => Promise.all(keys.map(k => caches.delete(k))))  // borrar TODO
-            .then(() => caches.open(CACHE_NAME))  // crear caché nuevo y limpio
-            .then(() => self.clients.claim())      // tomar control inmediato
+            .then(keys => {
+                console.log('[SW v7] Borrando caches:', keys);
+                return Promise.all(keys.map(k => caches.delete(k)));
+            })
+            .then(() => self.clients.claim())  // tomar control de todos los tabs
+            .then(() => {
+                // Notificar a todos los clients para recargar
+                return self.clients.matchAll({ type: 'window' });
+            })
+            .then(clients => {
+                clients.forEach(client => {
+                    // Enviar mensaje para forzar recarga de assets
+                    client.postMessage({ type: 'SW_ACTIVATED', version: 'v7' });
+                });
+            })
     );
 });
 
