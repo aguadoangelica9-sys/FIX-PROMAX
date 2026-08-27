@@ -4683,7 +4683,6 @@
                 <select id="customerStatusFilter" onchange="renderCustomers()"
                     style="padding:9px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit;outline:none;">
                     <option value="">Todos los clientes</option>
-                    <option value="saldo">Con saldo pendiente</option>
                     <option value="credito">Con crédito activo</option>
                 </select>
             </div>
@@ -4692,7 +4691,7 @@
                     <table>
                         <thead><tr>
                             <th>Nombre</th><th>Email</th><th>Teléfono</th>
-                            <th>Documento</th><th>Saldo</th><th>Actividad</th><th>Acciones</th>
+                            <th>Documento</th><th>Actividad</th><th>Acciones</th>
                         </tr></thead>
                         <tbody id="customersTableBody"></tbody>
                     </table>
@@ -8883,10 +8882,6 @@
                 <td style="font-size:13px;">${c.phone || '—'}</td>
                 <td style="font-size:12px;color:var(--text-2);">${c.document || c.rif || '—'}</td>
                 <td>
-                    <div style="font-weight:600;color:${hasBalance?'var(--danger)':'var(--text)'};">${balanceFmt}</div>
-                    ${hasBalance?'<div style="font-size:10px;color:var(--danger);">⚠️ saldo pendiente</div>':''}
-                </td>
-                <td>
                     <div style="font-size:12px;color:var(--text-2);">${saleCount} venta${saleCount!==1?'s':''}</div>
                     <div style="font-size:11px;color:var(--text-3);">${invoiceCount} factura${invoiceCount!==1?'s':''}</div>
                 </td>
@@ -8930,10 +8925,6 @@
                     <div style="background:var(--surface-2);border-radius:10px;padding:12px;text-align:center;">
                         <div style="font-size:18px;font-weight:800;color:var(--success);">${formatCurrency(total,defC)}</div>
                         <div style="font-size:11px;color:var(--text-3);">Total comprado</div>
-                    </div>
-                    <div style="background:var(--surface-2);border-radius:10px;padding:12px;text-align:center;">
-                        <div style="font-size:18px;font-weight:800;color:${(c.balance||0)>0?'var(--danger)':'var(--success)'};">${formatCurrency(c.balance||0,defC)}</div>
-                        <div style="font-size:11px;color:var(--text-3);">Saldo pendiente</div>
                     </div>
                 </div>
                 ${sales.length ? `
