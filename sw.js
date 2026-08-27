@@ -4,7 +4,7 @@
  *             Cache-first solo para assets estáticos (íconos, imágenes).
  */
 
-const CACHE_NAME = 'fixpromax-v6-nocache-html';
+const CACHE_NAME = 'fixpromax-v7-nocache-html';
 const API_BASE   = '/api/';
 
 // NO precachear el HTML — siempre va a la red para tener datos frescos
@@ -45,7 +45,7 @@ self.addEventListener('fetch', event => {
 
     // HTML principal y scripts críticos → siempre red, sin caché
     const noCacheUrls = ['/', '/index2.html', '/auth.js', '/subscription.js',
-                         '/currency.js', '/sw.js', '/manifest.json'];
+                         '/currency.js', '/sw.js', '/manifest.json', '/mobile.css'];
     if (noCacheUrls.includes(url.pathname)) {
         event.respondWith(
             fetch(request).catch(() => caches.match('/icons/icon-192.png'))
