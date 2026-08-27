@@ -4870,13 +4870,11 @@
         border-bottom-color: var(--primary) !important;
     }
 
-    /* ── Grid principal: columna única en móvil ── */
+    /* ── Grid principal: block en móvil — los paneles se controlan por su display ── */
     #module-pos .pos-grid {
-        display: grid !important;
-        grid-template-columns: 1fr !important;
+        display: block !important;
         height: auto !important;
         min-height: unset !important;
-        gap: 0 !important;
     }
 
     /* ── Panel de productos: visible por defecto ── */
@@ -4938,6 +4936,7 @@
         font-weight: 700 !important;
         white-space: normal !important;
         -webkit-line-clamp: 2 !important;
+        line-clamp: 2 !important;
     }
 
     .pos-product .price {
@@ -5046,7 +5045,7 @@
 } /* fin @media (max-width: 768px) */
 
 /* ── Landscape (≤900px): layout lado a lado, sin tabs ── */
-@media (max-width: 900px) and (orientation: landscape) {
+@media (max-width: 900px) and (orientation: landscape) and (min-height: 320px) {
 
     #module-pos > div:first-child:not(#posMobileTabs) { display: none !important; }
     #posMobileTabs  { display: none !important; }

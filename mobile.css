@@ -914,13 +914,11 @@
         border-bottom-color: var(--primary) !important;
     }
 
-    /* ── Grid principal: columna única en móvil ── */
+    /* ── Grid principal: block en móvil — los paneles se controlan por su display ── */
     #module-pos .pos-grid {
-        display: grid !important;
-        grid-template-columns: 1fr !important;
+        display: block !important;
         height: auto !important;
         min-height: unset !important;
-        gap: 0 !important;
     }
 
     /* ── Panel de productos: visible por defecto ── */
