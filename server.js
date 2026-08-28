@@ -5896,3 +5896,5 @@ app.get('/api/config/global', async (req, res) => {
 
 // Iniciar servidor
 startServer(PORT);
+
+// deploy: 2026-08-28 11:02
