@@ -545,7 +545,9 @@ app.get('/icons/:file', async (req, res) => {
 // index: false para que GET / no sea interceptado aquí
 
 // Validacion de permisos de empleado en escritura (enforcement en backend)
-app.use('/api', requireAuth, employeeWriteGuard);
+// NOTA: NO usar requireAuth aqui — bloquea rutas publicas como /api/ping
+// employeeWriteGuard maneja internamente la autenticacion opcionale
+app.use('/api', employeeWriteGuard);
 
 app.use(express.static(__dirname, {
     index:    false,
