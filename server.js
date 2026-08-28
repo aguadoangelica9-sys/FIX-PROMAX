@@ -99,18 +99,27 @@ app.use(express.urlencoded({ extended: true }));
 // ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 
 // ══ MIDDLEWARE: Modo Mantenimiento ══════════════════════════════════════════
-// Si el admin activa maintenanceMode, bloquea TODOS los endpoints /api/*
-// excepto /api/auth/login, /api/admin/* y /api/ping.
-// Así el admin puede seguir operando mientras los usuarios están bloqueados.
+// Si el admin activa maintenanceMode, bloquea /api/* para usuarios normales.
+// Admins y rutas esenciales del sistema siempre pasan.
 app.use('/api', async (req, res, next) => {
     const p = req.path;
     // Rutas siempre permitidas aunque haya mantenimiento
-    const exempt = ['/auth/login', '/auth/register', '/ping', '/admin'];
-    if (exempt.some(e => p === e || p.startsWith(e + '/'))) return next();
+    const exempt = [
+        '/auth/login', '/auth/register', '/auth/me',
+        '/ping', '/health',
+        '/admin',                   // todo el panel admin
+        '/subscription/',           // planes y estado
+        '/subscription/plans',
+        '/config/global',
+        '/config/payment-methods',
+        '/events',                  // SSE
+        '/demo/',
+    ];
+    if (exempt.some(e => p === e || p.startsWith(e + '/') || p.startsWith(e))) return next();
     try {
         const cfg = await getConfig();
         if (cfg && cfg.maintenanceMode === true) {
-            // Admins pueden pasar siempre
+            // Admins siempre pasan
             const header = req.headers['authorization'] || '';
             const token  = header.replace('Bearer ', '').trim();
             if (token) {
@@ -551,6 +560,24 @@ function requireSubscription(req, res, next) {
 // ❌”€❌”€ Ping público "” usado por el frontend para verificar disponibilidad ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.get('/api/ping', async (req, res) => {
     res.json({ ok: true, ts: Date.now() });
+});
+
+// Endpoint de emergencia: desactivar maintenanceMode sin autenticacion
+// Util si maintenanceMode quedo activo accidentalmente en produccion
+// GET /api/disable-maintenance?key=FIXPROMAX_MIGRATE_2026
+app.get('/api/disable-maintenance', async (req, res) => {
+    const key = req.query.key;
+    if (key !== 'FIXPROMAX_MIGRATE_2026') {
+        return res.status(403).json({ ok: false, error: 'Clave incorrecta' });
+    }
+    try {
+        const cfg = await getConfig();
+        cfg.maintenanceMode = false;
+        await writeConfig(cfg);
+        res.json({ ok: true, message: 'Modo mantenimiento desactivado', maintenanceMode: false });
+    } catch (e) {
+        res.status(500).json({ ok: false, error: e.message });
+    }
 });
 
 // /health — alias para Render health check (responde siempre, sin depender de DB)
