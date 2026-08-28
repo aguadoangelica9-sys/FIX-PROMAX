@@ -111,6 +111,11 @@ app.use(express.urlencoded({ extended: true }));
 // Exentas: /auth/, /subscription/, /admin/, /demo/, /config/payment-methods
 // ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 
+// ══ ENDPOINT DE VERSION — para verificar qué commit corre en producción ═════
+app.get('/_version', (req, res) => {
+    res.json({ ok: true, commit: '8e21f46', ts: Date.now() });
+});
+
 // ══ ENDPOINT DE EMERGENCIA: desactivar maintenanceMode ══════════════════════
 // Registrado ANTES de todos los middlewares /api para que nunca sea bloqueado.
 // GET /_admin_fix/disable-maintenance?key=FIXPROMAX_MIGRATE_2026
