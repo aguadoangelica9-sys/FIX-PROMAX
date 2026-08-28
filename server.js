@@ -130,51 +130,42 @@ app.get('/_admin_fix/disable-maintenance', async (req, res) => {
 });
 
 // ══ MIDDLEWARE: Modo Mantenimiento ══════════════════════════════════════════
-// Si el admin activa maintenanceMode, bloquea /api/* para usuarios normales.
-// Admins y rutas esenciales del sistema siempre pasan.
-// IMPORTANTE: si la lectura de config falla o tarda >500ms, deja pasar (fail-open).
+// Solo bloquea si maintenanceMode=true Y la request no viene de un admin.
+// Las rutas esenciales siempre pasan. Fail-open si MongoDB no responde.
 app.use('/api', async (req, res, next) => {
     const p = req.path;
-    // Rutas siempre permitidas aunque haya mantenimiento
-    const exempt = [
-        '/auth/login', '/auth/register', '/auth/me',
-        '/ping', '/health',
-        '/admin',
-        '/subscription/',
-        '/subscription/plans',
-        '/config/global',
-        '/config/payment-methods',
-        '/events',
-        '/demo/',
-        '/disable-maintenance',
+    // Rutas siempre exentas (nunca se bloquean)
+    const alwaysOk = [
+        '/auth/', '/subscription/', '/admin/', '/demo/', '/events',
+        '/ping', '/health', '/disable-maintenance',
+        '/config/global', '/config/payment-methods',
+        '/run-migration', '/fix-encoding', '/utf8-test',
     ];
-    if (exempt.some(e => p === e || p.startsWith(e + '/') || p.startsWith(e))) return next();
+    if (alwaysOk.some(e => p === e || p.startsWith(e + '/') || p.startsWith(e))) return next();
     try {
-        // Timeout de 500ms para no ralentizar requests si MongoDB está lento
-        const cfgPromise = getConfig();
-        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 500));
-        const cfg = await Promise.race([cfgPromise, timeoutPromise]);
+        const cfgPromise  = getConfig();
+        const timeout500  = new Promise(r => setTimeout(() => r(null), 500));
+        const cfg = await Promise.race([cfgPromise, timeout500]);
+        // Solo bloquear si maintenanceMode es explicitamente true
         if (cfg && cfg.maintenanceMode === true) {
-            // Admins siempre pasan
-            const header = req.headers['authorization'] || '';
-            const token  = header.replace('Bearer ', '').trim();
-            if (token) {
+            const tok = (req.headers['authorization'] || '').replace('Bearer ', '').trim();
+            if (tok) {
                 const sessions = await readSessions();
-                const entry    = sessions[token];
-                const userId   = entry ? (typeof entry === 'object' ? entry.userId : entry) : null;
-                if (userId) {
+                const entry    = sessions[tok];
+                const uid      = entry ? (typeof entry === 'object' ? entry.userId : entry) : null;
+                if (uid) {
                     const users = await readUsers();
-                    const user  = users.find(u => u.id === userId);
-                    if (user && user.role === 'admin') return next();
+                    const u     = users.find(x => x.id === uid);
+                    if (u && u.role === 'admin') return next();
                 }
             }
             return res.status(503).json({
                 ok: false,
-                error: 'Sistema en mantenimiento. Volveremos pronto. Disculpa las molestias.',
+                error: 'Sistema en mantenimiento. Volvemos pronto.',
                 code:  'MAINTENANCE_MODE',
             });
         }
-    } catch { /* si falla la lectura de config, dejar pasar (fail-open) */ }
+    } catch { /* fail-open: si falla la lectura de config, dejar pasar */ }
     next();
 });
 
