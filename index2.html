@@ -4720,7 +4720,7 @@
             <div class="card p-0 overflow-hidden">
                 <div class="table-wrap border-0" style="overflow-x:auto;">
                     <table>
-                        <thead><tr><th>Proveedor</th><th>Email</th><th>Teléfono</th><th>Saldo</th><th>Compras</th><th>Acciones</th></tr></thead>
+                        <thead><tr><th>Proveedor</th><th>Email</th><th>Teléfono</th><th>Compras</th><th>Acciones</th></tr></thead>
                         <tbody id="suppliersTableBody"></tbody>
                     </table>
                 </div>
@@ -8975,7 +8975,7 @@
             );
         });
         if (list.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--text-2);">
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--text-2);">
                 ${q ? `🔍 Sin proveedores para ese criterio.` : '🏭 No hay proveedores registrados.'}
             </td></tr>`;
             return;
@@ -8983,8 +8983,6 @@
         tbody.innerHTML = list.map(s => {
             const purchases    = data.purchases.filter(p => p.supplierId === s.id && p.status !== 'Anulada');
             const totalBought  = purchases.reduce((a,p)=>a+(p.total||0),0);
-            const defCurr      = data?.settings?.defaultCurrency || 'VES';
-            const hasBalance   = (s.balance || 0) > 0;
             return `<tr>
                 <td>
                     <div style="font-weight:600;">${s.name}</div>
@@ -8992,10 +8990,6 @@
                 </td>
                 <td style="font-size:13px;">${s.email || '—'}</td>
                 <td style="font-size:13px;">${s.phone || '—'}</td>
-                <td>
-                    <div style="font-weight:600;color:${hasBalance?'var(--danger)':'var(--text)'};">${dcFmt(s.balance||0, defCurr)}</div>
-                    ${hasBalance ? '<div style="font-size:10px;color:var(--danger);">⚠️ pendiente</div>' : ''}
-                </td>
                 <td style="font-size:12px;color:var(--text-2);">${purchases.length} compra${purchases.length!==1?'s':''}</td>
                 <td style="white-space:nowrap;">
                     <button class="btn btn-sm" onclick="openModal('supplier','${s.id}')" title="Editar">✏️</button>
@@ -16711,7 +16705,7 @@
                     const name    = cells[0]?.textContent?.trim() || '—';
                     const email   = cells[1]?.textContent?.trim() || '—';
                     const phone   = cells[2]?.textContent?.trim() || '—';
-                    const balance = cells[3]?.textContent?.trim() || '—';
+                    const buys    = cells[3]?.textContent?.trim() || '—';
                     const actionsHtml = cells[4]?.innerHTML || '';
                     return `
                         <div class="item-card">
@@ -16721,7 +16715,7 @@
                             </div>
                             <div class="item-card-meta">
                                 <span class="item-card-chip">✉️ ${email}</span>
-                                <span class="item-card-chip">Saldo: ${balance}</span>
+                                <span class="item-card-chip">${buys}</span>
                             </div>
                             <div class="item-card-actions">${actionsHtml}</div>
                         </div>`;
