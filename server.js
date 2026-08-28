@@ -3056,8 +3056,8 @@ app.post('/api/admin/payments/:id/reject', requireAdmin, async (req, res) => {
 });
 
 // ❌”€❌”€ MÁ‰TODOS DE PAGO CONFIGURABLES ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
-// Público (autenticado): obtener métodos activos para el POS y suscripción
-app.get('/api/config/payment-methods', requireAuth, async (req, res) => {
+// Público: obtener métodos activos para el POS y suscripción
+app.get('/api/config/payment-methods', async (req, res) => {
     const cfg = await getConfig();
     ok(res, cfg.paymentMethods);
 });
