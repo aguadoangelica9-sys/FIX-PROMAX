@@ -111,6 +111,24 @@ app.use(express.urlencoded({ extended: true }));
 // Exentas: /auth/, /subscription/, /admin/, /demo/, /config/payment-methods
 // ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 
+// ══ ENDPOINT DE EMERGENCIA: desactivar maintenanceMode ══════════════════════
+// Registrado ANTES de todos los middlewares /api para que nunca sea bloqueado.
+// GET /_admin_fix/disable-maintenance?key=FIXPROMAX_MIGRATE_2026
+app.get('/_admin_fix/disable-maintenance', async (req, res) => {
+    if ((req.query.key || '') !== 'FIXPROMAX_MIGRATE_2026') {
+        return res.status(403).json({ ok: false, error: 'Clave incorrecta' });
+    }
+    try {
+        const cfg = await getConfig();
+        const was = cfg.maintenanceMode;
+        cfg.maintenanceMode = false;
+        await writeConfig(cfg);
+        res.json({ ok: true, message: 'maintenanceMode desactivado', was, maintenanceMode: false });
+    } catch (e) {
+        res.status(500).json({ ok: false, error: e.message });
+    }
+});
+
 // ══ MIDDLEWARE: Modo Mantenimiento ══════════════════════════════════════════
 // Si el admin activa maintenanceMode, bloquea /api/* para usuarios normales.
 // Admins y rutas esenciales del sistema siempre pasan.
