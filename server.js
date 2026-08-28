@@ -114,23 +114,28 @@ app.use(express.urlencoded({ extended: true }));
 // ══ MIDDLEWARE: Modo Mantenimiento ══════════════════════════════════════════
 // Si el admin activa maintenanceMode, bloquea /api/* para usuarios normales.
 // Admins y rutas esenciales del sistema siempre pasan.
+// IMPORTANTE: si la lectura de config falla o tarda >500ms, deja pasar (fail-open).
 app.use('/api', async (req, res, next) => {
     const p = req.path;
     // Rutas siempre permitidas aunque haya mantenimiento
     const exempt = [
         '/auth/login', '/auth/register', '/auth/me',
         '/ping', '/health',
-        '/admin',                   // todo el panel admin
-        '/subscription/',           // planes y estado
+        '/admin',
+        '/subscription/',
         '/subscription/plans',
         '/config/global',
         '/config/payment-methods',
-        '/events',                  // SSE
+        '/events',
         '/demo/',
+        '/disable-maintenance',
     ];
     if (exempt.some(e => p === e || p.startsWith(e + '/') || p.startsWith(e))) return next();
     try {
-        const cfg = await getConfig();
+        // Timeout de 500ms para no ralentizar requests si MongoDB está lento
+        const cfgPromise = getConfig();
+        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 500));
+        const cfg = await Promise.race([cfgPromise, timeoutPromise]);
         if (cfg && cfg.maintenanceMode === true) {
             // Admins siempre pasan
             const header = req.headers['authorization'] || '';
@@ -151,7 +156,7 @@ app.use('/api', async (req, res, next) => {
                 code:  'MAINTENANCE_MODE',
             });
         }
-    } catch { /* si falla la lectura de config, dejar pasar */ }
+    } catch { /* si falla la lectura de config, dejar pasar (fail-open) */ }
     next();
 });
 
