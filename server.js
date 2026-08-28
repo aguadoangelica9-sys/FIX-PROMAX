@@ -365,7 +365,7 @@ app.get('/', async (req, res) => {
                     db = isDemo ? await readDemoDB() : await readCompanyDB(user.companyId);
                     authenticatedUser = user;
                 }
-                if (user) subStatus = getAccessStatus(user);
+                if (user) subStatus = await getAccessStatus(user);
             }
         }
 
@@ -4109,10 +4109,10 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
     const now     = Date.now();
     const { search, filter, sort, order } = req.query;
 
-    let list = users.map(u => {
+    let list = await Promise.all(users.map(async u => {
         const base     = u.trialStart || u.createdAt;
         const trialEnd = base ? new Date(base).getTime() + _TRIAL_DAYS_DEFAULT * 86400000 : null;
-        const status   = getAccessStatus(u);
+        const status   = await getAccessStatus(u);
         return {
             id:                 u.id,
             name:               u.name,
@@ -4132,7 +4132,7 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
             accessDaysLeft:     status.daysLeft,
             // Nunca exponer password ni tokens
         };
-    });
+    }));
 
     // Búsqueda
     if (search) {
