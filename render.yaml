@@ -3,9 +3,10 @@ services:
     name: fixpromax-erp
     runtime: node
     plan: free
+    branch: main
     buildCommand: npm install
     startCommand: npm start
-    healthCheckPath: /api/ping
+    healthCheckPath: /health
     autoDeploy: true
     envVars:
       - key: NODE_ENV
