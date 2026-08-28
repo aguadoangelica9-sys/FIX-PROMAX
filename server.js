@@ -58,6 +58,19 @@ async function startServer(port) {
         console.warn('\u26a0\ufe0f applyPlansOverrides fallo (no critico):', e.message);
     }
 
+    // Seguridad: al arrancar, desactivar maintenanceMode si estaba activo
+    // Esto evita que un accidente deje la app bloqueada entre deploys
+    try {
+        const cfg = await getConfig();
+        if (cfg && cfg.maintenanceMode === true) {
+            cfg.maintenanceMode = false;
+            await writeConfig(cfg);
+            console.log('  \u26a0\ufe0f maintenanceMode estaba activo — desactivado automaticamente al arrancar');
+        }
+    } catch (e) {
+        console.warn('\u26a0\ufe0f No se pudo verificar maintenanceMode al arrancar:', e.message);
+    }
+
     const server = app.listen(port, '0.0.0.0', () => {
         console.log('');
         console.log('  ❌š¡ FIX PRO MAX "” Backend corriendo');
