@@ -143,7 +143,7 @@ app.use('/api', async (req, res, next) => {
     const alwaysOk = [
         '/auth/', '/subscription/', '/admin/', '/demo/', '/events',
         '/ping', '/health', '/disable-maintenance',
-        '/config/global', '/config/payment-methods',
+        '/config/global', '/config/payment-methods', '/config/',
         '/run-migration', '/fix-encoding', '/utf8-test',
     ];
     if (alwaysOk.some(e => p === e || p.startsWith(e + '/') || p.startsWith(e))) return next();
