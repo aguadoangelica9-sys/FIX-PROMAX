@@ -5732,6 +5732,46 @@ app.get('/api/admin/company/:companyId/db', requireAdmin, async (req, res) => {
     }
 });
 
+// Endpoint de emergencia: forzar backup manual de una empresa con clave secreta
+// POST /api/admin/company/:companyId/force-backup?key=FIXPROMAX_MIGRATE_2026
+app.post('/api/admin/company/:companyId/force-backup', async (req, res) => {
+    if ((req.query.key || '') !== 'FIXPROMAX_MIGRATE_2026') {
+        return res.status(403).json({ ok: false, error: 'Clave incorrecta' });
+    }
+    try {
+        const companyId = req.params.companyId;
+        const db = await DB.readCompanyDB(companyId);
+        if (!db) return err(res, 'Empresa no encontrada', 404);
+        await DB.saveBackup(companyId, db, 'manual-admin');
+        ok(res, {
+            backed_up: true,
+            companyId,
+            savedAt:   new Date().toISOString(),
+            products:  (db.products  || []).length,
+            customers: (db.customers || []).length,
+            sales:     (db.sales     || []).length,
+            invoices:  (db.invoices  || []).length,
+        });
+    } catch (e) {
+        err(res, 'Error al hacer backup: ' + e.message, 500);
+    }
+});
+
+// Endpoint de emergencia: leer BD de empresa con clave secreta (para descarga/respaldo externo)
+// GET /api/admin/company/:companyId/export?key=FIXPROMAX_MIGRATE_2026
+app.get('/api/admin/company/:companyId/export', async (req, res) => {
+    if ((req.query.key || '') !== 'FIXPROMAX_MIGRATE_2026') {
+        return res.status(403).json({ ok: false, error: 'Clave incorrecta' });
+    }
+    try {
+        const db = await DB.readCompanyDB(req.params.companyId);
+        if (!db) return err(res, 'Empresa no encontrada', 404);
+        ok(res, db);
+    } catch (e) {
+        err(res, 'Error al exportar: ' + e.message, 500);
+    }
+});
+
 // GET /api/admin/company/:companyId/backups — listar backups de una empresa
 app.get('/api/admin/company/:companyId/backups', requireAdmin, async (req, res) => {
     try {
