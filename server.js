@@ -5732,6 +5732,44 @@ app.get('/api/admin/company/:companyId/db', requireAdmin, async (req, res) => {
     }
 });
 
+// Endpoint de emergencia: reparar facturas sin cliente vinculando desde la venta
+// POST /api/admin/company/:companyId/fix-invoice-customers?key=FIXPROMAX_MIGRATE_2026
+app.post('/api/admin/company/:companyId/fix-invoice-customers', async (req, res) => {
+    if ((req.query.key || '') !== 'FIXPROMAX_MIGRATE_2026') {
+        return res.status(403).json({ ok: false, error: 'Clave incorrecta' });
+    }
+    try {
+        const companyId = req.params.companyId;
+        const db = await DB.readCompanyDB(companyId);
+        if (!db) return err(res, 'Empresa no encontrada', 404);
+
+        let fixed = 0;
+        const details = [];
+
+        (db.invoices || []).forEach(inv => {
+            // Solo reparar facturas que NO tienen cliente pero SÍ tienen una venta asociada con cliente
+            if (inv.customerId) return;
+            const sale = (db.sales || []).find(s =>
+                s.invoice === inv.number || s.id === inv.fromSaleId
+            );
+            if (sale && sale.customerId) {
+                inv.customerId = sale.customerId;
+                inv.updatedAt  = new Date().toISOString();
+                fixed++;
+                details.push({ invoice: inv.number, customerId: sale.customerId });
+            }
+        });
+
+        if (fixed > 0) {
+            await DB.writeCompanyDB(companyId, db);
+        }
+
+        ok(res, { fixed, details });
+    } catch (e) {
+        err(res, 'Error al reparar: ' + e.message, 500);
+    }
+});
+
 // Endpoint de emergencia: forzar backup manual de una empresa con clave secreta
 // POST /api/admin/company/:companyId/force-backup?key=FIXPROMAX_MIGRATE_2026
 app.post('/api/admin/company/:companyId/force-backup', async (req, res) => {
