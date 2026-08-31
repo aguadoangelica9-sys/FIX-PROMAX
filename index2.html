@@ -4348,10 +4348,10 @@
                     <!-- Toggle IVA -->
                     <div style="display:flex;align-items:center;gap:8px;margin:4px 0;font-size:13px;color:var(--text-2);">
                         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;" onclick="posToggleIVA()">
-                            <div id="posIvaTrack" style="position:relative;width:40px;height:22px;border-radius:11px;background:var(--primary);transition:background .2s;flex-shrink:0;">
-                                <div id="posIvaThumb" style="position:absolute;top:3px;left:21px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;pointer-events:none;"></div>
+                            <div id="posIvaTrack" style="position:relative;width:40px;height:22px;border-radius:11px;background:var(--text-3);transition:background .2s;flex-shrink:0;">
+                                <div id="posIvaThumb" style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;pointer-events:none;"></div>
                             </div>
-                            <span id="posIvaLabel">Cobrar IVA (16%)</span>
+                            <span id="posIvaLabel">Sin IVA</span>
                         </label>
                     </div>
                     <!-- Toggle CRÉDITO -->
@@ -6063,17 +6063,19 @@
         if (window.CurrencySystem) {
             return window.CurrencySystem.format(amount, currency);
         }
-        // Fallback sin decimales
+        // Fallback: mostrar decimales solo si el valor tiene centavos
         const code = currency || (window._displayCurrency) || (data?.settings?.defaultCurrency) || 'VES';
-        const n   = Number(amount) || 0;
-        const abs = Math.round(Math.abs(n));
-        if (code === 'USD') {
-            return (n < 0 ? '-' : '') + '$' + abs.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-        }
-        if (code === 'EUR') {
-            return (n < 0 ? '-' : '') + '€' + abs.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-        }
-        return (n < 0 ? '-' : '') + 'Bs. ' + abs.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        const n    = Number(amount) || 0;
+        const abs  = Math.abs(n);
+        // Si tiene centavos mostrar 2 decimales, si es entero no mostrar decimales
+        const hasCents  = (abs - Math.floor(abs)) > 0.004;
+        const formatted = hasCents
+            ? abs.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, code === 'USD' ? ',' : '.')
+            : Math.round(abs).toString().replace(/\B(?=(\d{3})+(?!\d))/g, code === 'USD' ? ',' : '.');
+        const sign = n < 0 ? '-' : '';
+        if (code === 'USD') return sign + '$' + formatted;
+        if (code === 'EUR') return sign + '€' + formatted;
+        return sign + 'Bs. ' + formatted;
     }
 
     /* ══════════════════════════════════════════════════════════════════════
@@ -7724,7 +7726,7 @@
     /* ─── POS (existente) ─── */
     let cart = [];
     let posSelectedCustomerId = null;
-    let posIvaActivo  = true;  // estado del toggle IVA — true = cobrar IVA
+    let posIvaActivo  = false;  // estado del toggle IVA — false = sin IVA por defecto
     let posDiscountPct   = 0;    // porcentaje de descuento activo (0 = sin descuento)
     let posDiscountFixed = 0;    // monto fijo de descuento en USD (0 = sin descuento)
     let posDiscountMode  = 'pct'; // 'pct' | 'fixed'
@@ -8900,13 +8902,13 @@
         generateAlerts();
         cart = [];
         posClientClear();
-        posIvaActivo = true; // resetear IVA a activo para la siguiente venta
+        posIvaActivo = false; // sin IVA por defecto para la siguiente venta
         const track = document.getElementById('posIvaTrack');
         const thumb = document.getElementById('posIvaThumb');
         const label = document.getElementById('posIvaLabel');
-        if (track) track.style.background = 'var(--primary)';
-        if (thumb) thumb.style.left = '21px';
-        if (label) label.textContent = 'Cobrar IVA (16%)';
+        if (track) track.style.background = 'var(--text-3)';
+        if (thumb) thumb.style.left = '3px';
+        if (label) label.textContent = 'Sin IVA';
         // Resetear crédito para la siguiente venta
         posCreditoActivo = false;
         const cTrack = document.getElementById('posCreditTrack');

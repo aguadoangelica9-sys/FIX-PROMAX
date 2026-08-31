@@ -35,12 +35,18 @@
             flag:     '🇻🇪',
             locale:   'es-VE',
             decimals: 2,
-            /* Formato: Bs. 1.000  (sin decimales — estilo venezolano para precios enteros) */
+            /* Formato: Bs. 1.000 o Bs. 1.50 según si hay centavos */
             format(amount) {
-                const n = Number(amount) || 0;
-                // Sin decimales: mostrar entero con separador de miles (punto)
-                const abs   = Math.round(Math.abs(n));
-                const intFmt = abs.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                const n     = Number(amount) || 0;
+                const abs   = Math.abs(n);
+                const cents = abs - Math.floor(abs);
+                if (cents > 0.004) {
+                    // Con centavos: mostrar 2 decimales
+                    const [int, dec] = abs.toFixed(2).split('.');
+                    const intFmt = int.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                    return (n < 0 ? '-' : '') + 'Bs. ' + intFmt + ',' + dec;
+                }
+                const intFmt = Math.round(abs).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
                 return (n < 0 ? '-' : '') + 'Bs. ' + intFmt;
             },
         },
@@ -51,12 +57,18 @@
             flag:     '🇪🇺',
             locale:   'de-DE',
             decimals: 2,
-            /* Formato: â‚¬1.000  (sin decimales) */
+            /* Formato: €1.000 o €1.50 según si hay centavos */
             format(amount) {
-                const n = Number(amount) || 0;
-                const abs   = Math.round(Math.abs(n));
-                const intFmt = abs.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-                return (n < 0 ? '-' : '') + 'â‚¬' + intFmt;
+                const n     = Number(amount) || 0;
+                const abs   = Math.abs(n);
+                const cents = abs - Math.floor(abs);
+                if (cents > 0.004) {
+                    const [int, dec] = abs.toFixed(2).split('.');
+                    const intFmt = int.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                    return (n < 0 ? '-' : '') + '€' + intFmt + ',' + dec;
+                }
+                const intFmt = Math.round(abs).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                return (n < 0 ? '-' : '') + '€' + intFmt;
             },
         },
         USD: {
@@ -66,11 +78,17 @@
             flag:     '🇺🇸',
             locale:   'en-US',
             decimals: 2,
-            /* Formato: $1,000  (sin decimales) */
+            /* Formato: $1,000 o $1.50 según si hay centavos */
             format(amount) {
-                const n = Number(amount) || 0;
-                const abs   = Math.round(Math.abs(n));
-                const intFmt = abs.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                const n     = Number(amount) || 0;
+                const abs   = Math.abs(n);
+                const cents = abs - Math.floor(abs);
+                if (cents > 0.004) {
+                    const [int, dec] = abs.toFixed(2).split('.');
+                    const intFmt = int.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                    return (n < 0 ? '-' : '') + '$' + intFmt + '.' + dec;
+                }
+                const intFmt = Math.round(abs).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
                 return (n < 0 ? '-' : '') + '$' + intFmt;
             },
         },
