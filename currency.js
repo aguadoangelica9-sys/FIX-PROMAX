@@ -99,7 +99,7 @@
     /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
        ESTADO INTERNO
        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-    let _defaultCurrency = 'VES';
+    let _defaultCurrency = 'USD';   // USD es la moneda base del sistema
     let _activeRate       = 40.00;    // EUR→VES (fallback)
     let _activeRateUSD    = 36.00;    // USD→VES (fallback)
     let _rateCache        = { EUR: null, USD: null, date: null, source: null, status: 'initializing' };
@@ -187,11 +187,10 @@
      * @returns {'VES'|'EUR'}
      */
     function getDefault() {
-        // Primero intentar desde data (inyectado por servidor)
         if (typeof data !== 'undefined' && data?.settings?.defaultCurrency) {
             _defaultCurrency = data.settings.defaultCurrency;
         }
-        return _defaultCurrency;
+        return _defaultCurrency || 'USD';
     }
 
     /**

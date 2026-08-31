@@ -242,15 +242,19 @@
 
     /**
      * Normaliza un código de moneda desde Excel.
-     * Acepta: VES, EUR, Bs, Bs., bolivar, euro, €, etc.
-     * Si no se reconoce, usa la moneda principal de la empresa.
+     * Acepta: USD, $, dolar, dollar → 'USD'
+     *         VES, BS, BS., bolivar  → 'VES'
+     *         EUR, €, euro           → 'EUR'
+     * Fallback: USD (moneda base del sistema).
      */
     function _resolveCurrency(raw) {
-        if (!raw) return data?.settings?.defaultCurrency || 'VES';
+        if (!raw) return 'USD';
         const s = String(raw).trim().toUpperCase();
-        if (s === 'VES' || s === 'BS' || s === 'BS.' || s === 'BOLIVAR' || s === 'BOLÍVAR' || s === 'BOLIVARES') return 'VES';
+        if (s === 'USD' || s === '$' || s === 'DOLAR' || s === 'DÓLAR' || s === 'DOLLAR' || s === 'DOLARES' || s === 'DÓLARES') return 'USD';
+        if (s === 'VES' || s === 'BS' || s === 'BS.' || s === 'BOLIVAR' || s === 'BOLÍVAR' || s === 'BOLIVARES' || s === 'BOLÍVARES') return 'VES';
         if (s === 'EUR' || s === '€'  || s === 'EURO' || s === 'EUROS') return 'EUR';
-        return data?.settings?.defaultCurrency || 'VES';
+        // Fallback: USD (moneda base del sistema)
+        return 'USD';
     }
 
     /* ══════════════════════════════════════════════════════════════
@@ -821,14 +825,14 @@
 
         // Advertencia si no hay columna de moneda mapeada
         const hasCurrencyCol = Object.values(mapping).includes('currency');
-        const defCurr        = (typeof data !== 'undefined' && data?.settings?.defaultCurrency) || 'VES';
+        const defCurr        = 'USD';
         const currWarning    = hasCurrencyCol ? '' : `
-        <div style="background:#1c1a06;border:1px solid #a16207;border-radius:8px;padding:10px 14px;
-                    margin-bottom:14px;font-size:12px;color:#fbbf24;line-height:1.6;">
-            ⚠️ No se detectó columna de <strong>Moneda</strong>. Los productos se importarán
-            con la moneda predeterminada: <strong>${defCurr === 'EUR' ? '🇪🇺 EUR' : '🇻🇪 VES'}</strong>.
-            Si tu Excel tiene precios en otra moneda, agrega una columna llamada <strong>Moneda</strong>
-            con valores <code>VES</code> o <code>EUR</code>.
+        <div style="background:#0c1a0c;border:1px solid #166534;border-radius:8px;padding:10px 14px;
+                    margin-bottom:14px;font-size:12px;color:#86efac;line-height:1.6;">
+            ✅ No se detectó columna de <strong>Moneda</strong>. Los precios del Excel se importarán
+            como <strong>🇺🇸 USD (Dólares)</strong> — moneda base del sistema.<br>
+            Si tus precios están en VES o EUR, agrega una columna <strong>Moneda</strong>
+            con valores <code>VES</code>, <code>EUR</code> o <code>USD</code>.
         </div>`;
 
         const opts = FIELD_OPTIONS.map(f =>
@@ -1164,7 +1168,7 @@
             status:        String(item.status        || 'activo'),
             image:         String(item.image         || ''),
             notes:         String(item.notes         || ''),
-            currency:      _resolveCurrency(item.currency),
+            currency:      _resolveCurrency(item.currency),  // USD por defecto si no viene en Excel
             _importId:     _state.importId
         };
         data.products.push(prod);
@@ -1212,6 +1216,8 @@
         if (item.tax       !== null && item.tax       !== undefined) existing.tax       = Number(item.tax);
         if (item.minStock  !== null && item.minStock  !== undefined) existing.minStock  = Math.round(Number(item.minStock));
         if (item.maxStock  !== null && item.maxStock  !== undefined) existing.maxStock  = Math.round(Number(item.maxStock));
+        // Actualizar currency si viene explícitamente en el Excel
+        if (item.currency) existing.currency = _resolveCurrency(item.currency);
 
         if (item.category) {
             const cid = _resolveCategory(item.category);

@@ -5834,6 +5834,16 @@
             customers: [], suppliers: [],
             sales: [], invoices: [], purchases: [], expenses: [], returns: [],
             inventoryMovements: [], inventoryHistory: [], alerts: [],
+            settings: {
+                companyName: '',
+                rif: '',
+                country: 'Venezuela',
+                currency: 'USD',
+                defaultCurrency: 'USD',   // USD es la moneda base del sistema
+                darkMode: true,
+                notifications: true,
+                aiEnabled: true,
+            },
             chartOfAccounts: [
                 { code: '1-01-001', name: 'Caja',                   type: 'Activo',     balance: 0 },
                 { code: '1-01-002', name: 'Bancos',                  type: 'Activo',     balance: 0 },
@@ -6064,7 +6074,7 @@
             return window.CurrencySystem.format(amount, currency);
         }
         // Fallback: mostrar decimales solo si el valor tiene centavos
-        const code = currency || (window._displayCurrency) || (data?.settings?.defaultCurrency) || 'VES';
+        const code = currency || (window._displayCurrency) || (data?.settings?.defaultCurrency) || 'USD';
         const n    = Number(amount) || 0;
         const abs  = Math.abs(n);
         // Si tiene centavos mostrar 2 decimales, si es entero no mostrar decimales
@@ -6125,8 +6135,9 @@
      */
     function dc(amount, originalCurrency) {
         const val  = Number(amount) || 0;
-        const from = (originalCurrency || data?.settings?.defaultCurrency || 'VES').toUpperCase();
-        const to   = (window._displayCurrency || 'VES').toUpperCase();
+        // USD es la moneda base — si no se especifica moneda, asumir USD
+        const from = (originalCurrency || data?.settings?.defaultCurrency || 'USD').toUpperCase();
+        const to   = (window._displayCurrency || 'USD').toUpperCase();
         if (from === to) return val;
 
         // Helper: tasa X → VES
@@ -6160,7 +6171,7 @@
      */
     function dcFmt(amount, originalCurrency) {
         const converted = dc(amount, originalCurrency);
-        const disp = window._displayCurrency || 'VES';
+        const disp = window._displayCurrency || 'USD';
         if (window.CurrencySystem) return window.CurrencySystem.format(converted, disp);
         return formatCurrency(converted, disp);
     }
@@ -6172,8 +6183,8 @@
      * Uso en tablas: dcFmtBadge(s.total, s.currency)
      */
     function dcFmtBadge(amount, originalCurrency) {
-        const from = (originalCurrency || data?.settings?.defaultCurrency || 'VES').toUpperCase();
-        const to   = (window._displayCurrency || 'VES').toUpperCase();
+        const from = (originalCurrency || data?.settings?.defaultCurrency || 'USD').toUpperCase();
+        const to   = (window._displayCurrency || 'USD').toUpperCase();
         const main = dcFmt(amount, from);
         if (from === to) return main;
         const orig = formatCurrency(amount, from);
@@ -6190,7 +6201,7 @@
      * @param {string} currKey   – nombre del campo moneda
      */
     function dcSum(items, amtKey, currKey) {
-        const defCurr = data?.settings?.defaultCurrency || 'VES';
+        const defCurr = data?.settings?.defaultCurrency || 'USD';
         return items.reduce((acc, item) => {
             return acc + dc(item[amtKey] || 0, item[currKey] || defCurr);
         }, 0);
@@ -6473,12 +6484,12 @@
                 <div class="form-group"><label>Descripción</label><textarea id="f_description">${p ? p.description : ''}</textarea></div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Costo (USD)</label>
+                        <label>Costo</label>
                         <input type="number" step="0.01" id="f_cost" value="0" inputmode="decimal" oninput="recalcProfit()" />
                         <div style="font-size:10px;color:var(--text-3);margin-top:2px;" id="f_cost_hint"></div>
                     </div>
                     <div class="form-group">
-                        <label>Precio de venta * (USD)</label>
+                        <label>Precio de venta *</label>
                         <input type="number" step="0.01" id="f_price" value="" inputmode="decimal" oninput="recalcProfit()" />
                         <div style="font-size:10px;color:var(--text-3);margin-top:2px;" id="f_price_hint"></div>
                     </div>
@@ -6503,9 +6514,9 @@
                         <select id="f_currency" onchange="updatePriceSummary()"
                             style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-family:inherit;font-size:14px;outline:none;"
                             onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
-                            <option value="VES" \${(!p?.currency||p?.currency==='VES'||(!p?.currency&&(data?.settings?.defaultCurrency||'VES')==='VES'))?'selected':''}>🇻🇪 VES — Bs. (Bolívar venezolano)</option>
-                            <option value="EUR" \${p?.currency==='EUR'?'selected':''}>🇪🇺 EUR — € (Euro)</option>
-                            <option value="USD" \${p?.currency==='USD'?'selected':''}>🇺🇸 USD — $ (Dólar)</option>
+                            <option value="USD" ${(!p?.currency || p?.currency==='USD' || (!p?.currency && (data?.settings?.defaultCurrency||'USD')==='USD')) ? 'selected' : ''}>�� USD — $ (Dólar)</option>
+                            <option value="VES" ${p?.currency==='VES' ? 'selected' : ''}>🇻🇪 VES — Bs. (Bolívar venezolano)</option>
+                            <option value="EUR" ${p?.currency==='EUR' ? 'selected' : ''}>🇪🇺 EUR — € (Euro)</option>
                         </select>
                     </div>
                 </div>
@@ -6542,18 +6553,20 @@
                     <button class="btn btn-primary" onclick="saveSafe(this, saveProductFull)">💾 Guardar producto</button>
                 </div>
             `;
-            // ── Inicializar precios en USD y resumen ──
+            // ── Inicializar precios — USD es la moneda base del sistema ──
             (function initProductPriceFields() {
+                // Si el producto existente tiene moneda VES o EUR (legado),
+                // convertir a USD para mostrar en el formulario.
+                // Si ya es USD (o es nuevo), mostrar directo.
                 const rateUSD = window.CurrencySystem?.getRateFor('USD','VES') || 36;
                 const rateEUR = window.CurrencySystem?.getRateFor('EUR','VES') || 40;
 
-                // Convierte un valor desde la moneda original a USD
                 function toUSDVal(val, fromCurr) {
                     const v = Number(val) || 0;
                     const c = (fromCurr || 'USD').toUpperCase();
-                    if (c === 'USD') return v;
-                    if (c === 'VES') return v / rateUSD;
-                    if (c === 'EUR') return v * rateEUR / rateUSD;
+                    if (c === 'USD') return v;         // ya es USD — no tocar
+                    if (c === 'VES') return Math.round(v / rateUSD * 10000) / 10000;
+                    if (c === 'EUR') return Math.round(v * rateEUR / rateUSD * 10000) / 10000;
                     return v;
                 }
 
@@ -6575,6 +6588,10 @@
                 if (priceEl)  priceEl.value  = p ? priceUSD.toFixed(2)  : '';
                 if (whEl)     whEl.value     = p ? whUSD.toFixed(2)     : '';
                 if (profitEl) profitEl.value = p ? profitUSD.toFixed(2) : '';
+
+                // Fijar el selector de moneda en USD (precio base siempre en USD)
+                const currSel = document.getElementById('f_currency');
+                if (currSel) currSel.value = 'USD';
 
                 updatePriceSummary();
             })();
@@ -7019,29 +7036,26 @@
         const brand = document.getElementById('f_brand').value.trim();
         const description = document.getElementById('f_description').value.trim();
         const supplierId = document.getElementById('f_supplier').value;
-        const currency = document.getElementById('f_currency')?.value || data?.settings?.defaultCurrency || 'VES';
+        // USD es la moneda base del sistema — todos los precios se guardan en USD
+        // El selector f_currency permite ver equivalentes en VES/EUR pero el precio
+        // base siempre se guarda como USD en la base de datos.
+        const currency = 'USD';
 
-        // Los campos de precio están en USD — convertir a la moneda del producto al guardar
-        const rateUSD = window.CurrencySystem?.getRateFor('USD','VES') || 36;
-        const rateEUR = window.CurrencySystem?.getRateFor('EUR','VES') || 40;
-        function fromUSD(usdVal, toCurr) {
-            const v = Number(usdVal) || 0;
-            const c = (toCurr || 'USD').toUpperCase();
-            if (c === 'USD') return v;
-            if (c === 'VES') return v * rateUSD;
-            if (c === 'EUR') return v * rateUSD / rateEUR;
-            return v;
-        }
+        // Los campos de precio se guardan EXACTAMENTE como el usuario los escribe
+        // en la moneda seleccionada — SIN conversión de divisas.
+        // Si el usuario pone $100 en un producto VES, se guarda 100 VES.
+        // Esto garantiza que el precio no se modifique al guardar.
 
         const costUSD         = parseFloat(document.getElementById('f_cost').value) || 0;
         const priceUSD        = parseFloat(document.getElementById('f_price').value);
         const wholesalePriceUSD = parseFloat(document.getElementById('f_wholesalePrice').value) || 0;
         const profitUSD       = parseFloat(document.getElementById('f_profit').value);
 
-        const cost          = fromUSD(costUSD,         currency);
-        const price         = fromUSD(priceUSD,        currency);
-        const wholesalePrice= fromUSD(wholesalePriceUSD, currency);
-        const profit        = isNaN(profitUSD) ? null : fromUSD(profitUSD, currency);
+        // Guardar directamente en la moneda mostrada en el formulario (sin conversión)
+        const cost          = costUSD;
+        const price         = priceUSD;
+        const wholesalePrice= wholesalePriceUSD;
+        const profit        = isNaN(profitUSD) ? null : profitUSD;
 
         const tax = parseFloat(document.getElementById('f_tax').value) || 0;
         const stock = parseInt(document.getElementById('f_stock').value) || 0;
@@ -7218,40 +7232,30 @@
         updatePriceSummary();
     }
 
-    /** Muestra resumen de precios en USD + equivalente en la moneda del producto */
+    /** Muestra resumen: precio base USD + equivalentes en VES y EUR */
     function updatePriceSummary() {
         const summaryEl = document.getElementById('f_price_summary');
         if (!summaryEl) return;
-
-        const currency = document.getElementById('f_currency')?.value || 'USD';
-        const costUSD   = parseFloat(document.getElementById('f_cost')?.value)   || 0;
         const priceUSD  = parseFloat(document.getElementById('f_price')?.value)  || 0;
-        const profitUSD = parseFloat(document.getElementById('f_profit')?.value) || 0;
-
+        const costUSD   = parseFloat(document.getElementById('f_cost')?.value)   || 0;
+        const profitUSD = priceUSD - costUSD;
+        if (priceUSD <= 0) { summaryEl.innerHTML = ''; return; }
         const rateUSD = window.CurrencySystem?.getRateFor('USD','VES') || 36;
         const rateEUR = window.CurrencySystem?.getRateFor('EUR','VES') || 40;
-
-        function toOriginal(usdVal, toCurr) {
-            const v = Number(usdVal) || 0;
-            const c = (toCurr || 'USD').toUpperCase();
-            if (c === 'USD') return { val: v, sym: '$' };
-            if (c === 'VES') return { val: v * rateUSD, sym: 'Bs.' };
-            if (c === 'EUR') return { val: v * rateUSD / rateEUR, sym: '€' };
-            return { val: v, sym: '$' };
-        }
-
-        const costOrig   = toOriginal(costUSD,   currency);
-        const priceOrig  = toOriginal(priceUSD,  currency);
-        const profitOrig = toOriginal(profitUSD, currency);
-        const fmt = (v) => Number(v).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        const profitColor = profitUSD >= 0 ? 'var(--success,#10b981)' : 'var(--danger,#ef4444)';
-
-        summaryEl.innerHTML = currency === 'USD'
-            ? `💡 Los precios ya están en <strong>USD</strong>. Se guardan tal como los ves.`
-            : `💱 Equivalencia en <strong>${currency}</strong> (tasa actual):
-               &nbsp; Costo: <strong>${costOrig.sym} ${fmt(costOrig.val)}</strong>
-               &nbsp;|&nbsp; Precio: <strong>${priceOrig.sym} ${fmt(priceOrig.val)}</strong>
-               &nbsp;|&nbsp; Utilidad: <strong style="color:${profitColor}">${profitOrig.sym} ${fmt(profitOrig.val)}</strong>`;
+        const inVES = Math.round(priceUSD * rateUSD * 100) / 100;
+        const inEUR = Math.round(priceUSD * rateUSD / rateEUR * 100) / 100;
+        const fmtUSD = n => '$' + Number(n).toLocaleString('en-US', {minimumFractionDigits:2,maximumFractionDigits:2});
+        const fmtVES = n => 'Bs. ' + Math.round(n).toLocaleString('es-VE');
+        const fmtEUR = n => '€' + Number(n).toLocaleString('de-DE', {minimumFractionDigits:2,maximumFractionDigits:2});
+        const profColor = profitUSD >= 0 ? 'var(--success,#10b981)' : 'var(--danger,#ef4444)';
+        summaryEl.innerHTML = `
+            <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px;">
+                <span>💵 <strong>${fmtUSD(priceUSD)}</strong> <span style="color:var(--text-3)">USD (base)</span></span>
+                <span>🇻🇪 ${fmtVES(inVES)} <span style="color:var(--text-3)">VES</span></span>
+                <span>🇪🇺 ${fmtEUR(inEUR)} <span style="color:var(--text-3)">EUR</span></span>
+                <span style="color:${profColor};">Utilidad: ${fmtUSD(profitUSD)}</span>
+            </div>
+            <div style="font-size:10px;color:var(--text-3);margin-top:3px;">El precio se guarda en USD. VES/EUR son equivalentes calculados con la tasa actual.</div>`;
     }
 
     /* ──────────────────────────────────────────────────────────────── */
@@ -8250,22 +8254,22 @@
         }
         const _disp = (window._displayCurrency || 'USD').toUpperCase();
         container.innerHTML = filtered.map(p => {
-            // Precio principal en la moneda de visualización activa
-            const mainPrice = dcFmt(p.price, p.currency);
-            // Precio secundario en Bs (solo si la moneda activa no es VES)
-            let bsPrice = '';
-            if (_disp !== 'VES') {
-                const inVES = dc(p.price, p.currency);
-                const bsFmt = window.CurrencySystem
-                    ? window.CurrencySystem.format(inVES, 'VES')
-                    : 'Bs.\u00a0' + Math.round(inVES).toLocaleString('es-VE');
-                bsPrice = `<div class="price-bs">${bsFmt}</div>`;
+            // Precio principal en USD (moneda base)
+            const mainPrice = dcFmt(p.price, p.currency || 'USD');
+            // Precio secundario en la moneda de visualización (solo si es diferente de USD)
+            let altPrice = '';
+            if (_disp !== 'USD') {
+                const inDisp = dc(p.price, p.currency || 'USD');
+                const dispFmt = window.CurrencySystem
+                    ? window.CurrencySystem.format(inDisp, _disp)
+                    : inDisp.toFixed(2);
+                altPrice = `<div class="price-bs">${dispFmt}</div>`;
             }
             return `
             <div class="pos-product" onclick="addToCart('${p.id}')">
                 <div class="name">${p.name}</div>
                 <div class="price">${mainPrice}</div>
-                ${bsPrice}
+                ${altPrice}
                 <div class="stock ${p.stock < 5 ? 'low' : ''}">${p.stock} en stock</div>
             </div>`;
         }).join('');
@@ -8356,6 +8360,14 @@
             const lineNetUSD  = Math.round((lineUSD - itemDiscUSD) * 100) / 100;
             const lineNetVES  = Math.round(lineNetUSD * rUSD * 100) / 100;
 
+            const _cartDisp = (window._displayCurrency || 'USD').toUpperCase();
+            const _lineDispAlt = _cartDisp !== 'USD'
+                ? (window.CurrencySystem ? window.CurrencySystem.format(
+                    _cartDisp === 'VES' ? lineNetUSD * rUSD
+                        : lineNetUSD * rUSD / (window.CurrencySystem.getRateFor('EUR','VES') || 40),
+                    _cartDisp) : '')
+                : '';
+
             const fmtLine = (n, c) => window.CurrencySystem
                 ? window.CurrencySystem.format(n, c)
                 : (c === 'USD' ? '$' : 'Bs.\u00a0') + n.toFixed(2);
@@ -8381,7 +8393,7 @@
                             ? `<div style="font-size:10px;color:var(--text-3);text-decoration:line-through;">${fmtLine(lineUSD,'USD')}</div>
                                <div style="font-weight:700;font-size:13px;color:var(--success);">${fmtLine(lineNetUSD,'USD')}</div>`
                             : `<div style="font-weight:700;font-size:13px;">${fmtLine(lineUSD,'USD')}</div>
-                               <div style="font-size:10px;color:var(--text-3);">${fmtLine(lineNetVES,'VES')}</div>`
+                               ${_lineDispAlt ? `<div style="font-size:10px;color:var(--text-3);">${_lineDispAlt}</div>` : ''}`
                         }
                     </div>
                     <div style="display:flex;flex-direction:column;gap:3px;">
@@ -8401,22 +8413,44 @@
 
         // ── Usar _posCartTotals() — mismos valores que usará completeSale ──
         const { subtotalUSD: sUSD, lineDiscountUSD: ldUSD, generalDiscountUSD: gdUSD, discountUSD: dUSD, discPct: dPct, discType: dType, taxUSD: tUSD, totalUSD: totUSD, rateUSD } = _posCartTotals();
-        const subtotalVES = Math.round(sUSD   * rateUSD * 100) / 100;
-        const discountVES = Math.round(dUSD   * rateUSD * 100) / 100;
-        const taxVES      = Math.round(tUSD   * rateUSD * 100) / 100;
-        const totalVES    = Math.round(totUSD * rateUSD * 100) / 100;
+
+        // Mostrar equivalente en la moneda de visualización activa (puede ser VES, EUR o USD)
+        const _disp = (window._displayCurrency || 'USD').toUpperCase();
+        const _dispRate = _disp === 'VES' ? rateUSD
+            : _disp === 'EUR' ? (window.CurrencySystem?.getRateFor('EUR','VES') || 40) / rateUSD
+            : 1; // USD — ratio 1:1
+        const _toDisp = (usd) => {
+            if (_disp === 'USD') return usd;
+            if (_disp === 'VES') return Math.round(usd * rateUSD * 100) / 100;
+            const rateEUR = window.CurrencySystem?.getRateFor('EUR','VES') || 40;
+            return Math.round(usd * rateUSD / rateEUR * 100) / 100;
+        };
+        const subtotalDisp = _toDisp(sUSD);
+        const taxDisp      = _toDisp(tUSD);
+        const totalDisp    = _toDisp(totUSD);
 
         const fmtU = (n) => window.CurrencySystem ? window.CurrencySystem.format(n, 'USD')
             : '$' + n.toFixed(2);
-        const fmtV = (n) => window.CurrencySystem ? window.CurrencySystem.format(n, 'VES')
-            : 'Bs.\u00a0' + Math.round(n).toLocaleString('es-VE');
+        const fmtD = (n) => window.CurrencySystem ? window.CurrencySystem.format(n, _disp)
+            : (_disp === 'USD' ? '$' : _disp === 'EUR' ? '€' : 'Bs. ') + n.toFixed(2);
 
         if (subtotalEl) subtotalEl.textContent = fmtU(sUSD);
-        if (subBsEl)    subBsEl.textContent    = fmtV(subtotalVES);
         if (taxEl)      taxEl.textContent      = fmtU(tUSD);
-        if (taxBsEl)    taxBsEl.textContent    = fmtV(taxVES);
         if (totalEl)    totalEl.textContent    = fmtU(totUSD);
-        if (totalBsEl)  totalBsEl.textContent  = fmtV(totalVES);
+
+        // Equivalente en moneda de visualización (solo visible si es diferente de USD)
+        if (subBsEl) {
+            if (_disp !== 'USD') { subBsEl.textContent = fmtD(subtotalDisp); subBsEl.parentElement && (subBsEl.parentElement.style.display = ''); }
+            else { subBsEl.textContent = ''; if (subBsEl.parentElement) subBsEl.parentElement.style.display = 'none'; }
+        }
+        if (taxBsEl) {
+            if (_disp !== 'USD') { taxBsEl.textContent = fmtD(taxDisp); }
+            else { taxBsEl.textContent = ''; }
+        }
+        if (totalBsEl) {
+            if (_disp !== 'USD') { totalBsEl.textContent = fmtD(totalDisp); totalBsEl.style.display = ''; }
+            else { totalBsEl.textContent = ''; totalBsEl.style.display = 'none'; }
+        }
 
         // ── Fila descuento ────────────────────────────────────────────────────
         let discRow = document.getElementById('cartDiscountRow');
@@ -15566,15 +15600,17 @@
        ═══════════════════════════════════════════════════════════════ */
     // Los datos ya están en `data` cargados síncronamente desde window.__INITIAL_DATA__
     // Inicializar moneda de visualización antes de renderizar
+    // USD es la moneda principal del sistema — el default es siempre USD
     (function initDisplayCurrency() {
         try {
             const saved = localStorage.getItem(_DC_LS_KEY);
             if (saved && ['VES','USD','EUR'].includes(saved)) {
                 window._displayCurrency = saved;
             } else {
-                window._displayCurrency = data?.settings?.defaultCurrency || 'VES';
+                // USD como moneda principal del sistema — no cambiar a VES
+                window._displayCurrency = data?.settings?.defaultCurrency || 'USD';
             }
-        } catch { window._displayCurrency = 'VES'; }
+        } catch { window._displayCurrency = 'USD'; }
     })();
     // Migrar registros legacy de CxC/CxP al nuevo sistema consolidado (solo una vez)
     try { migrateToAccountMovements(); } catch(e) { console.warn('[Migration] CxC/CxP:', e); }
