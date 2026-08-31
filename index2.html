@@ -9493,13 +9493,13 @@
                 <tbody>${itemsHtml||'<tr><td colspan="4" style="color:#64748b;padding:8px 0;">Sin detalle de productos</td></tr>'}</tbody>
             </table>
             <div style="text-align:right;margin-top:12px;border-top:2px solid #e2e8f0;padding-top:8px;">
-                <div>Subtotal: ${formatCurrency(sale.subtotal||sale.total,sale.currency)}</div>
-                ${(sale.lineDiscount||0)>0 ? `<div style="color:#ef4444;">Desc. por producto: -${formatCurrency(sale.lineDiscount,sale.currency)}</div>` : ''}
-                ${(sale.generalDiscount||0)>0 ? `<div style="color:#ef4444;">Desc. general${sale.discountType==='pct'?` (${sale.discountPct}%)`:''}:  -${formatCurrency(sale.generalDiscount,sale.currency)}</div>` : ''}
-                ${(sale.discount||0)>0 && !(sale.lineDiscount||0) && !(sale.generalDiscount||0) ? `<div style="color:#ef4444;">Descuento${sale.discountType==='pct' ? ` (${sale.discountPct}%)` : ''}: -${formatCurrency(sale.discount,sale.currency)}</div>` : ''}
-                ${(sale.tax||0)>0?`<div>IVA: ${formatCurrency(sale.tax,sale.currency)}</div>`:''}
-                <div style="font-size:18px;font-weight:800;">TOTAL: ${formatCurrency(sale.total,sale.currency)}</div>
-                <div style="font-size:12px;color:#64748b;">Método: ${sale.method||'—'} · Moneda: ${sale.currency||'VES'}</div>
+                <div>Subtotal: ${formatCurrency(sale.subtotal||sale.total,'USD')}</div>
+                ${(sale.lineDiscount||0)>0 ? `<div style="color:#ef4444;">Desc. por producto: -${formatCurrency(sale.lineDiscount,'USD')}</div>` : ''}
+                ${(sale.generalDiscount||0)>0 ? `<div style="color:#ef4444;">Desc. general${sale.discountType==='pct'?` (${sale.discountPct}%)`:''}:  -${formatCurrency(sale.generalDiscount,'USD')}</div>` : ''}
+                ${(sale.discount||0)>0 && !(sale.lineDiscount||0) && !(sale.generalDiscount||0) ? `<div style="color:#ef4444;">Descuento${sale.discountType==='pct' ? ` (${sale.discountPct}%)` : ''}: -${formatCurrency(sale.discount,'USD')}</div>` : ''}
+                ${(sale.tax||0)>0?`<div>IVA: ${formatCurrency(sale.tax,'USD')}</div>`:''}
+                <div style="font-size:18px;font-weight:800;">TOTAL: ${formatCurrency(sale.total,'USD')}</div>
+                <div style="font-size:12px;color:#64748b;">Método: ${sale.method||'—'} · USD</div>
             </div>
             <div style="margin-top:16px;text-align:center;font-size:12px;color:#64748b;">
                 Cliente: ${custName} · Gracias por su compra
@@ -9679,6 +9679,19 @@
         );
 
         // Construir filas de items
+        // SIEMPRE mostrar en USD — convertir si el producto/factura está en otra moneda
+        const _invRateUSD = window.CurrencySystem?.getRateFor('USD', 'VES') || 36;
+        const _invRateEUR = window.CurrencySystem?.getRateFor('EUR', 'VES') || 40;
+        const _toUSD = (amount, fromCurr) => {
+            const c = (fromCurr || 'USD').toUpperCase();
+            if (c === 'USD') return amount;
+            if (c === 'VES') return Math.round(amount / _invRateUSD * 100) / 100;
+            if (c === 'EUR') return Math.round(amount * _invRateEUR / _invRateUSD * 100) / 100;
+            return amount;
+        };
+        // Moneda fuente de la factura/venta para convertir precios
+        const _srcCurr = (sale?.currency || inv.currency || 'USD').toUpperCase();
+
         let itemsHtml = '';
         let subtotal  = 0;
         let totalTax  = 0;
@@ -9689,13 +9702,19 @@
             itemsHtml = srcItems.map((it, idx) => {
                 const nombre  = it.productName || getProductName(it.productId) || it.name || it.description || 'Producto';
                 const qty     = Number(it.qty   || it.quantity || 1);
-                const price   = Number(it.price || 0);
+                // Precio unitario en USD
+                const priceRaw  = Number(it.price || 0);
+                // Detectar moneda del item: puede venir del producto o de la factura
+                const prod      = data.products?.find(p => p.id === (it.productId || it.id));
+                const itemCurr  = (prod?.currency || _srcCurr || 'USD').toUpperCase();
+                const priceUSD  = Math.round(_toUSD(priceRaw, itemCurr) * 100) / 100;
+
                 const disc    = Number(it.discount || 0);
                 const tax     = Number(it.tax   || 0);
-                const base    = qty * price;
-                const dAmt    = base * disc  / 100;
-                const tAmt    = (base - dAmt) * tax / 100;
-                const lineTot = base - dAmt + tAmt;
+                const base    = qty * priceUSD;
+                const dAmt    = Math.round(base * disc  / 100 * 100) / 100;
+                const tAmt    = Math.round((base - dAmt) * tax / 100 * 100) / 100;
+                const lineTot = Math.round((base - dAmt + tAmt) * 100) / 100;
                 subtotal  += base;
                 totalDisc += dAmt;
                 totalTax  += tAmt;
@@ -9704,30 +9723,31 @@
                 <tr style="background:${bg};border-bottom:1px solid #f1f5f9;">
                     <td style="padding:10px 12px;font-weight:500;">${nombre}</td>
                     <td style="padding:10px 8px;text-align:center;color:#475569;">${qty}</td>
-                    <td style="padding:10px 8px;text-align:right;">${formatCurrency(price, inv.currency)}</td>
+                    <td style="padding:10px 8px;text-align:right;">${formatCurrency(priceUSD, 'USD')}</td>
                     <td style="padding:10px 8px;text-align:center;color:${disc>0?'#16a34a':'#94a3b8'};">${disc > 0 ? disc + '%' : '—'}</td>
                     <td style="padding:10px 8px;text-align:center;color:${tax>0?'#d97706':'#94a3b8'};">${tax > 0 ? tax + '%' : '—'}</td>
-                    <td style="padding:10px 12px;text-align:right;font-weight:700;color:#0f172a;">${formatCurrency(lineTot, inv.currency)}</td>
+                    <td style="padding:10px 12px;text-align:right;font-weight:700;color:#0f172a;">${formatCurrency(lineTot, 'USD')}</td>
                 </tr>`;
             }).join('');
         } else {
-            subtotal  = Number(inv.total || 0);
-            // Mostrar el concepto/descripción como ítem visible en la factura
+            // Sin items detallados — mostrar total como un solo concepto en USD
+            subtotal  = Math.round(_toUSD(Number(inv.total || 0), _srcCurr) * 100) / 100;
             const concepto = (inv.notes && String(inv.notes).trim()) ? String(inv.notes).trim() : (inv.description && String(inv.description).trim()) ? String(inv.description).trim() : 'Servicios / Productos';
             itemsHtml = `
             <tr style="background:#f8fafc;border-bottom:1px solid #f1f5f9;">
                 <td style="padding:12px 14px;font-weight:500;color:#0f172a;">${concepto}</td>
                 <td style="padding:12px 8px;text-align:center;color:#475569;">1</td>
-                <td style="padding:12px 8px;text-align:right;">${formatCurrency(subtotal, inv.currency)}</td>
+                <td style="padding:12px 8px;text-align:right;">${formatCurrency(subtotal, 'USD')}</td>
                 <td style="padding:12px 8px;text-align:center;color:#94a3b8;">—</td>
                 <td style="padding:12px 8px;text-align:center;color:#94a3b8;">—</td>
-                <td style="padding:12px 14px;text-align:right;font-weight:700;color:#0f172a;">${formatCurrency(subtotal, inv.currency)}</td>
+                <td style="padding:12px 14px;text-align:right;font-weight:700;color:#0f172a;">${formatCurrency(subtotal, 'USD')}</td>
             </tr>`;
         }
 
-        const totalFinal = Number(inv.total || 0);
-        const paid       = Number(inv.paid  || 0);
-        const saldo      = totalFinal - paid;
+        // Totales siempre en USD
+        const totalFinal = Math.round(_toUSD(Number(inv.total || 0), _srcCurr) * 100) / 100;
+        const paid       = Math.round(_toUSD(Number(inv.paid  || 0), _srcCurr) * 100) / 100;
+        const saldo      = Math.round((totalFinal - paid) * 100) / 100;
         const metodoPago = sale?.method || inv.method || '';
 
         // Estado y colores
@@ -9735,10 +9755,8 @@
         const estadoBg = { 'Pagada':'#dcfce7','Parcial':'#fef9c3','Vencida':'#fee2e2','Pendiente':'#dbeafe' }[estado] || '#f1f5f9';
         const estadoClr = { 'Pagada':'#16a34a','Parcial':'#b45309','Vencida':'#dc2626','Pendiente':'#2563eb' }[estado] || '#475569';
 
-        // Moneda
-        const monedaLabel = inv.currency === 'USD' ? '🇺🇸 USD ($)'
-            : inv.currency === 'EUR' ? '🇪🇺 EUR (€)'
-            : '🇻🇪 VES (Bs.)';
+        // Moneda: siempre USD en la factura
+        const monedaLabel = '🇺🇸 USD ($)';
 
         const html = `
         <div style="font-family:'Inter',system-ui,sans-serif;color:#0f172a;max-width:680px;margin:0 auto;" id="invoiceDocContent">
@@ -9826,40 +9844,40 @@
                 ${subtotal !== totalFinal ? `
                 <div style="display:flex;justify-content:space-between;padding:5px 0;
                             border-bottom:1px solid #f1f5f9;font-size:13px;color:#64748b;">
-                  <span>Subtotal</span><span>${formatCurrency(subtotal, inv.currency)}</span>
+                  <span>Subtotal</span><span>${formatCurrency(subtotal, 'USD')}</span>
                 </div>` : ''}
                 ${(inv.lineDiscount||totalDisc) > 0 ? `
                 <div style="display:flex;justify-content:space-between;padding:5px 0;
                             border-bottom:1px solid #f1f5f9;font-size:13px;color:#16a34a;">
-                  <span>Desc. por producto</span><span>− ${formatCurrency(inv.lineDiscount||totalDisc, inv.currency)}</span>
+                  <span>Desc. por producto</span><span>− ${formatCurrency(_toUSD(inv.lineDiscount||totalDisc, _srcCurr), 'USD')}</span>
                 </div>` : ''}
                 ${(inv.generalDiscount||0) > 0 ? `
                 <div style="display:flex;justify-content:space-between;padding:5px 0;
                             border-bottom:1px solid #f1f5f9;font-size:13px;color:#16a34a;">
                   <span>Desc. general${inv.discountType==='pct'&&inv.discountPct?` (${inv.discountPct}%)`:''}</span>
-                  <span>− ${formatCurrency(inv.generalDiscount, inv.currency)}</span>
+                  <span>− ${formatCurrency(_toUSD(inv.generalDiscount, _srcCurr), 'USD')}</span>
                 </div>` : ''}
                 ${totalTax > 0 ? `
                 <div style="display:flex;justify-content:space-between;padding:5px 0;
                             border-bottom:1px solid #f1f5f9;font-size:13px;color:#d97706;">
-                  <span>IVA</span><span>${formatCurrency(totalTax, inv.currency)}</span>
+                  <span>IVA</span><span>${formatCurrency(totalTax, 'USD')}</span>
                 </div>` : ''}
               </div>
               <!-- Total grande -->
               <div style="background:linear-gradient(135deg,#4f46e5,#6366f1);padding:14px 18px;
                           display:flex;justify-content:space-between;align-items:center;">
                 <span style="font-weight:800;font-size:15px;color:#fff;letter-spacing:.5px;">TOTAL</span>
-                <span style="font-weight:900;font-size:22px;color:#fff;">${formatCurrency(totalFinal, inv.currency)}</span>
+                <span style="font-weight:900;font-size:22px;color:#fff;">${formatCurrency(totalFinal, 'USD')}</span>
               </div>
               <div style="padding:10px 18px 14px;">
                 <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;color:#64748b;">
                   <span>Pagado</span>
-                  <span style="color:#16a34a;font-weight:600;">${formatCurrency(paid, inv.currency)}</span>
+                  <span style="color:#16a34a;font-weight:600;">${formatCurrency(paid, 'USD')}</span>
                 </div>
                 ${saldo > 0.005 ? `
                 <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;
                             font-weight:700;color:#dc2626;border-top:1px dashed #fee2e2;margin-top:4px;">
-                  <span>Saldo pendiente</span><span>${formatCurrency(saldo, inv.currency)}</span>
+                  <span>Saldo pendiente</span><span>${formatCurrency(saldo, 'USD')}</span>
                 </div>` : `
                 <div style="display:flex;align-items:center;gap:6px;padding:6px 0;font-size:12px;
                             font-weight:700;color:#16a34a;border-top:1px dashed #dcfce7;margin-top:4px;">
