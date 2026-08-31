@@ -9493,7 +9493,6 @@
                 <tbody>${itemsHtml||'<tr><td colspan="4" style="color:#64748b;padding:8px 0;">Sin detalle de productos</td></tr>'}</tbody>
             </table>
             <div style="text-align:right;margin-top:12px;border-top:2px solid #e2e8f0;padding-top:8px;">
-                <div>Subtotal: ${formatCurrency(sale.subtotal||sale.total,'USD')}</div>
                 ${(sale.lineDiscount||0)>0 ? `<div style="color:#ef4444;">Desc. por producto: -${formatCurrency(sale.lineDiscount,'USD')}</div>` : ''}
                 ${(sale.generalDiscount||0)>0 ? `<div style="color:#ef4444;">Desc. general${sale.discountType==='pct'?` (${sale.discountPct}%)`:''}:  -${formatCurrency(sale.generalDiscount,'USD')}</div>` : ''}
                 ${(sale.discount||0)>0 && !(sale.lineDiscount||0) && !(sale.generalDiscount||0) ? `<div style="color:#ef4444;">Descuento${sale.discountType==='pct' ? ` (${sale.discountPct}%)` : ''}: -${formatCurrency(sale.discount,'USD')}</div>` : ''}
@@ -9841,11 +9840,6 @@
             <div style="min-width:280px;background:#f8fafc;border-radius:10px;
                         border:1px solid #e2e8f0;overflow:hidden;">
               <div style="padding:14px 18px;">
-                ${subtotal !== totalFinal ? `
-                <div style="display:flex;justify-content:space-between;padding:5px 0;
-                            border-bottom:1px solid #f1f5f9;font-size:13px;color:#64748b;">
-                  <span>Subtotal</span><span>${formatCurrency(subtotal, 'USD')}</span>
-                </div>` : ''}
                 ${(inv.lineDiscount||totalDisc) > 0 ? `
                 <div style="display:flex;justify-content:space-between;padding:5px 0;
                             border-bottom:1px solid #f1f5f9;font-size:13px;color:#16a34a;">
