@@ -3,7 +3,7 @@ services:
     name: fixpromax-erp
     runtime: node
     plan: free
-    branch: main
+    branch: master
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /health
