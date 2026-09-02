@@ -4348,10 +4348,10 @@
                     <!-- Toggle IVA -->
                     <div style="display:flex;align-items:center;gap:8px;margin:4px 0;font-size:13px;color:var(--text-2);">
                         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;" onclick="posToggleIVA()">
-                            <div id="posIvaTrack" style="position:relative;width:40px;height:22px;border-radius:11px;background:var(--text-3);transition:background .2s;flex-shrink:0;">
-                                <div id="posIvaThumb" style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;pointer-events:none;"></div>
+                            <div id="posIvaTrack" style="position:relative;width:40px;height:22px;border-radius:11px;background:var(--primary);transition:background .2s;flex-shrink:0;">
+                                <div id="posIvaThumb" style="position:absolute;top:3px;left:21px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;pointer-events:none;"></div>
                             </div>
-                            <span id="posIvaLabel">Sin IVA</span>
+                            <span id="posIvaLabel">Cobrar IVA (16%)</span>
                         </label>
                     </div>
                     <!-- Toggle CRÉDITO -->
@@ -4683,6 +4683,7 @@
                 <select id="customerStatusFilter" onchange="renderCustomers()"
                     style="padding:9px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit;outline:none;">
                     <option value="">Todos los clientes</option>
+                    <option value="saldo">Con saldo pendiente</option>
                     <option value="credito">Con crédito activo</option>
                 </select>
             </div>
@@ -4691,7 +4692,7 @@
                     <table>
                         <thead><tr>
                             <th>Nombre</th><th>Email</th><th>Teléfono</th>
-                            <th>Documento</th><th>Actividad</th><th>Acciones</th>
+                            <th>Documento</th><th>Saldo</th><th>Actividad</th><th>Acciones</th>
                         </tr></thead>
                         <tbody id="customersTableBody"></tbody>
                     </table>
@@ -4720,7 +4721,7 @@
             <div class="card p-0 overflow-hidden">
                 <div class="table-wrap border-0" style="overflow-x:auto;">
                     <table>
-                        <thead><tr><th>Proveedor</th><th>Email</th><th>Teléfono</th><th>Compras</th><th>Acciones</th></tr></thead>
+                        <thead><tr><th>Proveedor</th><th>Email</th><th>Teléfono</th><th>Saldo</th><th>Compras</th><th>Acciones</th></tr></thead>
                         <tbody id="suppliersTableBody"></tbody>
                     </table>
                 </div>
@@ -5834,16 +5835,6 @@
             customers: [], suppliers: [],
             sales: [], invoices: [], purchases: [], expenses: [], returns: [],
             inventoryMovements: [], inventoryHistory: [], alerts: [],
-            settings: {
-                companyName: '',
-                rif: '',
-                country: 'Venezuela',
-                currency: 'USD',
-                defaultCurrency: 'USD',   // USD es la moneda base del sistema
-                darkMode: true,
-                notifications: true,
-                aiEnabled: true,
-            },
             chartOfAccounts: [
                 { code: '1-01-001', name: 'Caja',                   type: 'Activo',     balance: 0 },
                 { code: '1-01-002', name: 'Bancos',                  type: 'Activo',     balance: 0 },
@@ -6073,19 +6064,17 @@
         if (window.CurrencySystem) {
             return window.CurrencySystem.format(amount, currency);
         }
-        // Fallback: mostrar decimales solo si el valor tiene centavos
-        const code = currency || (window._displayCurrency) || (data?.settings?.defaultCurrency) || 'USD';
-        const n    = Number(amount) || 0;
-        const abs  = Math.abs(n);
-        // Si tiene centavos mostrar 2 decimales, si es entero no mostrar decimales
-        const hasCents  = (abs - Math.floor(abs)) > 0.004;
-        const formatted = hasCents
-            ? abs.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, code === 'USD' ? ',' : '.')
-            : Math.round(abs).toString().replace(/\B(?=(\d{3})+(?!\d))/g, code === 'USD' ? ',' : '.');
-        const sign = n < 0 ? '-' : '';
-        if (code === 'USD') return sign + '$' + formatted;
-        if (code === 'EUR') return sign + '€' + formatted;
-        return sign + 'Bs. ' + formatted;
+        // Fallback sin decimales
+        const code = currency || (window._displayCurrency) || (data?.settings?.defaultCurrency) || 'VES';
+        const n   = Number(amount) || 0;
+        const abs = Math.round(Math.abs(n));
+        if (code === 'USD') {
+            return (n < 0 ? '-' : '') + '$' + abs.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+        if (code === 'EUR') {
+            return (n < 0 ? '-' : '') + '€' + abs.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
+        return (n < 0 ? '-' : '') + 'Bs. ' + abs.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
     }
 
     /* ══════════════════════════════════════════════════════════════════════
@@ -6135,9 +6124,8 @@
      */
     function dc(amount, originalCurrency) {
         const val  = Number(amount) || 0;
-        // USD es la moneda base — si no se especifica moneda, asumir USD
-        const from = (originalCurrency || data?.settings?.defaultCurrency || 'USD').toUpperCase();
-        const to   = (window._displayCurrency || 'USD').toUpperCase();
+        const from = (originalCurrency || data?.settings?.defaultCurrency || 'VES').toUpperCase();
+        const to   = (window._displayCurrency || 'VES').toUpperCase();
         if (from === to) return val;
 
         // Helper: tasa X → VES
@@ -6171,7 +6159,7 @@
      */
     function dcFmt(amount, originalCurrency) {
         const converted = dc(amount, originalCurrency);
-        const disp = window._displayCurrency || 'USD';
+        const disp = window._displayCurrency || 'VES';
         if (window.CurrencySystem) return window.CurrencySystem.format(converted, disp);
         return formatCurrency(converted, disp);
     }
@@ -6183,8 +6171,8 @@
      * Uso en tablas: dcFmtBadge(s.total, s.currency)
      */
     function dcFmtBadge(amount, originalCurrency) {
-        const from = (originalCurrency || data?.settings?.defaultCurrency || 'USD').toUpperCase();
-        const to   = (window._displayCurrency || 'USD').toUpperCase();
+        const from = (originalCurrency || data?.settings?.defaultCurrency || 'VES').toUpperCase();
+        const to   = (window._displayCurrency || 'VES').toUpperCase();
         const main = dcFmt(amount, from);
         if (from === to) return main;
         const orig = formatCurrency(amount, from);
@@ -6201,7 +6189,7 @@
      * @param {string} currKey   – nombre del campo moneda
      */
     function dcSum(items, amtKey, currKey) {
-        const defCurr = data?.settings?.defaultCurrency || 'USD';
+        const defCurr = data?.settings?.defaultCurrency || 'VES';
         return items.reduce((acc, item) => {
             return acc + dc(item[amtKey] || 0, item[currKey] || defCurr);
         }, 0);
@@ -6484,12 +6472,12 @@
                 <div class="form-group"><label>Descripción</label><textarea id="f_description">${p ? p.description : ''}</textarea></div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Costo</label>
+                        <label>Costo (USD)</label>
                         <input type="number" step="0.01" id="f_cost" value="0" inputmode="decimal" oninput="recalcProfit()" />
                         <div style="font-size:10px;color:var(--text-3);margin-top:2px;" id="f_cost_hint"></div>
                     </div>
                     <div class="form-group">
-                        <label>Precio de venta *</label>
+                        <label>Precio de venta * (USD)</label>
                         <input type="number" step="0.01" id="f_price" value="" inputmode="decimal" oninput="recalcProfit()" />
                         <div style="font-size:10px;color:var(--text-3);margin-top:2px;" id="f_price_hint"></div>
                     </div>
@@ -6514,9 +6502,9 @@
                         <select id="f_currency" onchange="updatePriceSummary()"
                             style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-family:inherit;font-size:14px;outline:none;"
                             onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
-                            <option value="USD" ${(!p?.currency || p?.currency==='USD' || (!p?.currency && (data?.settings?.defaultCurrency||'USD')==='USD')) ? 'selected' : ''}>�� USD — $ (Dólar)</option>
-                            <option value="VES" ${p?.currency==='VES' ? 'selected' : ''}>🇻🇪 VES — Bs. (Bolívar venezolano)</option>
-                            <option value="EUR" ${p?.currency==='EUR' ? 'selected' : ''}>🇪🇺 EUR — € (Euro)</option>
+                            <option value="VES" \${(!p?.currency||p?.currency==='VES'||(!p?.currency&&(data?.settings?.defaultCurrency||'VES')==='VES'))?'selected':''}>🇻🇪 VES — Bs. (Bolívar venezolano)</option>
+                            <option value="EUR" \${p?.currency==='EUR'?'selected':''}>🇪🇺 EUR — € (Euro)</option>
+                            <option value="USD" \${p?.currency==='USD'?'selected':''}>🇺🇸 USD — $ (Dólar)</option>
                         </select>
                     </div>
                 </div>
@@ -6553,20 +6541,18 @@
                     <button class="btn btn-primary" onclick="saveSafe(this, saveProductFull)">💾 Guardar producto</button>
                 </div>
             `;
-            // ── Inicializar precios — USD es la moneda base del sistema ──
+            // ── Inicializar precios en USD y resumen ──
             (function initProductPriceFields() {
-                // Si el producto existente tiene moneda VES o EUR (legado),
-                // convertir a USD para mostrar en el formulario.
-                // Si ya es USD (o es nuevo), mostrar directo.
                 const rateUSD = window.CurrencySystem?.getRateFor('USD','VES') || 36;
                 const rateEUR = window.CurrencySystem?.getRateFor('EUR','VES') || 40;
 
+                // Convierte un valor desde la moneda original a USD
                 function toUSDVal(val, fromCurr) {
                     const v = Number(val) || 0;
                     const c = (fromCurr || 'USD').toUpperCase();
-                    if (c === 'USD') return v;         // ya es USD — no tocar
-                    if (c === 'VES') return Math.round(v / rateUSD * 10000) / 10000;
-                    if (c === 'EUR') return Math.round(v * rateEUR / rateUSD * 10000) / 10000;
+                    if (c === 'USD') return v;
+                    if (c === 'VES') return v / rateUSD;
+                    if (c === 'EUR') return v * rateEUR / rateUSD;
                     return v;
                 }
 
@@ -6588,10 +6574,6 @@
                 if (priceEl)  priceEl.value  = p ? priceUSD.toFixed(2)  : '';
                 if (whEl)     whEl.value     = p ? whUSD.toFixed(2)     : '';
                 if (profitEl) profitEl.value = p ? profitUSD.toFixed(2) : '';
-
-                // Fijar el selector de moneda en USD (precio base siempre en USD)
-                const currSel = document.getElementById('f_currency');
-                if (currSel) currSel.value = 'USD';
 
                 updatePriceSummary();
             })();
@@ -6980,24 +6962,13 @@
                 const target = modalContext.extra?.target || 'receivable';
                 const invoiceId = modalContext.extra?.invoiceId;
                 let invoice = null;
-                let isMovement = false;
                 if (target === 'receivable') {
                     invoice = data.invoices.find(i => i.id === invoiceId);
-                    // Si no es factura legacy, buscar en accountMovements
-                    if (!invoice) {
-                        const mov = data.accountMovements?.find(m => m.id === invoiceId && m.type === 'receivable');
-                        if (mov) { openMovementPayment(invoiceId); return; }
-                    }
                 } else if (target === 'payable') {
                     invoice = data.purchases.find(i => i.id === invoiceId);
-                    // Si no es compra legacy, buscar en accountMovements
-                    if (!invoice) {
-                        const mov = data.accountMovements?.find(m => m.id === invoiceId && m.type === 'payable');
-                        if (mov) { openMovementPayment(invoiceId); return; }
-                    }
                 }
                 if (!invoice) {
-                    showToast('⚠️', 'Registro no encontrado');
+                    showToast('⚠️', 'Factura no encontrada');
                     closeModal();
                     return;
                 }
@@ -7047,26 +7018,29 @@
         const brand = document.getElementById('f_brand').value.trim();
         const description = document.getElementById('f_description').value.trim();
         const supplierId = document.getElementById('f_supplier').value;
-        // USD es la moneda base del sistema — todos los precios se guardan en USD
-        // El selector f_currency permite ver equivalentes en VES/EUR pero el precio
-        // base siempre se guarda como USD en la base de datos.
-        const currency = 'USD';
+        const currency = document.getElementById('f_currency')?.value || data?.settings?.defaultCurrency || 'VES';
 
-        // Los campos de precio se guardan EXACTAMENTE como el usuario los escribe
-        // en la moneda seleccionada — SIN conversión de divisas.
-        // Si el usuario pone $100 en un producto VES, se guarda 100 VES.
-        // Esto garantiza que el precio no se modifique al guardar.
+        // Los campos de precio están en USD — convertir a la moneda del producto al guardar
+        const rateUSD = window.CurrencySystem?.getRateFor('USD','VES') || 36;
+        const rateEUR = window.CurrencySystem?.getRateFor('EUR','VES') || 40;
+        function fromUSD(usdVal, toCurr) {
+            const v = Number(usdVal) || 0;
+            const c = (toCurr || 'USD').toUpperCase();
+            if (c === 'USD') return v;
+            if (c === 'VES') return v * rateUSD;
+            if (c === 'EUR') return v * rateUSD / rateEUR;
+            return v;
+        }
 
         const costUSD         = parseFloat(document.getElementById('f_cost').value) || 0;
         const priceUSD        = parseFloat(document.getElementById('f_price').value);
         const wholesalePriceUSD = parseFloat(document.getElementById('f_wholesalePrice').value) || 0;
         const profitUSD       = parseFloat(document.getElementById('f_profit').value);
 
-        // Guardar directamente en la moneda mostrada en el formulario (sin conversión)
-        const cost          = costUSD;
-        const price         = priceUSD;
-        const wholesalePrice= wholesalePriceUSD;
-        const profit        = isNaN(profitUSD) ? null : profitUSD;
+        const cost          = fromUSD(costUSD,         currency);
+        const price         = fromUSD(priceUSD,        currency);
+        const wholesalePrice= fromUSD(wholesalePriceUSD, currency);
+        const profit        = isNaN(profitUSD) ? null : fromUSD(profitUSD, currency);
 
         const tax = parseFloat(document.getElementById('f_tax').value) || 0;
         const stock = parseInt(document.getElementById('f_stock').value) || 0;
@@ -7243,30 +7217,40 @@
         updatePriceSummary();
     }
 
-    /** Muestra resumen: precio base USD + equivalentes en VES y EUR */
+    /** Muestra resumen de precios en USD + equivalente en la moneda del producto */
     function updatePriceSummary() {
         const summaryEl = document.getElementById('f_price_summary');
         if (!summaryEl) return;
-        const priceUSD  = parseFloat(document.getElementById('f_price')?.value)  || 0;
+
+        const currency = document.getElementById('f_currency')?.value || 'USD';
         const costUSD   = parseFloat(document.getElementById('f_cost')?.value)   || 0;
-        const profitUSD = priceUSD - costUSD;
-        if (priceUSD <= 0) { summaryEl.innerHTML = ''; return; }
+        const priceUSD  = parseFloat(document.getElementById('f_price')?.value)  || 0;
+        const profitUSD = parseFloat(document.getElementById('f_profit')?.value) || 0;
+
         const rateUSD = window.CurrencySystem?.getRateFor('USD','VES') || 36;
         const rateEUR = window.CurrencySystem?.getRateFor('EUR','VES') || 40;
-        const inVES = Math.round(priceUSD * rateUSD * 100) / 100;
-        const inEUR = Math.round(priceUSD * rateUSD / rateEUR * 100) / 100;
-        const fmtUSD = n => '$' + Number(n).toLocaleString('en-US', {minimumFractionDigits:2,maximumFractionDigits:2});
-        const fmtVES = n => 'Bs. ' + Math.round(n).toLocaleString('es-VE');
-        const fmtEUR = n => '€' + Number(n).toLocaleString('de-DE', {minimumFractionDigits:2,maximumFractionDigits:2});
-        const profColor = profitUSD >= 0 ? 'var(--success,#10b981)' : 'var(--danger,#ef4444)';
-        summaryEl.innerHTML = `
-            <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px;">
-                <span>💵 <strong>${fmtUSD(priceUSD)}</strong> <span style="color:var(--text-3)">USD (base)</span></span>
-                <span>🇻🇪 ${fmtVES(inVES)} <span style="color:var(--text-3)">VES</span></span>
-                <span>🇪🇺 ${fmtEUR(inEUR)} <span style="color:var(--text-3)">EUR</span></span>
-                <span style="color:${profColor};">Utilidad: ${fmtUSD(profitUSD)}</span>
-            </div>
-            <div style="font-size:10px;color:var(--text-3);margin-top:3px;">El precio se guarda en USD. VES/EUR son equivalentes calculados con la tasa actual.</div>`;
+
+        function toOriginal(usdVal, toCurr) {
+            const v = Number(usdVal) || 0;
+            const c = (toCurr || 'USD').toUpperCase();
+            if (c === 'USD') return { val: v, sym: '$' };
+            if (c === 'VES') return { val: v * rateUSD, sym: 'Bs.' };
+            if (c === 'EUR') return { val: v * rateUSD / rateEUR, sym: '€' };
+            return { val: v, sym: '$' };
+        }
+
+        const costOrig   = toOriginal(costUSD,   currency);
+        const priceOrig  = toOriginal(priceUSD,  currency);
+        const profitOrig = toOriginal(profitUSD, currency);
+        const fmt = (v) => Number(v).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const profitColor = profitUSD >= 0 ? 'var(--success,#10b981)' : 'var(--danger,#ef4444)';
+
+        summaryEl.innerHTML = currency === 'USD'
+            ? `💡 Los precios ya están en <strong>USD</strong>. Se guardan tal como los ves.`
+            : `💱 Equivalencia en <strong>${currency}</strong> (tasa actual):
+               &nbsp; Costo: <strong>${costOrig.sym} ${fmt(costOrig.val)}</strong>
+               &nbsp;|&nbsp; Precio: <strong>${priceOrig.sym} ${fmt(priceOrig.val)}</strong>
+               &nbsp;|&nbsp; Utilidad: <strong style="color:${profitColor}">${profitOrig.sym} ${fmt(profitOrig.val)}</strong>`;
     }
 
     /* ──────────────────────────────────────────────────────────────── */
@@ -7741,7 +7725,7 @@
     /* ─── POS (existente) ─── */
     let cart = [];
     let posSelectedCustomerId = null;
-    let posIvaActivo  = false;  // estado del toggle IVA — false = sin IVA por defecto
+    let posIvaActivo  = true;  // estado del toggle IVA — true = cobrar IVA
     let posDiscountPct   = 0;    // porcentaje de descuento activo (0 = sin descuento)
     let posDiscountFixed = 0;    // monto fijo de descuento en USD (0 = sin descuento)
     let posDiscountMode  = 'pct'; // 'pct' | 'fixed'
@@ -7875,15 +7859,13 @@
     function posSetDiscountFixed(amount) {
         posDiscountFixed = Math.max(0, Math.round((parseFloat(amount) || 0) * 100) / 100);
 
-        // Validar contra el subtotal NETO (después de descuentos por línea)
-        // porque el descuento general se aplica sobre ese neto
-        const { subtotalAfterLineDisc } = _posCartTotals();
-        const limit = subtotalAfterLineDisc ?? _posCartTotalsRaw().subtotalUSD;
-        if (posDiscountFixed > limit) {
-            posDiscountFixed = Math.round(limit * 100) / 100;
+        // Validar que no supere el subtotal actual
+        const { subtotalUSD } = _posCartTotalsRaw();
+        if (posDiscountFixed > subtotalUSD) {
+            posDiscountFixed = subtotalUSD;
             const input = document.getElementById('discValueInput');
             if (input) input.value = posDiscountFixed.toFixed(2);
-            showToast('⚠️', 'El descuento general no puede superar el subtotal neto');
+            showToast('⚠️', 'El descuento no puede superar el subtotal de la venta');
         }
 
         updateCartUI();
@@ -7929,249 +7911,6 @@
     }
 
     // ── POS: lógica del buscador de clientes ────────────────────────────────
-
-    // ════════════════════════════════════════════════════════════════
-    // DESCUENTO POR PRODUCTO — Modal y funciones de línea
-    // ════════════════════════════════════════════════════════════════
-
-    // Abre el modal de descuento para un producto específico del carrito
-    function openItemDiscountModal(itemId) {
-        const item = cart.find(i => i.id === itemId);
-        if (!item) return;
-
-        // Calcular el precio de línea en USD para mostrar en el modal
-        const prod  = data.products.find(p => p.id === itemId);
-        const curr  = (prod?.currency || data?.settings?.defaultCurrency || 'USD').toUpperCase();
-        const rUSD  = window.CurrencySystem?.getRateFor('USD', 'VES') || 36;
-        const rEUR  = window.CurrencySystem?.getRateFor('EUR', 'VES') || 40;
-        const lineAmt = item.qty * item.price;
-        let lineUSD = curr === 'USD' ? lineAmt : curr === 'VES' ? lineAmt / rUSD : (lineAmt * rEUR) / rUSD;
-        lineUSD = Math.round(lineUSD * 100) / 100;
-
-        const fmtU = n => window.CurrencySystem ? window.CurrencySystem.format(n, 'USD') : '$' + Number(n).toFixed(2);
-        const currentPct = item.discountPct || 0;
-
-        // Eliminar modal anterior si existe
-        document.getElementById('itemDiscModal')?.remove();
-
-        const modal = document.createElement('div');
-        modal.id = 'itemDiscModal';
-        modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9500;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(2px);';
-        modal.innerHTML = `
-            <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;
-                        width:100%;max-width:380px;padding:0;overflow:hidden;box-shadow:0 20px 40px rgba(0,0,0,.4);">
-                <!-- Header -->
-                <div style="background:var(--surface2);padding:16px 20px;border-bottom:1px solid var(--border);
-                            display:flex;justify-content:space-between;align-items:center;">
-                    <div>
-                        <div style="font-weight:700;font-size:15px;">🏷️ Descuento por producto</div>
-                        <div style="font-size:12px;color:var(--text-2);margin-top:2px;
-                                    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:250px;">${item.name}</div>
-                    </div>
-                    <button onclick="document.getElementById('itemDiscModal').remove()"
-                        style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--text-2);padding:4px 6px;">✕</button>
-                </div>
-                <!-- Info precio -->
-                <div style="padding:14px 20px 0;display:flex;gap:10px;font-size:13px;color:var(--text-2);">
-                    <span>Precio base: <strong style="color:var(--text);">${fmtU(lineUSD)}</strong></span>
-                    <span>Cant.: <strong style="color:var(--text);">${item.qty}</strong></span>
-                </div>
-                <!-- Modo: % o $ -->
-                <div style="padding:12px 20px 8px;display:flex;gap:8px;">
-                    <button id="idm_btn_pct" onclick="_idmSetMode('pct')"
-                        style="flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--primary);
-                               background:var(--primary);color:#fff;font-weight:700;cursor:pointer;font-size:13px;">%</button>
-                    <button id="idm_btn_fixed" onclick="_idmSetMode('fixed')"
-                        style="flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--border);
-                               background:var(--surface2);color:var(--text-2);font-weight:700;cursor:pointer;font-size:13px;">$ Monto</button>
-                </div>
-                <!-- Botones rápidos % -->
-                <div id="idm_pct_buttons" style="padding:0 20px 8px;display:flex;gap:6px;flex-wrap:wrap;">
-                    ${[5,10,15,20,25,50].map(p => `
-                        <button onclick="_idmQuickPct(${p})"
-                            style="padding:5px 10px;border-radius:6px;border:1px solid var(--border);
-                                   background:var(--surface2);color:var(--text);font-size:12px;
-                                   cursor:pointer;transition:all .15s;">${p}%</button>`).join('')}
-                </div>
-                <!-- Input valor -->
-                <div style="padding:0 20px 14px;">
-                    <div style="display:flex;align-items:center;gap:8px;background:var(--bg);
-                                border:1.5px solid var(--border);border-radius:8px;padding:4px 12px;
-                                transition:border-color .15s;" onfocus-within="this.style.borderColor='var(--primary)'">
-                        <span id="idm_prefix" style="color:var(--text-2);font-weight:600;font-size:14px;">%</span>
-                        <input id="idm_value" type="number" min="0" step="0.01"
-                            value="${currentPct > 0 ? currentPct : ''}"
-                            placeholder="${currentPct > 0 ? currentPct : '0'}"
-                            style="flex:1;background:none;border:none;outline:none;font-size:16px;
-                                   color:var(--text);font-family:inherit;padding:8px 0;"
-                            oninput="_idmUpdatePreview()"
-                            onfocus="this.closest('[style]').style.borderColor='var(--primary)'"
-                            onblur="this.closest('[style]').style.borderColor='var(--border)'"/>
-                    </div>
-                    <!-- Preview en tiempo real -->
-                    <div id="idm_preview" style="margin-top:8px;font-size:13px;color:var(--text-2);min-height:20px;text-align:center;"></div>
-                    <!-- Mensaje de error -->
-                    <div id="idm_error" style="display:none;margin-top:6px;font-size:12px;color:var(--danger);
-                                               background:rgba(239,68,68,.1);border-radius:6px;padding:6px 10px;"></div>
-                </div>
-                <!-- Botones acción -->
-                <div style="padding:0 20px 20px;display:flex;gap:8px;">
-                    ${currentPct > 0
-                        ? `<button onclick="_idmClear('${itemId}')"
-                               style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--danger);
-                                      background:rgba(239,68,68,.1);color:var(--danger);font-weight:700;
-                                      cursor:pointer;font-size:13px;">🗑️ Quitar</button>`
-                        : `<button onclick="document.getElementById('itemDiscModal').remove()"
-                               style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);
-                                      background:var(--surface2);color:var(--text-2);font-weight:700;
-                                      cursor:pointer;font-size:13px;">Cancelar</button>`}
-                    <button onclick="_idmApply('${itemId}', ${lineUSD})"
-                        style="flex:2;padding:10px;border-radius:8px;border:none;
-                               background:linear-gradient(135deg,var(--primary),#7c3aed);
-                               color:#fff;font-weight:700;cursor:pointer;font-size:13px;">✅ Aplicar</button>
-                </div>
-            </div>`;
-        document.body.appendChild(modal);
-
-        // Inicializar modo y preview
-        modal._mode    = 'pct';
-        modal._lineUSD = lineUSD;
-        modal._itemId  = itemId;
-        _idmUpdatePreview();
-
-        // Foco automático en el input
-        setTimeout(() => document.getElementById('idm_value')?.focus(), 80);
-    }
-
-    // Modo del modal de ítem (pct | fixed) — guardado en el elemento
-    function _idmSetMode(mode) {
-        const modal = document.getElementById('itemDiscModal');
-        if (!modal) return;
-        modal._mode = mode;
-        const btnPct   = document.getElementById('idm_btn_pct');
-        const btnFixed = document.getElementById('idm_btn_fixed');
-        const pctBtns  = document.getElementById('idm_pct_buttons');
-        const prefix   = document.getElementById('idm_prefix');
-        const inp      = document.getElementById('idm_value');
-        if (mode === 'pct') {
-            if (btnPct)   { btnPct.style.background = 'var(--primary)';    btnPct.style.color = '#fff';            btnPct.style.borderColor = 'var(--primary)';  }
-            if (btnFixed) { btnFixed.style.background = 'var(--surface2)'; btnFixed.style.color = 'var(--text-2)'; btnFixed.style.borderColor = 'var(--border)'; }
-            if (pctBtns) pctBtns.style.display = 'flex';
-            if (prefix)  prefix.textContent = '%';
-        } else {
-            if (btnFixed) { btnFixed.style.background = 'var(--primary)';  btnFixed.style.color = '#fff';           btnFixed.style.borderColor = 'var(--primary)'; }
-            if (btnPct)   { btnPct.style.background = 'var(--surface2)';   btnPct.style.color = 'var(--text-2)';   btnPct.style.borderColor = 'var(--border)';    }
-            if (pctBtns) pctBtns.style.display = 'none';
-            if (prefix)  prefix.textContent = '$';
-        }
-        if (inp) inp.value = '';
-        _idmUpdatePreview();
-    }
-
-    // Seleccionar porcentaje rápido
-    function _idmQuickPct(pct) {
-        const inp = document.getElementById('idm_value');
-        if (inp) {
-            inp.value = (parseFloat(inp.value) === pct) ? '' : pct; // toggle
-        }
-        // Resaltar botón activo
-        document.querySelectorAll('#idm_pct_buttons button').forEach(b => {
-            const active = parseInt(b.textContent) === pct && inp?.value !== '';
-            b.style.background   = active ? 'var(--primary)' : 'var(--surface2)';
-            b.style.color        = active ? '#fff' : 'var(--text)';
-            b.style.borderColor  = active ? 'var(--primary)' : 'var(--border)';
-        });
-        _idmUpdatePreview();
-    }
-
-    // Actualizar preview en tiempo real
-    function _idmUpdatePreview() {
-        const modal   = document.getElementById('itemDiscModal');
-        if (!modal) return;
-        const mode    = modal._mode || 'pct';
-        const lineUSD = modal._lineUSD || 0;
-        const inp     = document.getElementById('idm_value');
-        const preview = document.getElementById('idm_preview');
-        const errEl   = document.getElementById('idm_error');
-        const raw     = parseFloat(inp?.value) || 0;
-        const fmtU    = n => window.CurrencySystem ? window.CurrencySystem.format(n,'USD') : '$'+Number(n).toFixed(2);
-
-        let discUSD, netUSD, errMsg = '';
-        if (mode === 'pct') {
-            if (raw < 0)   errMsg = 'El descuento no puede ser negativo.';
-            if (raw > 100) errMsg = 'El porcentaje no puede superar 100%.';
-            discUSD = Math.round(lineUSD * (Math.min(100, Math.max(0, raw)) / 100) * 100) / 100;
-            netUSD  = Math.round((lineUSD - discUSD) * 100) / 100;
-        } else {
-            if (raw < 0)       errMsg = 'El descuento no puede ser negativo.';
-            if (raw > lineUSD) errMsg = `El descuento no puede ser mayor que el precio (${fmtU(lineUSD)}).`;
-            discUSD = Math.min(lineUSD, Math.max(0, Math.round(raw * 100) / 100));
-            netUSD  = Math.round((lineUSD - discUSD) * 100) / 100;
-        }
-
-        if (errEl) {
-            if (errMsg) { errEl.textContent = errMsg; errEl.style.display = 'block'; }
-            else        { errEl.style.display = 'none'; }
-        }
-        if (preview) {
-            if (raw > 0 && !errMsg) {
-                preview.innerHTML = `Descuento: <span style="color:var(--danger);font-weight:700;">-${fmtU(discUSD)}</span>
-                    &nbsp;→&nbsp; Total línea: <span style="color:var(--success);font-weight:700;">${fmtU(netUSD)}</span>`;
-            } else {
-                preview.innerHTML = '';
-            }
-        }
-    }
-
-    // Aplicar descuento al ítem
-    function _idmApply(itemId, lineUSD) {
-        const modal  = document.getElementById('itemDiscModal');
-        if (!modal) return;
-        const mode   = modal._mode || 'pct';
-        const inp    = document.getElementById('idm_value');
-        const raw    = parseFloat(inp?.value) || 0;
-        const item   = cart.find(i => i.id === itemId);
-        if (!item) return;
-
-        const fmtU   = n => window.CurrencySystem ? window.CurrencySystem.format(n,'USD') : '$'+Number(n).toFixed(2);
-
-        if (mode === 'pct') {
-            if (raw < 0 || raw > 100) {
-                document.getElementById('idm_error').textContent = raw < 0
-                    ? 'El descuento no puede ser negativo.'
-                    : 'El porcentaje no puede superar 100%.';
-                document.getElementById('idm_error').style.display = 'block';
-                return;
-            }
-            item.discountPct = Math.round(Math.min(100, Math.max(0, raw)) * 100) / 100;
-            item.discountAmt = Math.round(lineUSD * (item.discountPct / 100) * 100) / 100;
-        } else {
-            if (raw < 0 || raw > lineUSD) {
-                document.getElementById('idm_error').textContent = raw < 0
-                    ? 'El descuento no puede ser negativo.'
-                    : `El descuento no puede ser mayor que el precio (${fmtU(lineUSD)}).`;
-                document.getElementById('idm_error').style.display = 'block';
-                return;
-            }
-            item.discountAmt = Math.round(Math.min(lineUSD, Math.max(0, raw)) * 100) / 100;
-            item.discountPct = lineUSD > 0 ? Math.round(item.discountAmt / lineUSD * 10000) / 100 : 0;
-        }
-
-        modal.remove();
-        updateCartUI();
-        if (item.discountPct > 0) {
-            showToast('🏷️', `Descuento ${item.discountPct}% aplicado a "${item.name}"`);
-        }
-    }
-
-    // Quitar descuento del ítem
-    function _idmClear(itemId) {
-        const item = cart.find(i => i.id === itemId);
-        if (item) { item.discountPct = 0; item.discountAmt = 0; }
-        document.getElementById('itemDiscModal')?.remove();
-        updateCartUI();
-        showToast('✅', 'Descuento eliminado');
-    }
 
     function posClientShowDropdown() {
         posClientFilter(document.getElementById('posClientSearch')?.value || '');
@@ -8265,22 +8004,22 @@
         }
         const _disp = (window._displayCurrency || 'USD').toUpperCase();
         container.innerHTML = filtered.map(p => {
-            // Precio principal en USD (moneda base)
-            const mainPrice = dcFmt(p.price, p.currency || 'USD');
-            // Precio secundario en la moneda de visualización (solo si es diferente de USD)
-            let altPrice = '';
-            if (_disp !== 'USD') {
-                const inDisp = dc(p.price, p.currency || 'USD');
-                const dispFmt = window.CurrencySystem
-                    ? window.CurrencySystem.format(inDisp, _disp)
-                    : inDisp.toFixed(2);
-                altPrice = `<div class="price-bs">${dispFmt}</div>`;
+            // Precio principal en la moneda de visualización activa
+            const mainPrice = dcFmt(p.price, p.currency);
+            // Precio secundario en Bs (solo si la moneda activa no es VES)
+            let bsPrice = '';
+            if (_disp !== 'VES') {
+                const inVES = dc(p.price, p.currency);
+                const bsFmt = window.CurrencySystem
+                    ? window.CurrencySystem.format(inVES, 'VES')
+                    : 'Bs.\u00a0' + Math.round(inVES).toLocaleString('es-VE');
+                bsPrice = `<div class="price-bs">${bsFmt}</div>`;
             }
             return `
             <div class="pos-product" onclick="addToCart('${p.id}')">
                 <div class="name">${p.name}</div>
                 <div class="price">${mainPrice}</div>
-                ${altPrice}
+                ${bsPrice}
                 <div class="stock ${p.stock < 5 ? 'low' : ''}">${p.stock} en stock</div>
             </div>`;
         }).join('');
@@ -8319,7 +8058,7 @@
                 return;
             }
         } else {
-            cart.push({ id: productId, qty: 1, price: product.price, name: product.name, discountPct: 0, discountAmt: 0 });
+            cart.push({ id: productId, qty: 1, price: product.price, name: product.name });
         }
         updateCartUI();
         showToast('➕', `"${product.name}" agregado`);
@@ -8357,6 +8096,7 @@
             const prod    = data.products.find(p => p.id === item.id);
             const curr    = prod?.currency || data?.settings?.defaultCurrency || 'USD';
             const lineAmt = item.qty * item.price;
+            // Mostrar el precio de la línea en USD y Bs
             const rUSD = window.CurrencySystem?.getRateFor('USD', 'VES') || 36;
             const rEUR = window.CurrencySystem?.getRateFor('EUR', 'VES') || 40;
             const currUp = curr.toUpperCase();
@@ -8364,58 +8104,24 @@
                 : currUp === 'VES' ? lineAmt / rUSD
                 : (lineAmt * rEUR) / rUSD;
             lineUSD = Math.round(lineUSD * 100) / 100;
-
-            // Descuento por línea
-            const itemDiscPct = Math.min(100, Math.max(0, item.discountPct || 0));
-            const itemDiscUSD = Math.round(lineUSD * (itemDiscPct / 100) * 100) / 100;
-            const lineNetUSD  = Math.round((lineUSD - itemDiscUSD) * 100) / 100;
-            const lineNetVES  = Math.round(lineNetUSD * rUSD * 100) / 100;
-
-            const _cartDisp = (window._displayCurrency || 'USD').toUpperCase();
-            const _lineDispAlt = _cartDisp !== 'USD'
-                ? (window.CurrencySystem ? window.CurrencySystem.format(
-                    _cartDisp === 'VES' ? lineNetUSD * rUSD
-                        : lineNetUSD * rUSD / (window.CurrencySystem.getRateFor('EUR','VES') || 40),
-                    _cartDisp) : '')
-                : '';
-
+            const lineVES = Math.round(lineUSD * rUSD * 100) / 100;
             const fmtLine = (n, c) => window.CurrencySystem
                 ? window.CurrencySystem.format(n, c)
                 : (c === 'USD' ? '$' : 'Bs.\u00a0') + n.toFixed(2);
 
-            // Badge del descuento por línea
-            const discBadge = itemDiscPct > 0
-                ? `<div style="font-size:10px;color:var(--danger);font-weight:600;white-space:nowrap;">-${itemDiscPct}% (-${fmtLine(itemDiscUSD,'USD')})</div>`
-                : '';
-
             html += `
-                <div class="cart-item" style="flex-wrap:wrap;gap:4px;">
-                    <div style="flex:1;min-width:0;">
-                        <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.name}</div>
-                        ${discBadge}
-                    </div>
+                <div class="cart-item">
+                    <span style="flex:1;">${item.name}</span>
                     <div class="qty">
                         <button onclick="updateQty('${item.id}',-1)">−</button>
                         <span>${item.qty}</span>
                         <button onclick="updateQty('${item.id}',1)">+</button>
                     </div>
-                    <div style="text-align:right;min-width:70px;line-height:1.4;">
-                        ${itemDiscPct > 0
-                            ? `<div style="font-size:10px;color:var(--text-3);text-decoration:line-through;">${fmtLine(lineUSD,'USD')}</div>
-                               <div style="font-weight:700;font-size:13px;color:var(--success);">${fmtLine(lineNetUSD,'USD')}</div>`
-                            : `<div style="font-weight:700;font-size:13px;">${fmtLine(lineUSD,'USD')}</div>
-                               ${_lineDispAlt ? `<div style="font-size:10px;color:var(--text-3);">${_lineDispAlt}</div>` : ''}`
-                        }
+                    <div style="text-align:right;min-width:70px;line-height:1.2;">
+                        <div style="font-weight:700;font-size:13px;">${fmtLine(lineUSD,'USD')}</div>
+                        <div style="font-size:10px;color:var(--text-3);">${fmtLine(lineVES,'VES')}</div>
                     </div>
-                    <div style="display:flex;flex-direction:column;gap:3px;">
-                        <button class="remove" onclick="removeFromCart('${item.id}')" title="Eliminar">✕</button>
-                        <button onclick="openItemDiscountModal('${item.id}')"
-                            style="background:${itemDiscPct>0?'var(--warning)':'var(--surface2)'};border:1px solid ${itemDiscPct>0?'var(--warning)':'var(--border)'};
-                                   color:${itemDiscPct>0?'#000':'var(--text-2)'};border-radius:5px;font-size:10px;padding:2px 5px;cursor:pointer;
-                                   line-height:1.3;transition:all .15s;" title="${itemDiscPct>0?'Editar descuento':'Aplicar descuento'}">
-                            🏷️${itemDiscPct>0?` ${itemDiscPct}%`:''}
-                        </button>
-                    </div>
+                    <button class="remove" onclick="removeFromCart('${item.id}')">✕</button>
                 </div>
             `;
         });
@@ -8423,45 +8129,23 @@
         countEl.textContent = `${cart.reduce((s,i) => s + i.qty, 0)} items`;
 
         // ── Usar _posCartTotals() — mismos valores que usará completeSale ──
-        const { subtotalUSD: sUSD, lineDiscountUSD: ldUSD, generalDiscountUSD: gdUSD, discountUSD: dUSD, discPct: dPct, discType: dType, taxUSD: tUSD, totalUSD: totUSD, rateUSD } = _posCartTotals();
-
-        // Mostrar equivalente en la moneda de visualización activa (puede ser VES, EUR o USD)
-        const _disp = (window._displayCurrency || 'USD').toUpperCase();
-        const _dispRate = _disp === 'VES' ? rateUSD
-            : _disp === 'EUR' ? (window.CurrencySystem?.getRateFor('EUR','VES') || 40) / rateUSD
-            : 1; // USD — ratio 1:1
-        const _toDisp = (usd) => {
-            if (_disp === 'USD') return usd;
-            if (_disp === 'VES') return Math.round(usd * rateUSD * 100) / 100;
-            const rateEUR = window.CurrencySystem?.getRateFor('EUR','VES') || 40;
-            return Math.round(usd * rateUSD / rateEUR * 100) / 100;
-        };
-        const subtotalDisp = _toDisp(sUSD);
-        const taxDisp      = _toDisp(tUSD);
-        const totalDisp    = _toDisp(totUSD);
+        const { subtotalUSD: sUSD, discountUSD: dUSD, discPct: dPct, discType: dType, taxUSD: tUSD, totalUSD: totUSD, rateUSD } = _posCartTotals();
+        const subtotalVES = Math.round(sUSD   * rateUSD * 100) / 100;
+        const discountVES = Math.round(dUSD   * rateUSD * 100) / 100;
+        const taxVES      = Math.round(tUSD   * rateUSD * 100) / 100;
+        const totalVES    = Math.round(totUSD * rateUSD * 100) / 100;
 
         const fmtU = (n) => window.CurrencySystem ? window.CurrencySystem.format(n, 'USD')
             : '$' + n.toFixed(2);
-        const fmtD = (n) => window.CurrencySystem ? window.CurrencySystem.format(n, _disp)
-            : (_disp === 'USD' ? '$' : _disp === 'EUR' ? '€' : 'Bs. ') + n.toFixed(2);
+        const fmtV = (n) => window.CurrencySystem ? window.CurrencySystem.format(n, 'VES')
+            : 'Bs.\u00a0' + Math.round(n).toLocaleString('es-VE');
 
         if (subtotalEl) subtotalEl.textContent = fmtU(sUSD);
+        if (subBsEl)    subBsEl.textContent    = fmtV(subtotalVES);
         if (taxEl)      taxEl.textContent      = fmtU(tUSD);
+        if (taxBsEl)    taxBsEl.textContent    = fmtV(taxVES);
         if (totalEl)    totalEl.textContent    = fmtU(totUSD);
-
-        // Equivalente en moneda de visualización (solo visible si es diferente de USD)
-        if (subBsEl) {
-            if (_disp !== 'USD') { subBsEl.textContent = fmtD(subtotalDisp); subBsEl.parentElement && (subBsEl.parentElement.style.display = ''); }
-            else { subBsEl.textContent = ''; if (subBsEl.parentElement) subBsEl.parentElement.style.display = 'none'; }
-        }
-        if (taxBsEl) {
-            if (_disp !== 'USD') { taxBsEl.textContent = fmtD(taxDisp); }
-            else { taxBsEl.textContent = ''; }
-        }
-        if (totalBsEl) {
-            if (_disp !== 'USD') { totalBsEl.textContent = fmtD(totalDisp); totalBsEl.style.display = ''; }
-            else { totalBsEl.textContent = ''; totalBsEl.style.display = 'none'; }
-        }
+        if (totalBsEl)  totalBsEl.textContent  = fmtV(totalVES);
 
         // ── Fila descuento ────────────────────────────────────────────────────
         let discRow = document.getElementById('cartDiscountRow');
@@ -8477,17 +8161,10 @@
         }
         if (discRow) {
             if (dUSD > 0) {
-                let discHtml = '';
-                if (ldUSD > 0) {
-                    discHtml += `<div>Desc. por producto: <span style="font-weight:600;">-${fmtU(ldUSD)}</span></div>`;
-                }
-                if (gdUSD > 0) {
-                    const genLabel = dType === 'fixed'
-                        ? `Desc. general (-${fmtU(gdUSD)})`
-                        : `Desc. general (${dPct}%)`;
-                    discHtml += `<div>${genLabel}: <span style="font-weight:600;">-${fmtU(gdUSD)}</span></div>`;
-                }
-                discRow.innerHTML = discHtml;
+                const label = dType === 'fixed'
+                    ? `Descuento (-$${dUSD.toFixed(2)})`
+                    : `Descuento (${dPct}%)`;
+                discRow.innerHTML = `${label}: <span style="font-weight:600;">-${fmtU(dUSD)}</span>`;
                 discRow.style.display = '';
             } else {
                 discRow.style.display = 'none';
@@ -8518,9 +8195,7 @@
         const rateEUR = window.CurrencySystem?.getRateFor('EUR', 'VES') || 40;
 
         // Calcular subtotal directo en USD — sin pasar por VES como moneda puente
-        // También suma los descuentos por línea de cada producto
         let subtotalUSD = 0;
-        let lineDiscountUSD = 0; // descuentos por línea acumulados
         cart.forEach(item => {
             const prod = data.products.find(p => p.id === item.id);
             const curr = (prod?.currency || data?.settings?.defaultCurrency || 'USD').toUpperCase();
@@ -8535,43 +8210,36 @@
                 lineUSD = (lineAmt * rateEUR) / rateUSD;
             }
             subtotalUSD += lineUSD;
-            // Descuento por línea (discountPct tiene prioridad; discountAmt es el monto calculado)
-            const itemDiscPct = Math.min(100, Math.max(0, item.discountPct || 0));
-            const itemDiscAmt = Math.round(lineUSD * (itemDiscPct / 100) * 100) / 100;
-            lineDiscountUSD += itemDiscAmt;
         });
 
         // Redondear a centavos para evitar acumulación de errores floating-point
-        subtotalUSD     = Math.round(subtotalUSD     * 100) / 100;
-        lineDiscountUSD = Math.round(lineDiscountUSD * 100) / 100;
+        subtotalUSD = Math.round(subtotalUSD * 100) / 100;
 
-        // Subtotal neto tras aplicar descuentos por línea
-        const subtotalAfterLineDisc = Math.round((subtotalUSD - lineDiscountUSD) * 100) / 100;
-
-        // ── Aplicar descuento GENERAL (sobre el neto ya descontado por línea) ───
-        let generalDiscountUSD, discPct, discType;
+        // ── Aplicar descuento según el modo activo ────────────────────────────
+        let discountUSD, discPct, discType;
         if (posDiscountMode === 'fixed') {
-            generalDiscountUSD = Math.min(
+            // Monto fijo: clampeado a no superar el subtotal
+            discountUSD = Math.min(
                 Math.round((posDiscountFixed || 0) * 100) / 100,
-                subtotalAfterLineDisc
+                subtotalUSD
             );
-            discPct  = subtotalAfterLineDisc > 0 ? Math.round(generalDiscountUSD / subtotalAfterLineDisc * 10000) / 100 : 0;
+            // Calcular el porcentaje equivalente para guardar en la venta
+            discPct  = subtotalUSD > 0 ? Math.round(discountUSD / subtotalUSD * 10000) / 100 : 0;
             discType = 'fixed';
         } else {
-            discPct            = Math.min(100, Math.max(0, posDiscountPct || 0));
-            generalDiscountUSD = Math.round(subtotalAfterLineDisc * (discPct / 100) * 100) / 100;
-            discType           = 'pct';
+            // Porcentaje: clampeado 0–100
+            discPct     = Math.min(100, Math.max(0, posDiscountPct || 0));
+            discountUSD = Math.round(subtotalUSD * (discPct / 100) * 100) / 100;
+            discType    = 'pct';
         }
 
-        // Total de descuentos: por línea + general
-        const discountUSD       = Math.round((lineDiscountUSD + generalDiscountUSD) * 100) / 100;
         const subtotalAfterDisc = Math.round((subtotalUSD - discountUSD) * 100) / 100;
 
         const ivaActivo = posIvaActivo;
         const taxUSD   = ivaActivo ? Math.round(subtotalAfterDisc * 0.16 * 100) / 100 : 0;
         const totalUSD = Math.round((subtotalAfterDisc + taxUSD) * 100) / 100;
 
-        return { subtotalUSD, lineDiscountUSD, generalDiscountUSD, discountUSD, discPct, discType, subtotalAfterLineDisc, subtotalAfterDisc, taxUSD, totalUSD, rateUSD, rateEUR };
+        return { subtotalUSD, discountUSD, discPct, discType, subtotalAfterDisc, taxUSD, totalUSD, rateUSD, rateEUR };
     }
 
     // ── Subtotal bruto sin descuento (para validar límite de monto fijo) ────
@@ -8706,7 +8374,7 @@
             return;
         }
         // ── Usar _posCartTotals() — calcula en USD directo sin doble conversión VES ──
-        const { subtotalUSD, lineDiscountUSD, generalDiscountUSD, discountUSD, discPct, discType, subtotalAfterDisc, taxUSD, totalUSD, rateUSD, rateEUR } = _posCartTotals();
+        const { subtotalUSD, discountUSD, discPct, discType, subtotalAfterDisc, taxUSD, totalUSD, rateUSD, rateEUR } = _posCartTotals();
 
         const posCurr     = document.getElementById('posCurrency')?.value || 'USD';
         const totalInCurr = _posToPosCurr(totalUSD, posCurr, rateUSD, rateEUR);
@@ -8745,64 +8413,36 @@
         }
 
         // ── Todos los valores almacenados en USD (moneda base) ─────────────────
-        const subtotal           = Math.round(subtotalUSD          * 100) / 100;
-        const lineDiscountSave   = Math.round(lineDiscountUSD      * 100) / 100;
-        const generalDiscSave    = Math.round(generalDiscountUSD   * 100) / 100;
-        const discount           = Math.round(discountUSD          * 100) / 100;
-        const tax                = Math.round(taxUSD               * 100) / 100;
-        const grandTotal         = Math.round(totalUSD             * 100) / 100;
-        const paidToSave         = esCredito ? 0 : Math.round(paidUSD * 100) / 100;
-        const cambioUSD          = esCredito ? 0 : (paidCents - totalCents) / 100;
+        const subtotal    = Math.round(subtotalUSD      * 100) / 100;
+        const discount    = Math.round(discountUSD      * 100) / 100;
+        const tax         = Math.round(taxUSD           * 100) / 100;
+        const grandTotal  = Math.round(totalUSD         * 100) / 100;
+        const paidToSave  = esCredito ? 0 : Math.round(paidUSD * 100) / 100;
+        const cambioUSD   = esCredito ? 0 : (paidCents - totalCents) / 100;
 
         const invoice = `INV-${Date.now().toString().slice(-6)}`;
-        const saleId  = generateId();
-
-        // Construir items con descuento por línea (para factura y cotización)
-        const rateUSD2 = window.CurrencySystem?.getRateFor('USD','VES') || 36;
-        const rateEUR2 = window.CurrencySystem?.getRateFor('EUR','VES') || 40;
-        const saleItems = cart.map(i => {
-            const prod   = data.products.find(p => p.id === i.id);
-            const curr   = (prod?.currency || data?.settings?.defaultCurrency || 'USD').toUpperCase();
-            const lAmt   = i.qty * i.price;
-            let lUSD     = curr === 'USD' ? lAmt : curr === 'VES' ? lAmt / rateUSD2 : (lAmt * rateEUR2) / rateUSD2;
-            lUSD         = Math.round(lUSD * 100) / 100;
-            const dPct   = Math.min(100, Math.max(0, i.discountPct || 0));
-            const dAmt   = Math.round(lUSD * (dPct / 100) * 100) / 100;
-            return {
-                productId:   i.id,
-                productName: i.name,
-                qty:         i.qty,
-                price:       i.price,
-                priceUSD:    lUSD / i.qty, // precio unitario en USD
-                discount:    dPct,         // porcentaje de descuento de esta línea
-                discountAmt: dAmt,         // monto del descuento de esta línea en USD
-                tax:         0,            // IVA global (no por línea en POS)
-                total:       Math.round((lUSD - dAmt) * 100) / 100,
-            };
-        });
+        const saleId = generateId();
 
         // Registrar venta — todo en USD
         const sale = {
             id: saleId,
             invoice,
             customerId: posSelectedCustomerId,
-            items:         saleItems,
+            items: cart.map(i => ({ productId: i.id, qty: i.qty, price: i.price })),
             subtotal,
-            lineDiscount:  lineDiscountSave,  // descuento por producto (suma de líneas)
-            generalDiscount: generalDiscSave, // descuento general de la factura
-            discount,                         // total de descuentos (línea + general)
-            discountPct:   discPct,
-            discountType:  discType,
+            discount,
+            discountPct: discPct,
+            discountType: discType,  // 'pct' | 'fixed'
             tax,
-            total:         grandTotal,
-            paid:          paidToSave,
-            cambio:        cambioUSD,
-            method:        esCredito ? 'CREDITO' : document.getElementById('paymentMethod').value,
-            date:          new Date().toISOString(),
-            status:        esCredito ? 'Crédito' : 'Pagada',
-            isCredit:      esCredito,
-            currency:      'USD',
-            posCurrency:   posCurr,
+            total:    grandTotal,
+            paid:     paidToSave,
+            cambio:   cambioUSD,
+            method:   esCredito ? 'CREDITO' : document.getElementById('paymentMethod').value,
+            date:     new Date().toISOString(),
+            status:   esCredito ? 'Crédito' : 'Pagada',
+            isCredit: esCredito,
+            currency: 'USD',
+            posCurrency: posCurr,
             paidInPosCurr: paidInCurr,
         };
 
@@ -8845,54 +8485,49 @@
         data.invoices.push({
             id: newInvId,
             number: invoice,
-            // Guardar el cliente tanto en ventas a crédito como al contado
-            customerId: posSelectedCustomerId || null,
+            customerId: esCredito ? posSelectedCustomerId : null,
             date: new Date().toISOString().slice(0, 10),
             dueDate: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
-            items: saleItems,
+            items: sale.items,
             subtotal,
-            lineDiscount:    lineDiscountSave,
-            generalDiscount: generalDiscSave,
             discount,
             discountPct: discPct,
-            discountType: discType,
+            discountType: discType,  // 'pct' | 'fixed'
             tax,
             total:  grandTotal,
             paid:   paidToSave,   // en USD — mismo que sale.paid
             notes:  'Venta POS',
-            source: 'pos',  // Para identificar facturas del POS
             status: paidCents >= totalCents ? 'Pagada' : 'Pendiente',
             currency: 'USD',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         });
 
-        // Si es venta a crédito: crear accountMovement para CxC
+        // Si es venta a crédito: crear CxC automáticamente vinculada al cliente
         if (esCredito && posSelectedCustomerId) {
             ensureAM();
-            data.accountMovements = data.accountMovements || [];
-            const seq = data.accountMovements.filter(m => m.type === 'receivable').length + 1;
+            const cxcSeq = data.accountMovements.filter(m => m.type === 'receivable').length + 1;
+            const cxcNum = `CXC-${String(cxcSeq).padStart(6, '0')}`;
             data.accountMovements.push({
-                id: generateId(),
-                type: 'receivable',
-                entityId: posSelectedCustomerId,
-                legacyId: newInvId,  // Referencia a la factura
-                number: invoice,
-                date: new Date().toISOString().slice(0, 10),
-                dueDate: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
-                concept: 'Venta POS - Crédito',
+                id:          generateId(),
+                type:        'receivable',
+                entityId:    posSelectedCustomerId,
+                number:      cxcNum,
+                date:        new Date().toISOString().slice(0, 10),
+                dueDate:     new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+                concept:     `Venta POS ${invoice}`,
                 description: '',
-                reference: invoice,
-                invoiceId: newInvId,
-                amount: grandTotal,
-                currency: 'USD',
-                paid: 0,
-                status: 'Pendiente',
-                notes: 'Venta POS a crédito',
-                source: 'pos',
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                payments: [],
+                reference:   invoice,
+                invoiceId:   newInvId,
+                amount:      grandTotal,
+                currency:    'USD',
+                paid:        0,
+                status:      'Pendiente',
+                notes:       '',
+                source:      'pos',
+                createdAt:   new Date().toISOString(),
+                updatedAt:   new Date().toISOString(),
+                payments:    [],
             });
         }
 
@@ -8910,26 +8545,21 @@
             } else {
                 if (cashAccount) cashAccount.balance = Math.round(((cashAccount.balance || 0) + paidToSave) * 100) / 100;
             }
-            // Ingresos netos = subtotal bruto − descuentos (valor correcto fiscalmente)
-            const netRevenue   = Math.round(subtotalAfterDisc * 100) / 100;
-            const costEstimate = Math.round(netRevenue * 0.6 * 100) / 100;
-            revenueAccount.balance   = Math.round(((revenueAccount.balance   || 0) + netRevenue)    * 100) / 100;
-            taxAccount.balance       = Math.round(((taxAccount.balance       || 0) + tax)           * 100) / 100;
-            costAccount.balance      = Math.round(((costAccount.balance      || 0) + costEstimate)  * 100) / 100;
-            inventoryAccount.balance = Math.round(((inventoryAccount.balance || 0) - costEstimate)  * 100) / 100;
+            revenueAccount.balance   = Math.round(((revenueAccount.balance || 0) + subtotal)     * 100) / 100;
+            taxAccount.balance       = Math.round(((taxAccount.balance     || 0) + tax)          * 100) / 100;
+            const costEstimate       = Math.round(subtotal * 0.6 * 100) / 100;
+            costAccount.balance      = Math.round(((costAccount.balance      || 0) + costEstimate) * 100) / 100;
+            inventoryAccount.balance = Math.round(((inventoryAccount.balance || 0) - costEstimate) * 100) / 100;
             const today = new Date().toISOString().slice(0, 10);
             if (esCredito) {
-                data.journalEntries.push({ date: today, ref: invoice, desc: 'Venta POS — CxC (crédito)',      debit: grandTotal,   credit: null });
+                data.journalEntries.push({ date: today, ref: invoice, desc: 'Venta POS — CxC (crédito)',    debit: grandTotal,   credit: null        });
             } else {
-                data.journalEntries.push({ date: today, ref: invoice, desc: 'Venta POS — Cobro',             debit: paidToSave,   credit: null });
+                data.journalEntries.push({ date: today, ref: invoice, desc: 'Venta POS — Cobro',           debit: paidToSave,   credit: null        });
             }
-            if (discount > 0) {
-                data.journalEntries.push({ date: today, ref: invoice, desc: `Venta POS — Descuento aplicado (-${formatCurrency(discount,'USD')})`, debit: null, credit: null, note: `Desc. producto: ${formatCurrency(lineDiscountSave,'USD')} / Desc. general: ${formatCurrency(generalDiscSave,'USD')}` });
-            }
-            data.journalEntries.push({ date: today, ref: invoice, desc: 'Venta POS — Ingresos netos',    debit: null,         credit: netRevenue });
-            data.journalEntries.push({ date: today, ref: invoice, desc: 'Venta POS — IVA',               debit: null,         credit: tax });
-            data.journalEntries.push({ date: today, ref: invoice, desc: 'Costo de venta',                debit: costEstimate, credit: null });
-            data.journalEntries.push({ date: today, ref: invoice, desc: 'Costo de venta — Inventario',   debit: null,         credit: costEstimate });
+            data.journalEntries.push({ date: today, ref: invoice, desc: 'Venta POS — Ingresos',       debit: null,         credit: subtotal     });
+            data.journalEntries.push({ date: today, ref: invoice, desc: 'Venta POS — IVA',            debit: null,         credit: tax          });
+            data.journalEntries.push({ date: today, ref: invoice, desc: 'Costo de venta',             debit: costEstimate, credit: null         });
+            data.journalEntries.push({ date: today, ref: invoice, desc: 'Costo de venta — Inventario',debit: null,         credit: costEstimate });
         }
 
         // Registrar pago
@@ -8950,13 +8580,13 @@
         generateAlerts();
         cart = [];
         posClientClear();
-        posIvaActivo = false; // sin IVA por defecto para la siguiente venta
+        posIvaActivo = true; // resetear IVA a activo para la siguiente venta
         const track = document.getElementById('posIvaTrack');
         const thumb = document.getElementById('posIvaThumb');
         const label = document.getElementById('posIvaLabel');
-        if (track) track.style.background = 'var(--text-3)';
-        if (thumb) thumb.style.left = '3px';
-        if (label) label.textContent = 'Sin IVA';
+        if (track) track.style.background = 'var(--primary)';
+        if (thumb) thumb.style.left = '21px';
+        if (label) label.textContent = 'Cobrar IVA (16%)';
         // Resetear crédito para la siguiente venta
         posCreditoActivo = false;
         const cTrack = document.getElementById('posCreditTrack');
@@ -9253,6 +8883,10 @@
                 <td style="font-size:13px;">${c.phone || '—'}</td>
                 <td style="font-size:12px;color:var(--text-2);">${c.document || c.rif || '—'}</td>
                 <td>
+                    <div style="font-weight:600;color:${hasBalance?'var(--danger)':'var(--text)'};">${balanceFmt}</div>
+                    ${hasBalance?'<div style="font-size:10px;color:var(--danger);">⚠️ saldo pendiente</div>':''}
+                </td>
+                <td>
                     <div style="font-size:12px;color:var(--text-2);">${saleCount} venta${saleCount!==1?'s':''}</div>
                     <div style="font-size:11px;color:var(--text-3);">${invoiceCount} factura${invoiceCount!==1?'s':''}</div>
                 </td>
@@ -9296,6 +8930,10 @@
                     <div style="background:var(--surface-2);border-radius:10px;padding:12px;text-align:center;">
                         <div style="font-size:18px;font-weight:800;color:var(--success);">${formatCurrency(total,defC)}</div>
                         <div style="font-size:11px;color:var(--text-3);">Total comprado</div>
+                    </div>
+                    <div style="background:var(--surface-2);border-radius:10px;padding:12px;text-align:center;">
+                        <div style="font-size:18px;font-weight:800;color:${(c.balance||0)>0?'var(--danger)':'var(--success)'};">${formatCurrency(c.balance||0,defC)}</div>
+                        <div style="font-size:11px;color:var(--text-3);">Saldo pendiente</div>
                     </div>
                 </div>
                 ${sales.length ? `
@@ -9346,7 +8984,7 @@
             );
         });
         if (list.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--text-2);">
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--text-2);">
                 ${q ? `🔍 Sin proveedores para ese criterio.` : '🏭 No hay proveedores registrados.'}
             </td></tr>`;
             return;
@@ -9354,6 +8992,8 @@
         tbody.innerHTML = list.map(s => {
             const purchases    = data.purchases.filter(p => p.supplierId === s.id && p.status !== 'Anulada');
             const totalBought  = purchases.reduce((a,p)=>a+(p.total||0),0);
+            const defCurr      = data?.settings?.defaultCurrency || 'VES';
+            const hasBalance   = (s.balance || 0) > 0;
             return `<tr>
                 <td>
                     <div style="font-weight:600;">${s.name}</div>
@@ -9361,6 +9001,10 @@
                 </td>
                 <td style="font-size:13px;">${s.email || '—'}</td>
                 <td style="font-size:13px;">${s.phone || '—'}</td>
+                <td>
+                    <div style="font-weight:600;color:${hasBalance?'var(--danger)':'var(--text)'};">${dcFmt(s.balance||0, defCurr)}</div>
+                    ${hasBalance ? '<div style="font-size:10px;color:var(--danger);">⚠️ pendiente</div>' : ''}
+                </td>
                 <td style="font-size:12px;color:var(--text-2);">${purchases.length} compra${purchases.length!==1?'s':''}</td>
                 <td style="white-space:nowrap;">
                     <button class="btn btn-sm" onclick="openModal('supplier','${s.id}')" title="Editar">✏️</button>
@@ -9510,25 +9154,8 @@
         const settings = data.settings || {};
         const custName = getCustomerName(sale.customerId);
         const itemsHtml = (sale.items || []).map(it => {
-            const p       = data.products.find(x => x.id === it.productId);
-            const nombre  = it.productName || p?.name || it.productId;
-            const qty     = Number(it.qty || 1);
-            const price   = Number(it.price || 0);
-            const dPct    = Number(it.discount || 0);
-            // Precio en USD para el recibo
-            const prod    = p;
-            const curr    = (prod?.currency || sale.currency || 'USD').toUpperCase();
-            const rUSD    = window.CurrencySystem?.getRateFor('USD','VES') || 36;
-            const rEUR    = window.CurrencySystem?.getRateFor('EUR','VES') || 40;
-            const lAmt    = qty * price;
-            let lUSD      = curr === 'USD' ? lAmt : curr === 'VES' ? lAmt / rUSD : (lAmt * rEUR) / rUSD;
-            lUSD          = Math.round(lUSD * 100) / 100;
-            const dAmt    = Math.round(lUSD * (dPct / 100) * 100) / 100;
-            const lineNet = Math.round((lUSD - dAmt) * 100) / 100;
-            const discRow = dPct > 0
-                ? `<tr><td style="padding:1px 8px;color:#ef4444;font-size:11px;" colspan="3">  └ Desc. ${dPct}%</td><td style="text-align:right;padding:1px 8px;color:#ef4444;font-size:11px;">-${formatCurrency(dAmt, sale.currency)}</td></tr>`
-                : '';
-            return `<tr><td>${nombre}</td><td style="text-align:center;">${qty}</td><td style="text-align:right;">${formatCurrency(price, sale.currency)}</td><td style="text-align:right;">${formatCurrency(lineNet, sale.currency)}</td></tr>${discRow}`;
+            const p = data.products.find(x => x.id === it.productId);
+            return `<tr><td>${p?.name||it.productId}</td><td style="text-align:center;">${it.qty}</td><td style="text-align:right;">${formatCurrency(it.price,sale.currency)}</td><td style="text-align:right;">${formatCurrency(it.qty*it.price,sale.currency)}</td></tr>`;
         }).join('');
         document.getElementById('printContent').innerHTML = `
             <div style="text-align:center;margin-bottom:20px;">
@@ -9541,12 +9168,11 @@
                 <tbody>${itemsHtml||'<tr><td colspan="4" style="color:#64748b;padding:8px 0;">Sin detalle de productos</td></tr>'}</tbody>
             </table>
             <div style="text-align:right;margin-top:12px;border-top:2px solid #e2e8f0;padding-top:8px;">
-                ${(sale.lineDiscount||0)>0 ? `<div style="color:#ef4444;">Desc. por producto: -${formatCurrency(sale.lineDiscount,'USD')}</div>` : ''}
-                ${(sale.generalDiscount||0)>0 ? `<div style="color:#ef4444;">Desc. general${sale.discountType==='pct'?` (${sale.discountPct}%)`:''}:  -${formatCurrency(sale.generalDiscount,'USD')}</div>` : ''}
-                ${(sale.discount||0)>0 && !(sale.lineDiscount||0) && !(sale.generalDiscount||0) ? `<div style="color:#ef4444;">Descuento${sale.discountType==='pct' ? ` (${sale.discountPct}%)` : ''}: -${formatCurrency(sale.discount,'USD')}</div>` : ''}
-                ${(sale.tax||0)>0?`<div>IVA: ${formatCurrency(sale.tax,'USD')}</div>`:''}
-                <div style="font-size:18px;font-weight:800;">TOTAL: ${formatCurrency(sale.total,'USD')}</div>
-                <div style="font-size:12px;color:#64748b;">Método: ${sale.method||'—'} · USD</div>
+                <div>Subtotal: ${formatCurrency(sale.subtotal||sale.total,sale.currency)}</div>
+                ${(sale.discount||0)>0 ? `<div style="color:#ef4444;">Descuento${sale.discountType==='pct' ? ` (${sale.discountPct}%)` : ''}: -${formatCurrency(sale.discount,sale.currency)}</div>` : ''}
+                ${(sale.tax||0)>0?`<div>IVA: ${formatCurrency(sale.tax,sale.currency)}</div>`:''}
+                <div style="font-size:18px;font-weight:800;">TOTAL: ${formatCurrency(sale.total,sale.currency)}</div>
+                <div style="font-size:12px;color:#64748b;">Método: ${sale.method||'—'} · Moneda: ${sale.currency||'VES'}</div>
             </div>
             <div style="margin-top:16px;text-align:center;font-size:12px;color:#64748b;">
                 Cliente: ${custName} · Gracias por su compra
@@ -9590,13 +9216,11 @@
         const inventoryAccount = data.chartOfAccounts.find(a => a.code === '1-03');
         if (cashAccount && revenueAccount && taxAccount && costAccount && inventoryAccount) {
             cashAccount.balance = (cashAccount.balance || 0) - sale.paid;
-            // Revertir ingresos netos (subtotal − descuentos, igual que en completeSale)
-            const netRev  = Math.round(((sale.subtotal || 0) - (sale.discount || 0)) * 100) / 100;
-            const costEst = Math.round(netRev * 0.6 * 100) / 100;
-            revenueAccount.balance   = Math.round(((revenueAccount.balance   || 0) - netRev)  * 100) / 100;
-            taxAccount.balance       = Math.round(((taxAccount.balance       || 0) - sale.tax) * 100) / 100;
-            costAccount.balance      = Math.round(((costAccount.balance      || 0) - costEst)  * 100) / 100;
-            inventoryAccount.balance = Math.round(((inventoryAccount.balance || 0) + costEst)  * 100) / 100;
+            revenueAccount.balance = (revenueAccount.balance || 0) - sale.subtotal;
+            taxAccount.balance = (taxAccount.balance || 0) - sale.tax;
+            const costEstimate = sale.subtotal * 0.6;
+            costAccount.balance = (costAccount.balance || 0) - costEstimate;
+            inventoryAccount.balance = (inventoryAccount.balance || 0) + costEstimate;
         }
         sale.status = 'Anulada';
         // Anular factura asociada
@@ -9654,38 +9278,30 @@
             return true;
         });
         tbody.innerHTML = list.length === 0
-            ? `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-2);">No hay facturas.</td></tr>`
-            : list.map(i => {
-                const isPOS = i.source === 'pos' || i.notes === 'Venta POS';
-                const tipoBadge = isPOS 
-                    ? '<span class="badge badge-warning" style="font-size:10px;">POS</span>'
-                    : '<span class="badge badge-info" style="font-size:10px;">FISCAL</span>';
-                const notesText = i.notes
-                    ? i.notes
-                    : (Array.isArray(i.items) && i.items.length > 0
-                        ? i.items.map(it => it.productName || getProductName(it.productId) || '').filter(Boolean).join(', ')
-                        : '—');
-                const currencyBadge = window.CurrencySystem ? ' ' + window.CurrencySystem.getCurrencyBadge(i.currency) : '';
-                const payBtn = i.total - i.paid > 0
-                    ? '<button class="btn btn-sm btn-success" onclick="openPaymentModal(\'receivable\',\'' + i.id + '\')" title="Registrar pago">💰</button>'
-                    : '';
-                return '<tr>'
-                    + '<td>' + tipoBadge + '</td>'
-                    + '<td style="font-weight:600;">' + i.number + '</td>'
-                    + '<td>' + getCustomerName(i.customerId) + '</td>'
-                    + '<td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-2);font-size:13px;">' + notesText + '</td>'
-                    + '<td>' + formatCurrency(i.total, i.currency) + currencyBadge + '</td>'
-                    + '<td>' + getInvoiceStatusBadge(i) + '</td>'
-                    + '<td>' + (i.date || 'N/A') + '</td>'
-                    + '<td style="white-space:nowrap;">'
-                    + '<button class="btn btn-sm" onclick="openModal(\'invoice\',\'' + i.id + '\')" title="Editar">✏️</button>'
-                    + '<button class="btn btn-sm" onclick="printInvoiceDoc(\'' + i.id + '\')" title="Imprimir/PDF">🖨️</button>'
-                    + '<button class="btn btn-sm btn-danger" onclick="deleteInvoice(\'' + i.id + '\')" title="Anular">🗑️</button>'
-                    + payBtn
-                    + '<button class="btn btn-sm" onclick="openReturnModal(null,\'' + i.id + '\')" title="Devolver factura">↩️</button>'
-                    + '</td>'
-                    + '</tr>';
-            }).join('');
+            ? `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-2);">No hay facturas fiscales.</td></tr>`
+            : list.map(i => `
+            <tr>
+                <td><span class="badge badge-info" style="font-size:10px;">FISCAL</span></td>
+                <td style="font-weight:600;">${i.number}</td>
+                <td>${getCustomerName(i.customerId)}</td>
+                <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-2);font-size:13px;">${
+                    i.notes
+                        ? i.notes
+                        : (Array.isArray(i.items) && i.items.length > 0
+                            ? i.items.map(it => it.productName || getProductName(it.productId) || '').filter(Boolean).join(', ')
+                            : '—')
+                }</td>
+                <td>${formatCurrency(i.total, i.currency)}${window.CurrencySystem ? ' ' + window.CurrencySystem.getCurrencyBadge(i.currency) : ''}</td>
+                <td>${getInvoiceStatusBadge(i)}</td>
+                <td>${i.date || 'N/A'}</td>
+                <td style="white-space:nowrap;">
+                    <button class="btn btn-sm" onclick="openModal('invoice','${i.id}')" title="Editar">✏️</button>
+                    <button class="btn btn-sm" onclick="printInvoiceDoc('${i.id}')" title="Imprimir/PDF">🖨️</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteInvoice('${i.id}')" title="Anular">🗑️</button>
+                    ${i.total - i.paid > 0 ? `<button class="btn btn-sm btn-success" onclick="openPaymentModal('receivable','${i.id}')" title="Registrar pago">💰</button>` : ''}
+                    <button class="btn btn-sm" onclick="openReturnModal(null,'${i.id}')" title="Devolver factura">↩️</button>
+                </td>
+            </tr>`).join('');
     }
 
     async function deleteInvoice(id) {
@@ -9734,19 +9350,6 @@
         );
 
         // Construir filas de items
-        // SIEMPRE mostrar en USD — convertir si el producto/factura está en otra moneda
-        const _invRateUSD = window.CurrencySystem?.getRateFor('USD', 'VES') || 36;
-        const _invRateEUR = window.CurrencySystem?.getRateFor('EUR', 'VES') || 40;
-        const _toUSD = (amount, fromCurr) => {
-            const c = (fromCurr || 'USD').toUpperCase();
-            if (c === 'USD') return amount;
-            if (c === 'VES') return Math.round(amount / _invRateUSD * 100) / 100;
-            if (c === 'EUR') return Math.round(amount * _invRateEUR / _invRateUSD * 100) / 100;
-            return amount;
-        };
-        // Moneda fuente de la factura/venta para convertir precios
-        const _srcCurr = (sale?.currency || inv.currency || 'USD').toUpperCase();
-
         let itemsHtml = '';
         let subtotal  = 0;
         let totalTax  = 0;
@@ -9757,19 +9360,13 @@
             itemsHtml = srcItems.map((it, idx) => {
                 const nombre  = it.productName || getProductName(it.productId) || it.name || it.description || 'Producto';
                 const qty     = Number(it.qty   || it.quantity || 1);
-                // Precio unitario en USD
-                const priceRaw  = Number(it.price || 0);
-                // Detectar moneda del item: puede venir del producto o de la factura
-                const prod      = data.products?.find(p => p.id === (it.productId || it.id));
-                const itemCurr  = (prod?.currency || _srcCurr || 'USD').toUpperCase();
-                const priceUSD  = Math.round(_toUSD(priceRaw, itemCurr) * 100) / 100;
-
+                const price   = Number(it.price || 0);
                 const disc    = Number(it.discount || 0);
                 const tax     = Number(it.tax   || 0);
-                const base    = qty * priceUSD;
-                const dAmt    = Math.round(base * disc  / 100 * 100) / 100;
-                const tAmt    = Math.round((base - dAmt) * tax / 100 * 100) / 100;
-                const lineTot = Math.round((base - dAmt + tAmt) * 100) / 100;
+                const base    = qty * price;
+                const dAmt    = base * disc  / 100;
+                const tAmt    = (base - dAmt) * tax / 100;
+                const lineTot = base - dAmt + tAmt;
                 subtotal  += base;
                 totalDisc += dAmt;
                 totalTax  += tAmt;
@@ -9778,31 +9375,30 @@
                 <tr style="background:${bg};border-bottom:1px solid #f1f5f9;">
                     <td style="padding:10px 12px;font-weight:500;">${nombre}</td>
                     <td style="padding:10px 8px;text-align:center;color:#475569;">${qty}</td>
-                    <td style="padding:10px 8px;text-align:right;">${formatCurrency(priceUSD, 'USD')}</td>
+                    <td style="padding:10px 8px;text-align:right;">${formatCurrency(price, inv.currency)}</td>
                     <td style="padding:10px 8px;text-align:center;color:${disc>0?'#16a34a':'#94a3b8'};">${disc > 0 ? disc + '%' : '—'}</td>
                     <td style="padding:10px 8px;text-align:center;color:${tax>0?'#d97706':'#94a3b8'};">${tax > 0 ? tax + '%' : '—'}</td>
-                    <td style="padding:10px 12px;text-align:right;font-weight:700;color:#0f172a;">${formatCurrency(lineTot, 'USD')}</td>
+                    <td style="padding:10px 12px;text-align:right;font-weight:700;color:#0f172a;">${formatCurrency(lineTot, inv.currency)}</td>
                 </tr>`;
             }).join('');
         } else {
-            // Sin items detallados — mostrar total como un solo concepto en USD
-            subtotal  = Math.round(_toUSD(Number(inv.total || 0), _srcCurr) * 100) / 100;
+            subtotal  = Number(inv.total || 0);
+            // Mostrar el concepto/descripción como ítem visible en la factura
             const concepto = (inv.notes && String(inv.notes).trim()) ? String(inv.notes).trim() : (inv.description && String(inv.description).trim()) ? String(inv.description).trim() : 'Servicios / Productos';
             itemsHtml = `
             <tr style="background:#f8fafc;border-bottom:1px solid #f1f5f9;">
                 <td style="padding:12px 14px;font-weight:500;color:#0f172a;">${concepto}</td>
                 <td style="padding:12px 8px;text-align:center;color:#475569;">1</td>
-                <td style="padding:12px 8px;text-align:right;">${formatCurrency(subtotal, 'USD')}</td>
+                <td style="padding:12px 8px;text-align:right;">${formatCurrency(subtotal, inv.currency)}</td>
                 <td style="padding:12px 8px;text-align:center;color:#94a3b8;">—</td>
                 <td style="padding:12px 8px;text-align:center;color:#94a3b8;">—</td>
-                <td style="padding:12px 14px;text-align:right;font-weight:700;color:#0f172a;">${formatCurrency(subtotal, 'USD')}</td>
+                <td style="padding:12px 14px;text-align:right;font-weight:700;color:#0f172a;">${formatCurrency(subtotal, inv.currency)}</td>
             </tr>`;
         }
 
-        // Totales siempre en USD
-        const totalFinal = Math.round(_toUSD(Number(inv.total || 0), _srcCurr) * 100) / 100;
-        const paid       = Math.round(_toUSD(Number(inv.paid  || 0), _srcCurr) * 100) / 100;
-        const saldo      = Math.round((totalFinal - paid) * 100) / 100;
+        const totalFinal = Number(inv.total || 0);
+        const paid       = Number(inv.paid  || 0);
+        const saldo      = totalFinal - paid;
         const metodoPago = sale?.method || inv.method || '';
 
         // Estado y colores
@@ -9810,8 +9406,10 @@
         const estadoBg = { 'Pagada':'#dcfce7','Parcial':'#fef9c3','Vencida':'#fee2e2','Pendiente':'#dbeafe' }[estado] || '#f1f5f9';
         const estadoClr = { 'Pagada':'#16a34a','Parcial':'#b45309','Vencida':'#dc2626','Pendiente':'#2563eb' }[estado] || '#475569';
 
-        // Moneda: siempre USD en la factura
-        const monedaLabel = '🇺🇸 USD ($)';
+        // Moneda
+        const monedaLabel = inv.currency === 'USD' ? '🇺🇸 USD ($)'
+            : inv.currency === 'EUR' ? '🇪🇺 EUR (€)'
+            : '🇻🇪 VES (Bs.)';
 
         const html = `
         <div style="font-family:'Inter',system-ui,sans-serif;color:#0f172a;max-width:680px;margin:0 auto;" id="invoiceDocContent">
@@ -9896,38 +9494,37 @@
             <div style="min-width:280px;background:#f8fafc;border-radius:10px;
                         border:1px solid #e2e8f0;overflow:hidden;">
               <div style="padding:14px 18px;">
-                ${(inv.lineDiscount||totalDisc) > 0 ? `
+                ${subtotal !== totalFinal ? `
                 <div style="display:flex;justify-content:space-between;padding:5px 0;
-                            border-bottom:1px solid #f1f5f9;font-size:13px;color:#16a34a;">
-                  <span>Desc. por producto</span><span>− ${formatCurrency(_toUSD(inv.lineDiscount||totalDisc, _srcCurr), 'USD')}</span>
+                            border-bottom:1px solid #f1f5f9;font-size:13px;color:#64748b;">
+                  <span>Subtotal</span><span>${formatCurrency(subtotal, inv.currency)}</span>
                 </div>` : ''}
-                ${(inv.generalDiscount||0) > 0 ? `
+                ${totalDisc > 0 ? `
                 <div style="display:flex;justify-content:space-between;padding:5px 0;
                             border-bottom:1px solid #f1f5f9;font-size:13px;color:#16a34a;">
-                  <span>Desc. general${inv.discountType==='pct'&&inv.discountPct?` (${inv.discountPct}%)`:''}</span>
-                  <span>− ${formatCurrency(_toUSD(inv.generalDiscount, _srcCurr), 'USD')}</span>
+                  <span>Descuentos</span><span>− ${formatCurrency(totalDisc, inv.currency)}</span>
                 </div>` : ''}
                 ${totalTax > 0 ? `
                 <div style="display:flex;justify-content:space-between;padding:5px 0;
                             border-bottom:1px solid #f1f5f9;font-size:13px;color:#d97706;">
-                  <span>IVA</span><span>${formatCurrency(totalTax, 'USD')}</span>
+                  <span>IVA</span><span>${formatCurrency(totalTax, inv.currency)}</span>
                 </div>` : ''}
               </div>
               <!-- Total grande -->
               <div style="background:linear-gradient(135deg,#4f46e5,#6366f1);padding:14px 18px;
                           display:flex;justify-content:space-between;align-items:center;">
                 <span style="font-weight:800;font-size:15px;color:#fff;letter-spacing:.5px;">TOTAL</span>
-                <span style="font-weight:900;font-size:22px;color:#fff;">${formatCurrency(totalFinal, 'USD')}</span>
+                <span style="font-weight:900;font-size:22px;color:#fff;">${formatCurrency(totalFinal, inv.currency)}</span>
               </div>
               <div style="padding:10px 18px 14px;">
                 <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;color:#64748b;">
                   <span>Pagado</span>
-                  <span style="color:#16a34a;font-weight:600;">${formatCurrency(paid, 'USD')}</span>
+                  <span style="color:#16a34a;font-weight:600;">${formatCurrency(paid, inv.currency)}</span>
                 </div>
                 ${saldo > 0.005 ? `
                 <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;
                             font-weight:700;color:#dc2626;border-top:1px dashed #fee2e2;margin-top:4px;">
-                  <span>Saldo pendiente</span><span>${formatCurrency(saldo, 'USD')}</span>
+                  <span>Saldo pendiente</span><span>${formatCurrency(saldo, inv.currency)}</span>
                 </div>` : `
                 <div style="display:flex;align-items:center;gap:6px;padding:6px 0;font-size:12px;
                             font-weight:700;color:#16a34a;border-top:1px dashed #dcfce7;margin-top:4px;">
@@ -11777,43 +11374,6 @@
         if (!Array.isArray(data.accountMovements)) data.accountMovements = [];
     }
 
-    // Sincronizar ventas POS que no tienen factura en data.invoices
-    // (ventas creadas con versiones anteriores del código)
-    function syncPOSInvoices() {
-        if (!Array.isArray(data.sales) || !Array.isArray(data.invoices)) return;
-        const existingInvNumbers = new Set(data.invoices.map(i => i.number));
-        let added = 0;
-        data.sales.forEach(sale => {
-            if (sale.status === 'Anulada') return;
-            if (!sale.invoice) return;
-            if (existingInvNumbers.has(sale.invoice)) return; // ya existe
-            // Crear la factura faltante basada en la venta
-            const newInv = {
-                id:          generateId(),
-                number:      sale.invoice,
-                customerId:  sale.customerId || null,
-                date:        sale.date ? sale.date.slice(0,10) : new Date().toISOString().slice(0,10),
-                dueDate:     sale.date ? new Date(new Date(sale.date).getTime() + 30*86400000).toISOString().slice(0,10) : '',
-                items:       sale.items || [],
-                subtotal:    sale.subtotal || sale.total || 0,
-                discount:    sale.discount || 0,
-                tax:         sale.tax || 0,
-                total:       sale.total || 0,
-                paid:        sale.paid || 0,
-                notes:       'Venta POS',
-                source:      'pos',
-                status:      sale.status === 'Pagada' ? 'Pagada' : (sale.paid >= sale.total ? 'Pagada' : 'Pendiente'),
-                currency:    sale.currency || 'USD',
-                createdAt:   sale.date || new Date().toISOString(),
-                updatedAt:   new Date().toISOString(),
-            };
-            data.invoices.push(newInv);
-            existingInvNumbers.add(sale.invoice);
-            added++;
-        });
-        if (added > 0) console.log(`[syncPOSInvoices] Sincronizadas ${added} facturas POS faltantes`);
-    }
-
     // Agrupa movimientos por entityId y calcula totales consolidados
     function groupMovements(type) {
         ensureAM();
@@ -11874,11 +11434,9 @@
     // Vista consolidada: un card por proveedor con saldo total
     function _renderPayablesConsolidated(container, q, defCurr) {
         const groups = groupMovements('payable');
-        // Excluir compras que ya tienen accountMovement equivalente
-        const _migratedPurIds = new Set((data.accountMovements||[]).filter(m => m.invoiceId || m.legacyId).map(m => m.invoiceId || m.legacyId));
         // También incluir proveedores con registros legacy en purchases
         const legacyBySupp = {};
-        (data.purchases || []).filter(p => p.status !== 'Anulada' && (p.total - (p.paid||0)) > 0 && !_migratedPurIds.has(p.id))
+        (data.purchases || []).filter(p => p.status !== 'Anulada' && (p.total - (p.paid||0)) > 0)
             .forEach(p => {
                 if (!legacyBySupp[p.supplierId]) legacyBySupp[p.supplierId] = [];
                 legacyBySupp[p.supplierId].push(p);
@@ -11941,13 +11499,7 @@
     function _renderPayablesMovements(container, q, today, soonStr, defCurr) {
         ensureAM();
         const movs = data.accountMovements.filter(m => m.type === 'payable' && (Number(m.amount)-Number(m.paid||0)) > 0);
-        // Excluir compras que ya tienen accountMovement (para evitar duplicación)
-        const migratedIds = new Set((data.accountMovements||[]).filter(m => m.invoiceId || m.legacyId).map(m => m.invoiceId || m.legacyId));
-        const legacy = (data.purchases||[]).filter(p => 
-            p.status !== 'Anulada' && 
-            (p.total-(p.paid||0))>0 &&
-            !migratedIds.has(p.id)  // Excluir si ya fue migrado
-        );
+        const legacy = (data.purchases||[]).filter(p => p.status !== 'Anulada' && (p.total-(p.paid||0))>0);
         const filtered = movs.filter(m => !q
             || getSupplierName(m.entityId).toLowerCase().includes(q)
             || (m.number||'').toLowerCase().includes(q)
@@ -12020,9 +11572,7 @@
         ensureAM();
 
         const allMovsRec = data.accountMovements.filter(m => m.type === 'receivable');
-        // Excluir facturas que ya tienen un accountMovement equivalente (por invoiceId o legacyId)
-        const _migratedInvIds = new Set(data.accountMovements.filter(m => m.invoiceId || m.legacyId).map(m => m.invoiceId || m.legacyId));
-        const legacyRec  = (data.invoices || []).filter(i => i.status !== 'Anulada' && (i.total - (i.paid||0)) > 0 && !_migratedInvIds.has(i.id));
+        const legacyRec  = (data.invoices || []).filter(i => i.status !== 'Anulada' && (i.total - (i.paid||0)) > 0);
 
         const totalRecDisp = allMovsRec.reduce((s,m)=> s + dc((Number(m.amount)||0)-(Number(m.paid)||0), m.currency||defCurr), 0)
                            + legacyRec.reduce((s,i)=> s + dc((i.total||0)-(i.paid||0), i.currency||defCurr), 0);
@@ -12051,10 +11601,8 @@
     // Vista consolidada: un card por cliente con saldo total
     function _renderReceivablesConsolidated(container, q, defCurr) {
         const groups = groupMovements('receivable');
-        // Excluir facturas que ya tienen accountMovement equivalente
-        const _migratedInvIds = new Set((data.accountMovements||[]).filter(m => m.invoiceId || m.legacyId).map(m => m.invoiceId || m.legacyId));
         const legacyByCust = {};
-        (data.invoices || []).filter(i => i.status !== 'Anulada' && (i.total - (i.paid||0)) > 0 && !_migratedInvIds.has(i.id))
+        (data.invoices || []).filter(i => i.status !== 'Anulada' && (i.total - (i.paid||0)) > 0)
             .forEach(i => {
                 if (!legacyByCust[i.customerId]) legacyByCust[i.customerId] = [];
                 legacyByCust[i.customerId].push(i);
@@ -12117,13 +11665,7 @@
     function _renderReceivablesMovements(container, q, today, soonStr, defCurr) {
         ensureAM();
         const movs = data.accountMovements.filter(m => m.type === 'receivable' && (Number(m.amount)-Number(m.paid||0)) > 0);
-        // Excluir facturas que ya tienen accountMovement (para evitar duplicación)
-        const migratedIds = new Set((data.accountMovements||[]).filter(m => m.invoiceId || m.legacyId).map(m => m.invoiceId || m.legacyId));
-        const legacy = (data.invoices||[]).filter(i => 
-            i.status !== 'Anulada' && 
-            (i.total-(i.paid||0))>0 &&
-            !migratedIds.has(i.id)  // Excluir si ya fue migrado
-        );
+        const legacy = (data.invoices||[]).filter(i => i.status !== 'Anulada' && (i.total-(i.paid||0))>0);
         const filtered = movs.filter(m => !q
             || getCustomerName(m.entityId).toLowerCase().includes(q)
             || (m.number||'').toLowerCase().includes(q)
@@ -12203,11 +11745,10 @@
 
         // Movimientos nuevos
         const movs = data.accountMovements.filter(m => m.type === type && m.entityId === entityId);
-        // Movimientos legacy (invoices/purchases) — excluir los que ya tienen accountMovement
-        const _migratedIds = new Set(movs.filter(m => m.invoiceId || m.legacyId).map(m => m.invoiceId || m.legacyId));
+        // Movimientos legacy (invoices/purchases)
         const legacyItems = isRec
-            ? (data.invoices||[]).filter(i => i.customerId === entityId && i.status !== 'Anulada' && !_migratedIds.has(i.id))
-            : (data.purchases||[]).filter(p => p.supplierId === entityId && p.status !== 'Anulada' && !_migratedIds.has(p.id));
+            ? (data.invoices||[]).filter(i => i.customerId === entityId && i.status !== 'Anulada')
+            : (data.purchases||[]).filter(p => p.supplierId === entityId && p.status !== 'Anulada');
 
         // Calcular totales consolidados
         const totalDebt   = movs.reduce((s,m)=>s+(Number(m.amount)||0),0) + legacyItems.reduce((s,i)=>s+dc(i.total||0, i.currency||defCurr),0);
@@ -12257,7 +11798,6 @@
                 <td style="white-space:nowrap;">
                     ${saldo>0?`<button class="btn btn-sm btn-success" onclick="openPaymentModal('${type}','${item.id}')">💰</button>`:''}
                     ${item.paid>0?`<button class="btn btn-sm" onclick="viewPayments('${type}','${item.id}')">📋</button>`:''}
-                    <button class="btn btn-sm" onclick="openModal('${isRec?'invoice':'purchase'}','${item.id}')" title="Editar">✏️</button>
                     <button class="btn btn-sm" style="color:var(--danger);" onclick="deleteLegacyRecord('${isRec?'invoice':'purchase'}','${item.id}','${item.number||item.id}')" title="Eliminar">🗑️</button>
                 </td></tr>`);
         });
@@ -12932,14 +12472,6 @@
     }
 
     function openPaymentModal(target, invoiceId) {
-        // Si es un movement (no invoice/purchase legacy), usar openMovementPayment
-        if (target === 'receivable' || target === 'payable') {
-            const mov = data.accountMovements?.find(m => m.id === invoiceId && m.type === target);
-            if (mov) {
-                openMovementPayment(invoiceId);
-                return;
-            }
-        }
         modalContext.extra = { target, invoiceId };
         openModal('payment');
     }
@@ -13424,8 +12956,8 @@
 
         if (type === 'sales') {
             filename = 'reporte_ventas.csv';
-            const rows = salesFiltered.map(s=>`${s.invoice||''},${getCustomerName(s.customerId)},${s.subtotal||s.total||0},${s.discount||0},${s.total||0},${s.currency||defCurr},${s.method||''},${new Date(s.createdAt||s.date||Date.now()).toLocaleDateString()}`).join('\n');
-            csvContent = 'Factura,Cliente,Subtotal,Descuento,Total,Moneda,Método,Fecha\n' + rows;
+            const rows = salesFiltered.map(s=>`${s.invoice||''},${getCustomerName(s.customerId)},${s.total||0},${s.currency||defCurr},${s.method||''},${new Date(s.createdAt||s.date||Date.now()).toLocaleDateString()}`).join('\n');
+            csvContent = 'Factura,Cliente,Total,Moneda,Método,Fecha\n' + rows;
             html = `<div class="card">
                 <div class="card-header"><h3>📊 Reporte de Ventas ${dateFrom||dateTo?'<span style="font-size:12px;font-weight:400;color:var(--text-3);">('+[dateFrom,dateTo].filter(Boolean).join(' → ')+')</span>':''}</h3>
                 <button class="btn btn-sm" onclick="downloadCSV('${filename}', window._lastCSV)">⬇ Descargar CSV</button></div>
@@ -15608,7 +15140,6 @@
         renderCustomers();
         renderSuppliers();
         renderSales();
-        syncPOSInvoices();   // ← sincronizar ventas POS sin factura
         renderInvoices();
         renderQuotes();          // ← cotizaciones
         renderPurchases();
@@ -15688,17 +15219,15 @@
        ═══════════════════════════════════════════════════════════════ */
     // Los datos ya están en `data` cargados síncronamente desde window.__INITIAL_DATA__
     // Inicializar moneda de visualización antes de renderizar
-    // USD es la moneda principal del sistema — el default es siempre USD
     (function initDisplayCurrency() {
         try {
             const saved = localStorage.getItem(_DC_LS_KEY);
             if (saved && ['VES','USD','EUR'].includes(saved)) {
                 window._displayCurrency = saved;
             } else {
-                // USD como moneda principal del sistema — no cambiar a VES
-                window._displayCurrency = data?.settings?.defaultCurrency || 'USD';
+                window._displayCurrency = data?.settings?.defaultCurrency || 'VES';
             }
-        } catch { window._displayCurrency = 'USD'; }
+        } catch { window._displayCurrency = 'VES'; }
     })();
     // Migrar registros legacy de CxC/CxP al nuevo sistema consolidado (solo una vez)
     try { migrateToAccountMovements(); } catch(e) { console.warn('[Migration] CxC/CxP:', e); }
@@ -17191,7 +16720,7 @@
                     const name    = cells[0]?.textContent?.trim() || '—';
                     const email   = cells[1]?.textContent?.trim() || '—';
                     const phone   = cells[2]?.textContent?.trim() || '—';
-                    const buys    = cells[3]?.textContent?.trim() || '—';
+                    const balance = cells[3]?.textContent?.trim() || '—';
                     const actionsHtml = cells[4]?.innerHTML || '';
                     return `
                         <div class="item-card">
@@ -17201,7 +16730,7 @@
                             </div>
                             <div class="item-card-meta">
                                 <span class="item-card-chip">✉️ ${email}</span>
-                                <span class="item-card-chip">${buys}</span>
+                                <span class="item-card-chip">Saldo: ${balance}</span>
                             </div>
                             <div class="item-card-actions">${actionsHtml}</div>
                         </div>`;
