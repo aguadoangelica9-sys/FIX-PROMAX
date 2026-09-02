@@ -116,6 +116,59 @@ app.get('/_version', (req, res) => {
     res.json({ ok: true, commit: '8e21f46', ts: Date.now() });
 });
 
+// ── FIX TEMPORAL URGENTE: restaurar factura INV-461946 Arthur Moura ──────────
+// Registrado ANTES de todos los middlewares para evitar bloqueos de auth/maintenance
+app.post('/_fix/restore-arthur-invoice', async (req, res) => {
+    const SECRET = 'FIXPROMAX_ARTHUR_2026';
+    if ((req.query.key || req.body?.key) !== SECRET) return res.status(403).json({ error: 'forbidden' });
+    try {
+        const COMPANY_ID  = '8defc0952f47c9c6855a479';
+        const INV_NUMBER  = 'INV-461946';
+        const CUSTOMER_ID = 'mtfywtff2t6s';
+        const db = await readCompanyDB(COMPANY_ID);
+        let action = '';
+        const invIdx = (db.invoices || []).findIndex(i => i.number === INV_NUMBER);
+        if (invIdx === -1) {
+            const sale = (db.sales || []).find(s => s.invoice === INV_NUMBER);
+            if (!sale) return res.status(404).json({ error: 'Venta no encontrada en MongoDB' });
+            if (!Array.isArray(db.invoices)) db.invoices = [];
+            db.invoices.push({
+                id: 'mtjegz7mjx13', number: INV_NUMBER, customerId: CUSTOMER_ID,
+                date: '2026-09-02', dueDate: '2026-10-02',
+                items: sale.items || [], subtotal: sale.subtotal || 0,
+                lineDiscount: 0, generalDiscount: 0, discount: 0, discountPct: 0, discountType: 'pct',
+                tax: sale.tax || 0, total: sale.total || 2422, paid: sale.paid || 0,
+                notes: 'Venta POS', source: 'pos', status: 'Pendiente', currency: 'USD',
+                createdAt: '2026-09-02T01:11:01.954Z', updatedAt: new Date().toISOString(),
+            });
+            action = 'invoice_created';
+        } else {
+            const oldStatus = db.invoices[invIdx].status;
+            db.invoices[invIdx].status    = 'Pendiente';
+            db.invoices[invIdx].updatedAt = new Date().toISOString();
+            action = `status: ${oldStatus} → Pendiente`;
+        }
+        if (!Array.isArray(db.accountMovements)) db.accountMovements = [];
+        const movExists = db.accountMovements.some(m => m.type === 'receivable' && (m.invoiceId === 'mtjegz7mjx13' || m.reference === INV_NUMBER));
+        if (!movExists) {
+            db.accountMovements.push({
+                id: 'mtjegz7mjx13_mov', type: 'receivable', entityId: CUSTOMER_ID,
+                legacyId: 'mtjegz7mjx13', invoiceId: 'mtjegz7mjx13', number: INV_NUMBER,
+                date: '2026-09-02', dueDate: '2026-10-02', concept: 'Venta POS - Crédito',
+                description: '', reference: INV_NUMBER, amount: 2422, currency: 'USD',
+                paid: 0, status: 'Pendiente', notes: 'Venta POS a crédito — ARTHUR MOURA',
+                source: 'pos', createdAt: '2026-09-02T01:11:01.954Z',
+                updatedAt: new Date().toISOString(), payments: [],
+            });
+            action += ' | accountMovement_created';
+        }
+        await writeCompanyDB(COMPANY_ID, db);
+        const invCheck = (db.invoices || []).find(i => i.number === INV_NUMBER);
+        res.json({ ok: true, action, invoice: { number: invCheck?.number, status: invCheck?.status, total: invCheck?.total } });
+    } catch(e) { res.status(500).json({ error: e.message }); }
+});
+// ── FIN FIX TEMPORAL ─────────────────────────────────────────────────────────
+
 // ══ ENDPOINT DE EMERGENCIA: desactivar maintenanceMode ══════════════════════
 // Registrado ANTES de todos los middlewares /api para que nunca sea bloqueado.
 // GET /_admin_fix/disable-maintenance?key=FIXPROMAX_MIGRATE_2026
