@@ -113,7 +113,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // ══ ENDPOINT DE VERSION — para verificar qué commit corre en producción ═════
 app.get('/_version', (req, res) => {
-    res.json({ ok: true, commit: '5a73b8e', ts: Date.now() });
+    res.json({ ok: true, commit: '827dc40', ts: Date.now() });
 });
 
 // ── FIX TEMPORAL URGENTE: restaurar factura INV-461946 Arthur Moura ──────────
