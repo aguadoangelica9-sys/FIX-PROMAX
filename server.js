@@ -133,18 +133,24 @@ app.get('/_fix/restore-arthur-invoice', async (req, res) => {
         const invIdx = (db.invoices || []).findIndex(i => i.number === INV_NUMBER);
         if (invIdx === -1) {
             const sale = (db.sales || []).find(s => s.invoice === INV_NUMBER);
-            if (!sale) return res.status(404).json({ error: 'Venta no encontrada en MongoDB' });
             if (!Array.isArray(db.invoices)) db.invoices = [];
+            // Crear la factura con datos conocidos del backup (aunque no haya venta)
+            const saleItems = sale?.items || [
+                { productId: 'mt7oe156249y', productName: 'GUAYA TPS ALLISON',       qty: 4, price: 450, priceUSD: 450, discount: 0, discountAmt: 0, tax: 0, total: 1800 },
+                { productId: 'mt7oe155oyze', productName: 'LETRAS ISUZU',             qty: 6, price: 22,  priceUSD: 22,  discount: 0, discountAmt: 0, tax: 0, total: 132  },
+                { productId: 'mt7oe151e6iq', productName: 'VALVULA MAGNETICA FRENO',  qty: 1, price: 160, priceUSD: 160, discount: 0, discountAmt: 0, tax: 0, total: 160  },
+                { productId: 'mt7oe151yoe7', productName: 'TERMINAL BARRA LARGA',     qty: 3, price: 110, priceUSD: 110, discount: 0, discountAmt: 0, tax: 0, total: 330  },
+            ];
             db.invoices.push({
                 id: 'mtjegz7mjx13', number: INV_NUMBER, customerId: CUSTOMER_ID,
                 date: '2026-09-02', dueDate: '2026-10-02',
-                items: sale.items || [], subtotal: sale.subtotal || 0,
+                items: saleItems, subtotal: sale?.subtotal || 2422,
                 lineDiscount: 0, generalDiscount: 0, discount: 0, discountPct: 0, discountType: 'pct',
-                tax: sale.tax || 0, total: sale.total || 2422, paid: sale.paid || 0,
+                tax: 0, total: sale?.total || 2422, paid: sale?.paid || 0,
                 notes: 'Venta POS', source: 'pos', status: 'Pendiente', currency: 'USD',
                 createdAt: '2026-09-02T01:11:01.954Z', updatedAt: new Date().toISOString(),
             });
-            action = 'invoice_created';
+            action = sale ? 'invoice_created_from_sale' : 'invoice_created_from_backup';
         } else {
             const oldStatus = db.invoices[invIdx].status;
             db.invoices[invIdx].status    = 'Pendiente';
