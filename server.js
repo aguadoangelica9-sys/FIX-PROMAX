@@ -113,70 +113,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // ══ ENDPOINT DE VERSION — para verificar qué commit corre en producción ═════
 app.get('/_version', (req, res) => {
-    res.json({ ok: true, commit: '827dc40', ts: Date.now() });
+    res.json({ ok: true, commit: '4ca1888', ts: Date.now() });
 });
-
-// ── FIX TEMPORAL URGENTE: restaurar factura INV-461946 Arthur Moura ──────────
-app.get('/_fix/ping', (req, res) => {
-    res.json({ ok: true, msg: 'fix endpoint activo', key_env: !!process.env.ADMIN_FIX_KEY });
-});
-app.get('/_fix/restore-arthur-invoice', async (req, res) => {
-    const SECRET = process.env.ADMIN_FIX_KEY || 'FIXPROMAX_ARTHUR_2026';
-    if ((req.query.key || '') !== SECRET) return res.status(403).json({ error: 'forbidden' });
-    try {
-        const DB_MOD      = require('./db-mongo');
-        const COMPANY_ID  = '8defc0952f47c9c6855a479';
-        const INV_NUMBER  = 'INV-461946';
-        const CUSTOMER_ID = 'mtfywtff2t6s';
-        const db = await DB_MOD.readCompanyDB(COMPANY_ID);
-        let action = '';
-        const invIdx = (db.invoices || []).findIndex(i => i.number === INV_NUMBER);
-        if (invIdx === -1) {
-            const sale = (db.sales || []).find(s => s.invoice === INV_NUMBER);
-            if (!Array.isArray(db.invoices)) db.invoices = [];
-            // Crear la factura con datos conocidos del backup (aunque no haya venta)
-            const saleItems = sale?.items || [
-                { productId: 'mt7oe156249y', productName: 'GUAYA TPS ALLISON',       qty: 4, price: 450, priceUSD: 450, discount: 0, discountAmt: 0, tax: 0, total: 1800 },
-                { productId: 'mt7oe155oyze', productName: 'LETRAS ISUZU',             qty: 6, price: 22,  priceUSD: 22,  discount: 0, discountAmt: 0, tax: 0, total: 132  },
-                { productId: 'mt7oe151e6iq', productName: 'VALVULA MAGNETICA FRENO',  qty: 1, price: 160, priceUSD: 160, discount: 0, discountAmt: 0, tax: 0, total: 160  },
-                { productId: 'mt7oe151yoe7', productName: 'TERMINAL BARRA LARGA',     qty: 3, price: 110, priceUSD: 110, discount: 0, discountAmt: 0, tax: 0, total: 330  },
-            ];
-            db.invoices.push({
-                id: 'mtjegz7mjx13', number: INV_NUMBER, customerId: CUSTOMER_ID,
-                date: '2026-09-02', dueDate: '2026-10-02',
-                items: saleItems, subtotal: sale?.subtotal || 2422,
-                lineDiscount: 0, generalDiscount: 0, discount: 0, discountPct: 0, discountType: 'pct',
-                tax: 0, total: sale?.total || 2422, paid: sale?.paid || 0,
-                notes: 'Venta POS', source: 'pos', status: 'Pendiente', currency: 'USD',
-                createdAt: '2026-09-02T01:11:01.954Z', updatedAt: new Date().toISOString(),
-            });
-            action = sale ? 'invoice_created_from_sale' : 'invoice_created_from_backup';
-        } else {
-            const oldStatus = db.invoices[invIdx].status;
-            db.invoices[invIdx].status    = 'Pendiente';
-            db.invoices[invIdx].updatedAt = new Date().toISOString();
-            action = `status: ${oldStatus} -> Pendiente`;
-        }
-        if (!Array.isArray(db.accountMovements)) db.accountMovements = [];
-        const movExists = db.accountMovements.some(m => m.type === 'receivable' && (m.invoiceId === 'mtjegz7mjx13' || m.reference === INV_NUMBER));
-        if (!movExists) {
-            db.accountMovements.push({
-                id: 'mtjegz7mjx13_mov', type: 'receivable', entityId: CUSTOMER_ID,
-                legacyId: 'mtjegz7mjx13', invoiceId: 'mtjegz7mjx13', number: INV_NUMBER,
-                date: '2026-09-02', dueDate: '2026-10-02', concept: 'Venta POS - Credito',
-                description: '', reference: INV_NUMBER, amount: 2422, currency: 'USD',
-                paid: 0, status: 'Pendiente', notes: 'Venta POS a credito - ARTHUR MOURA',
-                source: 'pos', createdAt: '2026-09-02T01:11:01.954Z',
-                updatedAt: new Date().toISOString(), payments: [],
-            });
-            action += ' | accountMovement_created';
-        }
-        await DB_MOD.writeCompanyDB(COMPANY_ID, db);
-        const invCheck = (db.invoices || []).find(i => i.number === INV_NUMBER);
-        res.json({ ok: true, action, invoice: { number: invCheck?.number, status: invCheck?.status, total: invCheck?.total } });
-    } catch(e) { res.status(500).json({ error: e.message, stack: e.stack?.split('\n')[0] }); }
-});
-// ── FIN FIX TEMPORAL ─────────────────────────────────────────────────────────
 
 // ══ ENDPOINT DE EMERGENCIA: desactivar maintenanceMode ══════════════════════
 // Registrado ANTES de todos los middlewares /api para que nunca sea bloqueado.
