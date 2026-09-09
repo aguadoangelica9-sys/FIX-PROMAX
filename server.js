@@ -119,7 +119,7 @@ app.get('/_version', (req, res) => {
 // ── FIX TEMPORAL URGENTE: restaurar factura INV-461946 Arthur Moura ──────────
 // Registrado ANTES de todos los middlewares para evitar bloqueos de auth/maintenance
 app.post('/_fix/restore-arthur-invoice', async (req, res) => {
-    const SECRET = 'FIXPROMAX_ARTHUR_2026';
+    const SECRET = process.env.ADMIN_FIX_KEY || 'FIXPROMAX_ARTHUR_2026';
     if ((req.query.key || req.body?.key) !== SECRET) return res.status(403).json({ error: 'forbidden' });
     try {
         const COMPANY_ID  = '8defc0952f47c9c6855a479';
@@ -173,7 +173,7 @@ app.post('/_fix/restore-arthur-invoice', async (req, res) => {
 // Registrado ANTES de todos los middlewares /api para que nunca sea bloqueado.
 // GET /_admin_fix/disable-maintenance?key=FIXPROMAX_MIGRATE_2026
 app.get('/_admin_fix/disable-maintenance', async (req, res) => {
-    if ((req.query.key || '') !== 'FIXPROMAX_MIGRATE_2026') {
+    if ((req.query.key || '') !== (process.env.ADMIN_MIGRATE_KEY || 'FIXPROMAX_MIGRATE_2026')) {
         return res.status(403).json({ ok: false, error: 'Clave incorrecta' });
     }
     try {
@@ -654,7 +654,7 @@ app.get('/api/ping', async (req, res) => {
 // GET /api/disable-maintenance?key=FIXPROMAX_MIGRATE_2026
 app.get('/api/disable-maintenance', async (req, res) => {
     const key = req.query.key;
-    if (key !== 'FIXPROMAX_MIGRATE_2026') {
+    if (key !== (process.env.ADMIN_MIGRATE_KEY || 'FIXPROMAX_MIGRATE_2026')) {
         return res.status(403).json({ ok: false, error: 'Clave incorrecta' });
     }
     try {
@@ -2121,7 +2121,7 @@ function makeToken() {
 
 // Hash simple de contraseÁ±a (SHA-256 "” sin librerías extra)
 function hashPassword(plain) {
-    return require('crypto').createHash('sha256').update(plain + 'fixpromax_salt_2026').digest('hex');
+    return require('crypto').createHash('sha256').update(plain + (process.env.PASSWORD_SALT || 'fixpromax_salt_2026')).digest('hex');
 }
 
 // Middleware de autenticación "” extrae token del header Authorization
@@ -4672,7 +4672,7 @@ app.get('/admin.html', async (req, res) => {
 const DEMO_COMPANY_ID  = 'demo-company-fixed';
 const DEMO_DB_PATH     = path.join(__dirname, 'db_demo.json');
 const DEMO_EMAIL       = 'demo@fixpromax.app';
-const DEMO_PASSWORD    = 'Demo1234';
+const DEMO_PASSWORD    = process.env.DEMO_PASSWORD || 'Demo1234';
 const DEMO_RESET_HOURS = 24;
 
 /** Datos de ejemplo pre-cargados para el modo demo */
@@ -5318,7 +5318,7 @@ app.get('/api/utf8-test', (req, res) => {
 // ══════════════════════════════════════════════════════════════════════════════
 app.post('/api/fix-encoding', async (req, res) => {
     const key = req.query.key || req.body?.key;
-    if (key !== 'FIXPROMAX_MIGRATE_2026') {
+    if (key !== (process.env.ADMIN_MIGRATE_KEY || 'FIXPROMAX_MIGRATE_2026')) {
         return res.status(403).json({ ok: false, error: 'Clave incorrecta' });
     }
     res.json({ ok: true, message: 'Limpieza de encoding iniciada. Revisa los logs.' });
@@ -5467,7 +5467,7 @@ app.post('/api/fix-encoding', async (req, res) => {
 // ══════════════════════════════════════════════════════════════════════════════
 app.post('/api/run-migration', async (req, res) => {
     const key = req.query.key || req.body?.key;
-    if (key !== 'FIXPROMAX_MIGRATE_2026') {
+    if (key !== (process.env.ADMIN_MIGRATE_KEY || 'FIXPROMAX_MIGRATE_2026')) {
         return res.status(403).json({ ok: false, error: 'Clave incorrecta' });
     }
     res.json({ ok: true, message: 'Migración iniciada. Revisa los logs de Render para ver el progreso.' });
@@ -5788,7 +5788,7 @@ app.get('/api/admin/company/:companyId/db', requireAdmin, async (req, res) => {
 // Endpoint de emergencia: reparar facturas sin cliente vinculando desde la venta
 // POST /api/admin/company/:companyId/fix-invoice-customers?key=FIXPROMAX_MIGRATE_2026
 app.post('/api/admin/company/:companyId/fix-invoice-customers', async (req, res) => {
-    if ((req.query.key || '') !== 'FIXPROMAX_MIGRATE_2026') {
+    if ((req.query.key || '') !== (process.env.ADMIN_MIGRATE_KEY || 'FIXPROMAX_MIGRATE_2026')) {
         return res.status(403).json({ ok: false, error: 'Clave incorrecta' });
     }
     try {
@@ -5826,7 +5826,7 @@ app.post('/api/admin/company/:companyId/fix-invoice-customers', async (req, res)
 // Endpoint de emergencia: forzar backup manual de una empresa con clave secreta
 // POST /api/admin/company/:companyId/force-backup?key=FIXPROMAX_MIGRATE_2026
 app.post('/api/admin/company/:companyId/force-backup', async (req, res) => {
-    if ((req.query.key || '') !== 'FIXPROMAX_MIGRATE_2026') {
+    if ((req.query.key || '') !== (process.env.ADMIN_MIGRATE_KEY || 'FIXPROMAX_MIGRATE_2026')) {
         return res.status(403).json({ ok: false, error: 'Clave incorrecta' });
     }
     try {
@@ -5851,7 +5851,7 @@ app.post('/api/admin/company/:companyId/force-backup', async (req, res) => {
 // Endpoint de emergencia: leer BD de empresa con clave secreta (para descarga/respaldo externo)
 // GET /api/admin/company/:companyId/export?key=FIXPROMAX_MIGRATE_2026
 app.get('/api/admin/company/:companyId/export', async (req, res) => {
-    if ((req.query.key || '') !== 'FIXPROMAX_MIGRATE_2026') {
+    if ((req.query.key || '') !== (process.env.ADMIN_MIGRATE_KEY || 'FIXPROMAX_MIGRATE_2026')) {
         return res.status(403).json({ ok: false, error: 'Clave incorrecta' });
     }
     try {
@@ -6092,68 +6092,3 @@ startServer(PORT);
 // deploy: 2026-08-28 11:02
 
 // redeploy: 2026-08-31 19:06
-
-// ── FIX TEMPORAL: restaurar factura INV-461946 Arthur Moura ──────────────────
-// ELIMINAR después de ejecutar
-app.post('/_fix/restore-arthur-invoice', async (req, res) => {
-    const SECRET = 'FIXPROMAX_ARTHUR_2026';
-    if ((req.query.key || req.body?.key) !== SECRET) return res.status(403).json({ error: 'forbidden' });
-    try {
-        const COMPANY_ID  = '8defc0952f47c9c6855a479';
-        const INV_NUMBER  = 'INV-461946';
-        const CUSTOMER_ID = 'mtfywtff2t6s';
-        const db = await readCompanyDB(COMPANY_ID);
-
-        let action = '';
-
-        // Buscar la factura
-        const invIdx = (db.invoices || []).findIndex(i => i.number === INV_NUMBER);
-        if (invIdx === -1) {
-            // No existe — crearla
-            const sale = (db.sales || []).find(s => s.invoice === INV_NUMBER);
-            if (!sale) return res.status(404).json({ error: 'Venta no encontrada' });
-            if (!Array.isArray(db.invoices)) db.invoices = [];
-            db.invoices.push({
-                id: 'mtjegz7mjx13', number: INV_NUMBER, customerId: CUSTOMER_ID,
-                date: '2026-09-02', dueDate: '2026-10-02',
-                items: sale.items || [], subtotal: sale.subtotal || 0,
-                lineDiscount: 0, generalDiscount: 0, discount: 0, discountPct: 0, discountType: 'pct',
-                tax: sale.tax || 0, total: sale.total || 2422, paid: sale.paid || 0,
-                notes: 'Venta POS', source: 'pos', status: 'Pendiente', currency: 'USD',
-                createdAt: '2026-09-02T01:11:01.954Z', updatedAt: new Date().toISOString(),
-            });
-            action = 'created';
-        } else {
-            // Existe — restaurar status
-            const oldStatus = db.invoices[invIdx].status;
-            db.invoices[invIdx].status    = 'Pendiente';
-            db.invoices[invIdx].updatedAt = new Date().toISOString();
-            action = `status changed: ${oldStatus} → Pendiente`;
-        }
-
-        // Asegurar accountMovement
-        if (!Array.isArray(db.accountMovements)) db.accountMovements = [];
-        const movExists = db.accountMovements.some(
-            m => m.type === 'receivable' && (m.invoiceId === 'mtjegz7mjx13' || m.reference === INV_NUMBER)
-        );
-        if (!movExists) {
-            db.accountMovements.push({
-                id: 'mtjegz7mjx13_mov', type: 'receivable', entityId: CUSTOMER_ID,
-                legacyId: 'mtjegz7mjx13', invoiceId: 'mtjegz7mjx13', number: INV_NUMBER,
-                date: '2026-09-02', dueDate: '2026-10-02', concept: 'Venta POS - Crédito',
-                description: '', reference: INV_NUMBER, amount: 2422, currency: 'USD',
-                paid: 0, status: 'Pendiente', notes: 'Venta POS a crédito — ARTHUR MOURA',
-                source: 'pos', createdAt: '2026-09-02T01:11:01.954Z',
-                updatedAt: new Date().toISOString(), payments: [],
-            });
-            action += ' | accountMovement created';
-        }
-
-        await writeCompanyDB(COMPANY_ID, db);
-        const invCheck = (db.invoices || []).find(i => i.number === INV_NUMBER);
-        res.json({ ok: true, action, invoice: { number: invCheck?.number, status: invCheck?.status, total: invCheck?.total } });
-    } catch(e) {
-        res.status(500).json({ error: e.message });
-    }
-});
-// ── FIN FIX TEMPORAL ──────────────────────────────────────────────────────────

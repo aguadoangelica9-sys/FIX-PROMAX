@@ -1,9 +1,34 @@
 node_modules/
 
-# Variables de entorno — NUNCA subir a Git
+# ── Variables de entorno — NUNCA subir a Git ──────────────────────────────────
 .env
 
-# Scripts temporales de análisis y migración de código (no necesarios en producción)
+# ── Datos sensibles de la app ─────────────────────────────────────────────────
+# config.json contiene tokens de UltraMsg, datos bancarios y teléfonos
+config.json
+# users.json contiene hashes de contraseñas de usuarios reales
+users.json
+# sessions.json contiene tokens de sesión activos
+sessions.json
+# devices.json contiene tokens de dispositivos
+devices.json
+# payments.json contiene historial de pagos con datos de clientes
+payments.json
+# companies.json contiene datos de empresas registradas
+companies.json
+# tickets.json contiene tickets de soporte con datos de usuarios
+tickets.json
+# admin-log.json contiene logs internos con IPs y datos de acceso
+admin-log.json
+# wa-alerts.json contiene configuración de alertas WhatsApp
+wa-alerts.json
+
+# ── Bases de datos locales (caché) ────────────────────────────────────────────
+db_ms*.json
+db_test*.json
+db.json
+
+# ── Scripts temporales de análisis y migración ────────────────────────────────
 _patch-async.js
 _fix-handlers.js
 _analyze-render.js
@@ -15,16 +40,21 @@ _fix-json-encoding.js
 _fix-residual.js
 _fix-server-emojis.js
 _render-output.html
+_check_cxc.js
+_migrate_cxc.js
+_fix_arthur_invoice.js
+_old_index.html
 
-# Archivos de prueba locales
+# ── Archivos de respaldo ──────────────────────────────────────────────────────
+backup_*.json
+*.bak-head
+
+# ── Archivos de prueba locales ────────────────────────────────────────────────
 test-team*.txt
 test-team*.js
 tsx
 
-# Archivos de respaldo locales
-*.bak-head
-
-# Logs y archivos de sistema
+# ── Logs y archivos de sistema ────────────────────────────────────────────────
 *.log
 .DS_Store
 Thumbs.db
