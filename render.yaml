@@ -13,5 +13,18 @@ services:
         value: production
       - key: PORT
         value: 10000
+      # ── Secretos — se gestionan en el panel de Render, no en este archivo ──
       - key: MONGODB_URI
-        value: mongodb+srv://1ng3l2c1_db_user:fixpromax2026@fixpromax.xlbpzsu.mongodb.net/fixpromax?appName=FIXPROMAX
+        sync: false
+      - key: PASSWORD_SALT
+        sync: false
+      - key: DEMO_PASSWORD
+        sync: false
+      - key: ADMIN_MIGRATE_KEY
+        sync: false
+      - key: ADMIN_FIX_KEY
+        sync: false
+      - key: ULTRAMSG_INSTANCE
+        sync: false
+      - key: ULTRAMSG_TOKEN
+        sync: false
