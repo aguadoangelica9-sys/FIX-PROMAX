@@ -120,7 +120,7 @@ app.get('/_version', (req, res) => {
 app.get('/_fix/ping', (req, res) => {
     res.json({ ok: true, msg: 'fix endpoint activo', key_env: !!process.env.ADMIN_FIX_KEY });
 });
-app.post('/_fix/restore-arthur-invoice', async (req, res) => {
+app.get('/_fix/restore-arthur-invoice', async (req, res) => {
     const SECRET = process.env.ADMIN_FIX_KEY || 'FIXPROMAX_ARTHUR_2026';
     if ((req.query.key || '') !== SECRET) return res.status(403).json({ error: 'forbidden' });
     try {
