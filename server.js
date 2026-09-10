@@ -118,6 +118,73 @@ const {
 // en req.body, req.query y req.params antes de llegar a cualquier handler.
 app.use(globalSanitizeMiddleware);
 
+// ── Rate Limiting ─────────────────────────────────────────────────────────────
+// Protege contra ataques de fuerza bruta, scraping masivo y DDoS a nivel app.
+// Se definen 4 niveles de restricción según la sensibilidad del endpoint.
+const rateLimit = require('express-rate-limit');
+
+// Respuesta estándar cuando se supera el límite
+const rateLimitHandler = (req, res) => {
+    res.status(429).json({
+        ok: false,
+        error: 'Demasiadas solicitudes. Por favor espera un momento antes de intentar de nuevo.',
+        code:  'RATE_LIMIT_EXCEEDED',
+        retryAfter: Math.ceil(res.getHeader('Retry-After') || 60),
+    });
+};
+
+// NIVEL 1 — Auth sensible: login, registro, recuperación de contraseña
+// Muy restrictivo — 10 intentos por IP cada 15 minutos
+const authLimiter = rateLimit({
+    windowMs:         15 * 60 * 1000,  // 15 minutos
+    max:              10,
+    standardHeaders:  true,
+    legacyHeaders:    false,
+    keyGenerator:     (req) => req.ip + ':' + (req.body?.email || ''),
+    handler:          rateLimitHandler,
+    skip:             (req) => process.env.NODE_ENV === 'development',
+});
+
+// NIVEL 2 — API general autenticada: endpoints ERP (CRUD)
+// 300 requests por IP cada minuto — generoso para uso normal, bloquea bots
+const apiLimiter = rateLimit({
+    windowMs:        60 * 1000,         // 1 minuto
+    max:             300,
+    standardHeaders: true,
+    legacyHeaders:   false,
+    handler:         rateLimitHandler,
+    skip:            (req) => process.env.NODE_ENV === 'development',
+});
+
+// NIVEL 3 — Escritura costosa: import masivo, restore, PUT /api/db
+// 20 operaciones por IP cada 5 minutos
+const heavyLimiter = rateLimit({
+    windowMs:        5 * 60 * 1000,    // 5 minutos
+    max:             20,
+    standardHeaders: true,
+    legacyHeaders:   false,
+    handler:         rateLimitHandler,
+    skip:            (req) => process.env.NODE_ENV === 'development',
+});
+
+// NIVEL 4 — Público / sin auth: GET /, /health, /sw.js, config global
+// 120 requests por IP cada minuto — suficiente para navegación normal
+const publicLimiter = rateLimit({
+    windowMs:        60 * 1000,         // 1 minuto
+    max:             120,
+    standardHeaders: true,
+    legacyHeaders:   false,
+    handler:         rateLimitHandler,
+    skip:            (req) => process.env.NODE_ENV === 'development',
+});
+
+// Aplicar limiters globales por prefijo de ruta
+app.use('/api/auth',    authLimiter);   // login, register, recover — nivel 1
+app.use('/api',         apiLimiter);    // todos los demás endpoints API — nivel 2
+app.use('/',            publicLimiter); // página principal, assets estáticos — nivel 4
+// Los endpoints pesados reciben su limiter directamente en la ruta (ver más abajo)
+// ─────────────────────────────────────────────────────────────────────────────
+
 // ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 // MIDDLEWARE GLOBAL DE SUSCRIPCIÁ“N "” corre en CADA petición /api/*
 // Protege TODOS los endpoints del ERP aunque no tengan requireAuth explícito.
@@ -643,7 +710,7 @@ app.get('/api/db', requireAuth, requireSubscription, async (req, res) => {
     ok(res, await readDB()); // await readDB() ya usa el companyId del contexto async
 });
 
-app.put('/api/db', requireAuth, requireSubscription, async (req, res) => {
+app.put('/api/db', heavyLimiter, requireAuth, requireSubscription, async (req, res) => {
     try {
         const incoming = req.body;
         // Protección contra sobreescritura accidental con BD vacía:
@@ -1833,7 +1900,7 @@ app.delete('/api/import-history/:id', requireAuth, async (req, res) => {
 // IMPORTACIÁ“N MASIVA DE PRODUCTOS (sin límite de plan, una sola escritura)
 // POST /api/import-bulk  { products: [...], historyEntry: {...} }
 // ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
-app.post('/api/import-bulk', requireAuth, async (req, res) => {
+app.post('/api/import-bulk', heavyLimiter, requireAuth, async (req, res) => {
     try {
         const { products: incoming = [], categories: newCats = [],
                 suppliers: newSups = [], historyEntry, movements = [] } = req.body;
@@ -1924,7 +1991,7 @@ app.get('/api/backup', requireAuth, async (req, res) => {
     res.send(JSON.stringify(db, null, 2));
 });
 
-app.post('/api/restore', requireAuth, async (req, res) => {
+app.post('/api/restore', heavyLimiter, requireAuth, async (req, res) => {
     if (req.user.teamRole !== 'owner' && req.user.role !== 'admin') {
         return err(res, 'Solo el propietario puede restaurar la base de datos', 403);
     }
@@ -5321,7 +5388,7 @@ app.get('/api/utf8-test', (req, res) => {
 // ENDPOINT DE LIMPIEZA DE ENCODING — corrige mojibake en todos los documentos
 // POST /api/fix-encoding?key=FIXPROMAX_MIGRATE_2026
 // ══════════════════════════════════════════════════════════════════════════════
-app.post('/api/fix-encoding', async (req, res) => {
+app.post('/api/fix-encoding', heavyLimiter, async (req, res) => {
     const key = req.query.key || req.body?.key;
     if (key !== (process.env.ADMIN_MIGRATE_KEY || 'FIXPROMAX_MIGRATE_2026')) {
         return res.status(403).json({ ok: false, error: 'Clave incorrecta' });
@@ -5470,7 +5537,7 @@ app.post('/api/fix-encoding', async (req, res) => {
 // POST /api/run-migration?key=FIXPROMAX_MIGRATE_2026
 // Sube todos los datos JSON al MongoDB Atlas desde el servidor de Render
 // ══════════════════════════════════════════════════════════════════════════════
-app.post('/api/run-migration', async (req, res) => {
+app.post('/api/run-migration', heavyLimiter, async (req, res) => {
     const key = req.query.key || req.body?.key;
     if (key !== (process.env.ADMIN_MIGRATE_KEY || 'FIXPROMAX_MIGRATE_2026')) {
         return res.status(403).json({ ok: false, error: 'Clave incorrecta' });
