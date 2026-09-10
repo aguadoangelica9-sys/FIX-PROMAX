@@ -105,6 +105,19 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// ── Importar módulo de sanitización ──────────────────────────────────────────
+const {
+    globalSanitizeMiddleware,
+    sanitizeText, sanitizeName, sanitizeEmail, sanitizeNumber, sanitizeInt,
+    sanitizeEnum, sanitizeId, sanitizeDate, sanitizeBool, sanitizePhone,
+    sanitizeToken, detectPromptInjection, validate, applyWhitelist, escapeHtml,
+} = require('./sanitize');
+
+// ── Middleware global de sanitización — corre en CADA petición ────────────────
+// Protege contra XSS, NoSQL injection, prototype pollution y path traversal
+// en req.body, req.query y req.params antes de llegar a cualquier handler.
+app.use(globalSanitizeMiddleware);
+
 // ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 // MIDDLEWARE GLOBAL DE SUSCRIPCIÁ“N "” corre en CADA petición /api/*
 // Protege TODOS los endpoints del ERP aunque no tengan requireAuth explícito.
@@ -430,10 +443,16 @@ app.get('/', async (req, res) => {
         const plansHtml = activePlans.map(p => {
             const color  = PLAN_COLORS[p.id] || '#4f46e5';
             const icon   = PLAN_ICONS[p.id]  || '📙';
-            const fList  = (p.features || []).map(f => `<li style="font-size:12px;color:#94a3b8;padding:2px 0;">❌œ” ${f}</li>`).join('');
-            const nList  = (p.notIncluded || []).filter(Boolean).map(f => `<li style="font-size:12px;color:#64748b;padding:2px 0;opacity:.6;">❌œ– ${f}</li>`).join('');
+            const fList  = (p.features || []).map(f => `<li style="font-size:12px;color:#94a3b8;padding:2px 0;">\u2714 ${escapeHtml(String(f))}</li>`).join('');
+            const nList  = (p.notIncluded || []).filter(Boolean).map(f => `<li style="font-size:12px;color:#64748b;padding:2px 0;opacity:.6;">\u2013 ${escapeHtml(String(f))}</li>`).join('');
             const btnBg  = `linear-gradient(135deg,${color},${color}cc)`;
             const btnClr = p.id === 'semestral' ? '#000' : '#fff';
+            // Escapar todos los campos de texto de planes para prevenir XSS almacenado
+            const safeName  = escapeHtml(String(p.name        || ''));
+            const safeDesc  = escapeHtml(String(p.description || ''));
+            const safeBadge = escapeHtml(String(p.badge       || ''));
+            const safePer   = escapeHtml(String(p.period || ((p.duration || 30) + ' días')));
+            const safeId    = escapeHtml(String(p.id    || ''));
             return `
             <div style="background:#0f172a;border:2px solid ${color}44;border-radius:14px;overflow:hidden;transition:border-color .2s,box-shadow .2s;"
                  onmouseover="this.style.borderColor='${color}';this.style.boxShadow='0 4px 20px ${color}22'"
@@ -443,16 +462,16 @@ app.get('/', async (req, res) => {
                   <span style="font-size:28px;">${icon}</span>
                   <div style="display:flex;gap:6px;">
                     ${p.recommended ? `<span style="background:#4f46e5;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;">❌­ REC</span>` : ''}
-                    ${p.badge && !p.recommended ? `<span style="background:${color};color:${p.id==='semestral'?'#000':'#fff'};font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;">${p.badge}</span>` : ''}
+                    ${safeBadge && !p.recommended ? `<span style="background:${color};color:${p.id==='semestral'?'#000':'#fff'};font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;">${safeBadge}</span>` : ''}
                   </div>
                 </div>
-                <div style="font-size:16px;font-weight:800;color:#f8fafc;">${p.name}</div>
-                <div style="font-size:12px;color:#94a3b8;margin-top:2px;">${p.description || ''}</div>
+                <div style="font-size:16px;font-weight:800;color:#f8fafc;">${safeName}</div>
+                <div style="font-size:12px;color:#94a3b8;margin-top:2px;">${safeDesc}</div>
               </div>
               <div style="padding:14px 16px;">
                 <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:4px;">
                   <span style="font-size:26px;font-weight:900;color:${color};">$${Number(p.price).toFixed(2)}</span>
-                  <span style="font-size:12px;color:#64748b;">/ ${p.period || p.duration+' días'}</span>
+                  <span style="font-size:12px;color:#64748b;">/ ${safePer}</span>
                 </div>
                 <div style="font-size:11px;color:#64748b;margin-bottom:10px;">
                   ${p.maxUsers===1?'👤 1 usuario':`👥 Hasta ${p.maxUsers} usuarios`}
@@ -460,7 +479,7 @@ app.get('/', async (req, res) => {
                   &nbsp;·&nbsp;${p.multiUser?'✅ Multiusuario':'❌Œ Sin multiusuario'}
                 </div>
                 <ul style="list-style:none;padding:0;margin:0 0 12px;">${fList}${nList}</ul>
-                <button onclick="window.startSubscription('${p.id}')"
+                <button onclick="window.startSubscription('${safeId}')"
                     style="width:100%;background:${btnBg};color:${btnClr};border:none;padding:10px;
                            border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;"
                     onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
@@ -672,7 +691,7 @@ app.post('/api/products', requireAuth, async (req, res) => {
     }
 
     const product = { id: generateId(), createdAt: new Date().toISOString(),
-                      updatedAt: new Date().toISOString(), ...req.body };
+                      updatedAt: new Date().toISOString(), ...applyWhitelist(req.body, 'product') };
     db.products.push(product);
     await writeDB(db);
     ok(res, product);
@@ -682,7 +701,7 @@ app.put('/api/products/:id', requireAuth, async (req, res) => {
     const db = await readDB();
     const idx = db.products.findIndex(p => p.id === req.params.id);
     if (idx === -1) return err(res, 'Producto no encontrado', 404);
-    db.products[idx] = { ...db.products[idx], ...req.body, id: req.params.id,
+    db.products[idx] = { ...db.products[idx], ...applyWhitelist(req.body, 'product'), id: req.params.id,
                          updatedAt: new Date().toISOString() };
     await writeDB(db);
     ok(res, db.products[idx]);
@@ -704,7 +723,7 @@ app.get('/api/categories', async (req, res) => ok(res, (await readDB()).categori
 
 app.post('/api/categories', requireAuth, async (req, res) => {
     const db = await readDB();
-    const cat = { id: generateId(), ...req.body };
+    const cat = { id: generateId(), ...applyWhitelist(req.body, 'category') };
     db.categories.push(cat);
     await writeDB(db);
     ok(res, cat);
@@ -714,7 +733,7 @@ app.put('/api/categories/:id', requireAuth, async (req, res) => {
     const db = await readDB();
     const idx = db.categories.findIndex(c => c.id === req.params.id);
     if (idx === -1) return err(res, 'Categoría no encontrada', 404);
-    db.categories[idx] = { ...db.categories[idx], ...req.body, id: req.params.id };
+    db.categories[idx] = { ...db.categories[idx], ...applyWhitelist(req.body, 'category'), id: req.params.id };
     await writeDB(db);
     ok(res, db.categories[idx]);
 });
@@ -733,7 +752,7 @@ app.get('/api/warehouses', async (req, res) => ok(res, (await readDB()).warehous
 
 app.post('/api/warehouses', requireAuth, async (req, res) => {
     const db = await readDB();
-    const wh = { id: generateId(), ...req.body };
+    const wh = { id: generateId(), ...applyWhitelist(req.body, 'warehouse') };
     db.warehouses.push(wh);
     await writeDB(db);
     ok(res, wh);
@@ -743,7 +762,7 @@ app.put('/api/warehouses/:id', requireAuth, async (req, res) => {
     const db = await readDB();
     const idx = db.warehouses.findIndex(w => w.id === req.params.id);
     if (idx === -1) return err(res, 'Almacén no encontrado', 404);
-    db.warehouses[idx] = { ...db.warehouses[idx], ...req.body, id: req.params.id };
+    db.warehouses[idx] = { ...db.warehouses[idx], ...applyWhitelist(req.body, 'warehouse'), id: req.params.id };
     await writeDB(db);
     ok(res, db.warehouses[idx]);
 });
@@ -763,7 +782,7 @@ app.get('/api/customers', async (req, res) => ok(res, (await readDB()).customers
 app.post('/api/customers', requireAuth, async (req, res) => {
     const db = await readDB();
     const customer = { id: generateId(), balance: 0, createdAt: new Date().toISOString(),
-                       updatedAt: new Date().toISOString(), ...req.body };
+                       updatedAt: new Date().toISOString(), ...applyWhitelist(req.body, 'customer') };
     db.customers.push(customer);
     await writeDB(db);
     ok(res, customer);
@@ -773,7 +792,7 @@ app.put('/api/customers/:id', requireAuth, async (req, res) => {
     const db = await readDB();
     const idx = db.customers.findIndex(c => c.id === req.params.id);
     if (idx === -1) return err(res, 'Cliente no encontrado', 404);
-    db.customers[idx] = { ...db.customers[idx], ...req.body, id: req.params.id,
+    db.customers[idx] = { ...db.customers[idx], ...applyWhitelist(req.body, 'customer'), id: req.params.id,
                           updatedAt: new Date().toISOString() };
     await writeDB(db);
     ok(res, db.customers[idx]);
@@ -794,7 +813,7 @@ app.get('/api/suppliers', async (req, res) => ok(res, (await readDB()).suppliers
 app.post('/api/suppliers', requireAuth, async (req, res) => {
     const db = await readDB();
     const supplier = { id: generateId(), balance: 0, createdAt: new Date().toISOString(),
-                       updatedAt: new Date().toISOString(), ...req.body };
+                       updatedAt: new Date().toISOString(), ...applyWhitelist(req.body, 'supplier') };
     db.suppliers.push(supplier);
     await writeDB(db);
     ok(res, supplier);
@@ -804,7 +823,7 @@ app.put('/api/suppliers/:id', requireAuth, async (req, res) => {
     const db = await readDB();
     const idx = db.suppliers.findIndex(s => s.id === req.params.id);
     if (idx === -1) return err(res, 'Proveedor no encontrado', 404);
-    db.suppliers[idx] = { ...db.suppliers[idx], ...req.body, id: req.params.id,
+    db.suppliers[idx] = { ...db.suppliers[idx], ...applyWhitelist(req.body, 'supplier'), id: req.params.id,
                           updatedAt: new Date().toISOString() };
     await writeDB(db);
     ok(res, db.suppliers[idx]);
@@ -824,7 +843,7 @@ app.get('/api/sales', async (req, res) => ok(res, (await readDB()).sales));
 
 app.post('/api/sales', requireAuth, async (req, res) => {
     const db = await readDB();
-    const sale = { id: generateId(), createdAt: new Date().toISOString(), ...req.body };
+    const sale = { id: generateId(), createdAt: new Date().toISOString(), ...applyWhitelist(req.body, 'sale') };
 
     // Descontar stock de cada producto vendido
     if (Array.isArray(sale.items)) {
@@ -863,7 +882,7 @@ app.put('/api/sales/:id', requireAuth, async (req, res) => {
     const db = await readDB();
     const idx = db.sales.findIndex(s => s.id === req.params.id);
     if (idx === -1) return err(res, 'Venta no encontrada', 404);
-    db.sales[idx] = { ...db.sales[idx], ...req.body, id: req.params.id };
+    db.sales[idx] = { ...db.sales[idx], ...applyWhitelist(req.body, 'sale'), id: req.params.id };
     await writeDB(db);
     ok(res, db.sales[idx]);
 });
@@ -883,7 +902,7 @@ app.get('/api/invoices', async (req, res) => ok(res, (await readDB()).invoices))
 app.post('/api/invoices', requireAuth, async (req, res) => {
     const db = await readDB();
     const invoice = { id: generateId(), paid: 0, status: 'Pendiente',
-                      createdAt: new Date().toISOString(), ...req.body };
+                      createdAt: new Date().toISOString(), ...applyWhitelist(req.body, 'invoice') };
     db.invoices.push(invoice);
     await writeDB(db);
     ok(res, invoice);
@@ -893,7 +912,7 @@ app.put('/api/invoices/:id', requireAuth, async (req, res) => {
     const db = await readDB();
     const idx = db.invoices.findIndex(i => i.id === req.params.id);
     if (idx === -1) return err(res, 'Factura no encontrada', 404);
-    db.invoices[idx] = { ...db.invoices[idx], ...req.body, id: req.params.id };
+    db.invoices[idx] = { ...db.invoices[idx], ...applyWhitelist(req.body, 'invoice'), id: req.params.id };
     await writeDB(db);
     ok(res, db.invoices[idx]);
 });
@@ -921,7 +940,7 @@ app.post('/api/quotes', requireAuth, requirePermission('invoices', 'create'), as
         quoteStatus: 'Borrador',
         createdAt:   new Date().toISOString(),
         updatedAt:   new Date().toISOString(),
-        ...req.body,
+        ...applyWhitelist(req.body, 'quote'),
     };
     // Generar número secuencial si no viene
     if (!qt.number) {
@@ -946,7 +965,7 @@ app.put('/api/quotes/:id', requireAuth, requirePermission('invoices', 'edit'), a
     if (['Convertida', 'Anulada'].includes(existing.quoteStatus) && !req.body.quoteStatus) {
         return err(res, `No se puede editar una cotización con estado "${existing.quoteStatus}"`, 400);
     }
-    db.quotes[idx] = { ...existing, ...req.body, id: req.params.id, updatedAt: new Date().toISOString() };
+    db.quotes[idx] = { ...existing, ...applyWhitelist(req.body, 'quote'), id: req.params.id, updatedAt: new Date().toISOString() };
     await writeDB(db);
     ok(res, db.quotes[idx]);
 });
@@ -1070,7 +1089,7 @@ app.get('/api/purchases', async (req, res) => ok(res, (await readDB()).purchases
 
 app.post('/api/purchases', requireAuth, async (req, res) => {
     const db = await readDB();
-    const purchase = { id: generateId(), createdAt: new Date().toISOString(), ...req.body };
+    const purchase = { id: generateId(), createdAt: new Date().toISOString(), ...applyWhitelist(req.body, 'purchase') };
 
     // Sumar stock a los productos de la compra
     if (Array.isArray(purchase.items)) {
@@ -1108,7 +1127,7 @@ app.put('/api/purchases/:id', requireAuth, async (req, res) => {
     const db = await readDB();
     const idx = db.purchases.findIndex(p => p.id === req.params.id);
     if (idx === -1) return err(res, 'Compra no encontrada', 404);
-    db.purchases[idx] = { ...db.purchases[idx], ...req.body, id: req.params.id };
+    db.purchases[idx] = { ...db.purchases[idx], ...applyWhitelist(req.body, 'purchase'), id: req.params.id };
     await writeDB(db);
     ok(res, db.purchases[idx]);
 });
@@ -1539,7 +1558,7 @@ app.get('/api/expenses', async (req, res) => ok(res, (await readDB()).expenses))
 
 app.post('/api/expenses', requireAuth, async (req, res) => {
     const db = await readDB();
-    const expense = { id: generateId(), createdAt: new Date().toISOString(), ...req.body };
+    const expense = { id: generateId(), createdAt: new Date().toISOString(), ...applyWhitelist(req.body, 'expense') };
     db.expenses.push(expense);
     await writeDB(db);
     ok(res, expense);
@@ -1549,7 +1568,7 @@ app.put('/api/expenses/:id', requireAuth, async (req, res) => {
     const db = await readDB();
     const idx = db.expenses.findIndex(e => e.id === req.params.id);
     if (idx === -1) return err(res, 'Gasto no encontrado', 404);
-    db.expenses[idx] = { ...db.expenses[idx], ...req.body, id: req.params.id };
+    db.expenses[idx] = { ...db.expenses[idx], ...applyWhitelist(req.body, 'expense'), id: req.params.id };
     await writeDB(db);
     ok(res, db.expenses[idx]);
 });
@@ -1568,7 +1587,7 @@ app.get('/api/returns', async (req, res) => ok(res, (await readDB()).returns));
 
 app.post('/api/returns', requireAuth, async (req, res) => {
     const db = await readDB();
-    const ret = { id: generateId(), createdAt: new Date().toISOString(), ...req.body };
+    const ret = { id: generateId(), createdAt: new Date().toISOString(), ...applyWhitelist(req.body, 'return_') };
 
     // Reponer stock del producto devuelto
     const prod = db.products.find(p => p.id === ret.productId);
@@ -1611,8 +1630,20 @@ app.delete('/api/returns/:id', requireAuth, async (req, res) => {
 app.get('/api/inventory-movements', async (req, res) => ok(res, (await readDB()).inventoryMovements));
 
 app.post('/api/inventory-movements', requireAuth, async (req, res) => {
-    const db = await readDB();
-    const mov = { id: generateId(), date: new Date().toISOString(), user: 'admin', ...req.body };
+    const db  = await readDB();
+    const b   = req.body;
+    const mov = {
+        id:          generateId(),
+        date:        new Date().toISOString(),
+        user:        'admin',
+        productId:   sanitizeId(b.productId)   || null,
+        type:        sanitizeEnum(b.type, ['Entrada','Salida','Ajuste','Transferencia'], 'Ajuste'),
+        quantity:    sanitizeNumber(b.quantity, { min: -99999, max: 99999, defaultVal: 0 }),
+        warehouseId: sanitizeId(b.warehouseId) || null,
+        reason:      sanitizeName(b.reason     || '', 300),
+        reference:   sanitizeName(b.reference  || '', 100),
+        notes:       sanitizeText(b.notes      || '', { maxLength: 500 }),
+    };
 
     // Aplicar el ajuste al stock del producto
     const prod = db.products.find(p => p.id === mov.productId);
@@ -1641,7 +1672,7 @@ app.get('/api/payments', async (req, res) => ok(res, (await readDB()).payments))
 
 app.post('/api/payments', requireAuth, async (req, res) => {
     const db = await readDB();
-    const payment = { id: generateId(), createdAt: new Date().toISOString(), ...req.body };
+    const payment = { id: generateId(), createdAt: new Date().toISOString(), ...applyWhitelist(req.body, 'payment') };
 
     // Actualizar saldo de factura si aplica
     if (payment.invoiceId) {
@@ -1662,7 +1693,7 @@ app.put('/api/payments/:id', requireAuth, async (req, res) => {
     const db = await readDB();
     const idx = db.payments.findIndex(p => p.id === req.params.id);
     if (idx === -1) return err(res, 'Pago no encontrado', 404);
-    db.payments[idx] = { ...db.payments[idx], ...req.body, id: req.params.id };
+    db.payments[idx] = { ...db.payments[idx], ...applyWhitelist(req.body, 'payment'), id: req.params.id };
     await writeDB(db);
     ok(res, db.payments[idx]);
 });
@@ -2128,7 +2159,13 @@ app.post('/api/auth/register', async (req, res) => {
         }
     } catch { /* si falla la lectura de config, permitir registro */ }
 
-    const { name, email, password, company } = req.body;
+    // ── Sanitización de inputs ────────────────────────────────────────────────
+    const name     = sanitizeName(req.body.name     || '');
+    const email    = sanitizeEmail(req.body.email   || '');
+    const password = (req.body.password || '').slice(0, 128); // no sanitizar la password, solo limitar largo
+    const company  = sanitizeName(req.body.company  || '', 150);
+    const mode     = sanitizeEnum(req.body.mode, ['basic','pro'], 'basic');
+
     if (!name || !email || !password) {
         return err(res, 'Nombre, email y contraseÁ±a son obligatorios');
     }
@@ -2145,13 +2182,13 @@ app.post('/api/auth/register', async (req, res) => {
     }
     const newUser = {
         id:        generateId(),
-        name:      name.trim(),
-        email:     email.toLowerCase().trim(),
+        name,
+        email,
         password:  hashPassword(password),
-        company:   (company || '').trim(),
+        company,
         role:      users.length === 0 ? 'admin' : 'user',
-        mode:      (req.body.mode === 'pro') ? 'pro' : 'basic',
-        avatar:    name.trim().split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2),
+        mode,
+        avatar:    name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2),
         createdAt: new Date().toISOString(),
         trialStart: new Date().toISOString(),   // inicio del trial de 3 días
         active:    true,
@@ -2336,10 +2373,14 @@ app.put('/api/auth/me', requireAuth, async (req, res) => {
     const users = await readUsers();
     const idx   = users.findIndex(u => u.id === req.user.id);
     if (idx === -1) return err(res, 'Usuario no encontrado', 404);
-    const { name, company, password, newPassword, mode } = req.body;
-    if (name)    users[idx].name    = name.trim();
-    if (company) users[idx].company = company.trim();
-    if (mode && ['basic','pro'].includes(mode)) users[idx].mode = mode;
+    const name        = sanitizeName(req.body.name        || '');
+    const company     = sanitizeName(req.body.company     || '', 150);
+    const password    = (req.body.password    || '').slice(0, 128);
+    const newPassword = (req.body.newPassword || '').slice(0, 128);
+    const mode        = sanitizeEnum(req.body.mode, ['basic','pro'], null);
+    if (name)    users[idx].name    = name;
+    if (company) users[idx].company = company;
+    if (mode)    users[idx].mode    = mode;
     if (password && newPassword) {
         if (users[idx].password !== hashPassword(password)) {
             return err(res, 'ContraseÁ±a actual incorrecta');
@@ -3306,11 +3347,13 @@ app.post('/api/admin/wa-retry', requireAdmin, async (req, res) => {
 
 // ❌”€❌”€ ADMIN: Guardar configuración de WhatsApp (UltraMsg) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.put('/api/admin/settings/whatsapp', requireAdmin, async (req, res) => {
-    const { phone, instance, token, destPhone } = req.body;
+    const phone     = sanitizePhone(req.body.phone     || '');
+    const destPhone = sanitizePhone(req.body.destPhone || '');
+    const instance  = sanitizeToken(req.body.instance  || '');  // previene path traversal en URL de UltraMsg
+    const token     = sanitizeToken(req.body.token     || '');  // previene inyección en cabeceras HTTP
     if (!phone) return err(res, 'Número de teléfono requerido');
     const cfg = await getConfig();
     cfg.whatsappPhone    = phone.replace(/\D/g,'');
-    // destPhone: número DESTINO donde llegan los mensajes (puede ser diferente al de la instancia)
     cfg.whatsappDestPhone = (destPhone || phone).replace(/\D/g,'');
     cfg.ultramsgInstance = instance || cfg.ultramsgInstance || '';
     cfg.ultramsgToken    = token    || cfg.ultramsgToken    || 'PENDING_SETUP';
@@ -3706,7 +3749,11 @@ app.post('/api/team/invite', requireAuth, async (req, res) => {
         return err(res, 'Solo el propietario puede invitar empleados', 403);
     }
 
-    const { name, email, password, permissions } = req.body;
+    const name        = sanitizeName(req.body.name     || '');
+    const email       = sanitizeEmail(req.body.email  || '');
+    const password    = (req.body.password || '').slice(0, 128);
+    const permissions = req.body.permissions && typeof req.body.permissions === 'object'
+        ? req.body.permissions : null;
     if (!name || !email || !password) return err(res, 'Nombre, email y contrasena son obligatorios');
     if (password.length < 6)          return err(res, 'La contrasena debe tener al menos 6 caracteres');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return err(res, 'Email invalido');
@@ -4249,7 +4296,14 @@ app.patch('/api/admin/users/:id/patch', requireAdmin, async (req, res) => {
         const allowed = ['companyId','teamRole','role','active','name','company','mode'];
         const patch   = {};
         for (const k of allowed) {
-            if (req.body[k] !== undefined) patch[k] = req.body[k];
+            if (req.body[k] !== undefined) {
+                // Sanitizar cada campo según su tipo esperado
+                if (k === 'active')   patch[k] = sanitizeBool(req.body[k]);
+                else if (k === 'role') patch[k] = sanitizeEnum(req.body[k], ['admin','user'], req.body[k]);
+                else if (k === 'teamRole') patch[k] = sanitizeEnum(req.body[k], ['owner','employee','manager'], req.body[k]);
+                else if (k === 'mode') patch[k] = sanitizeEnum(req.body[k], ['basic','pro','semestral'], req.body[k]);
+                else patch[k] = sanitizeName(String(req.body[k]), 200);
+            }
         }
         // Usar updateUser de MongoDB directamente para evitar problemas de schema
         const updated = await DB.updateUser(req.params.id, patch);
@@ -4261,7 +4315,8 @@ app.patch('/api/admin/users/:id/patch', requireAdmin, async (req, res) => {
 });
 
 app.post('/api/admin/users/:id/action', requireAdmin, async (req, res) => {
-    const { action, reason } = req.body;
+    const action = req.body.action;
+    const reason = sanitizeText(req.body.reason || '', { maxLength: 500 });
     const ALLOWED = ['suspend', 'reactivate', 'grant_access', 'revoke_access', 'force_logout'];
     if (!ALLOWED.includes(action)) return err(res, 'Acción no permitida');
 
@@ -4460,7 +4515,10 @@ app.get('/api/admin/log', requireAdmin, async (req, res) => {
 
 // Usuario crea ticket
 app.post('/api/support/tickets', requireAuth, async (req, res) => {
-    const { category, title, description, priority } = req.body;
+    const category    = sanitizeEnum(req.body.category, ['Facturación','Técnico','Cuenta','Pagos','Otro'], 'Otro');
+    const title       = sanitizeName(req.body.title       || '', 200);
+    const description = sanitizeText(req.body.description || '', { maxLength: 3000, allowNewlines: true });
+    const priority    = sanitizeEnum(req.body.priority, ['baja','media','alta','urgente'], 'media');
     if (!title || !description) return err(res, 'Título y descripción requeridos');
     const tickets = await readTickets();
     const ticket  = {
@@ -4469,9 +4527,9 @@ app.post('/api/support/tickets', requireAuth, async (req, res) => {
         userName:    req.user.name,
         userEmail:   req.user.email,
         category:    category || 'Otro',
-        title:       title.trim(),
-        description: description.trim(),
-        priority:    priority || 'media',
+        title:       title,
+        description: description,
+        priority:    priority,
         status:      'new',
         createdAt:   new Date().toISOString(),
         updatedAt:   new Date().toISOString(),
@@ -4480,7 +4538,7 @@ app.post('/api/support/tickets', requireAuth, async (req, res) => {
             from:     'user',
             userId:   req.user.id,
             userName: req.user.name,
-            text:     description.trim(),
+            text:     description,
             ts:       new Date().toISOString(),
             internal: false,
         }],
@@ -4520,13 +4578,13 @@ app.get('/api/support/tickets/:id', requireAuth, async (req, res) => {
 
 // Usuario agrega mensaje a su ticket
 app.post('/api/support/tickets/:id/reply', requireAuth, async (req, res) => {
-    const { text } = req.body;
+    const text = sanitizeText(req.body.text || '', { maxLength: 3000, allowNewlines: true });
     if (!text) return err(res, 'Texto requerido');
     const tickets = await readTickets();
     const idx = tickets.findIndex(t => t.id === req.params.id && t.userId === req.user.id);
     if (idx === -1) return err(res, 'Ticket no encontrado', 404);
     if (tickets[idx].status === 'closed') return err(res, 'El ticket está cerrado');
-    const msg = { id: generateId(), from: 'user', userId: req.user.id, userName: req.user.name, text: text.trim(), ts: new Date().toISOString(), internal: false };
+    const msg = { id: generateId(), from: 'user', userId: req.user.id, userName: req.user.name, text: text, ts: new Date().toISOString(), internal: false };
     tickets[idx].messages.push(msg);
     tickets[idx].updatedAt = msg.ts;
     if (tickets[idx].status === 'resolved') tickets[idx].status = 'in_progress';
