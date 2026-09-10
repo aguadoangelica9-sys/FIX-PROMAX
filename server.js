@@ -2352,6 +2352,153 @@ app.post('/api/auth/login', async (req, res) => {
                 teamRole:  user.teamRole  || (user.role === 'admin' ? 'owner' : 'employee') }
     });
 });
+// ══════════════════════════════════════════════════════════════════════════════
+// GOOGLE SIGN-IN — OAuth 2.0 con passport-google-oauth20
+// Flujo:
+//   1. Usuario hace clic en "Continuar con Google"
+//   2. Browser redirige a GET /api/auth/google
+//   3. Google autentica y redirige a GET /api/auth/google/callback
+//   4. El servidor crea/actualiza el usuario y genera un token de sesión
+//   5. Redirige al cliente con el token en la URL (?google_token=xxx)
+//   6. auth.js detecta el token y entra a la app
+// ══════════════════════════════════════════════════════════════════════════════
+(function setupGoogleOAuth() {
+    const clientID     = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+    if (!clientID || clientID === 'PEGA_TU_CLIENT_ID_AQUI' ||
+        !clientSecret || clientSecret === 'PEGA_TU_CLIENT_SECRET_AQUI') {
+        console.warn('⚠️  Google OAuth no configurado — GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET faltan en .env');
+        app.get('/api/auth/google',          (req, res) => res.status(503).json({ ok: false, error: 'Google Sign-In no está configurado aún.' }));
+        app.get('/api/auth/google/callback', (req, res) => res.redirect('/?error=google_not_configured'));
+        return;
+    }
+
+    const passport       = require('passport');
+    const GoogleStrategy = require('passport-google-oauth20').Strategy;
+    const APP_URL        = (process.env.APP_URL || 'http://localhost:3000').replace(/\/$/, '');
+    const CALLBACK_URL   = APP_URL + '/api/auth/google/callback';
+
+    passport.use(new GoogleStrategy({
+        clientID,
+        clientSecret,
+        callbackURL:        CALLBACK_URL,
+        passReqToCallback:  false,
+    }, async (accessToken, refreshToken, profile, done) => {
+        try {
+            const googleId    = profile.id;
+            const email       = ((profile.emails || [])[0] || {}).value || '';
+            const cleanEmail  = email.toLowerCase().trim();
+            const displayName = profile.displayName || cleanEmail.split('@')[0];
+            const avatar      = displayName.split(' ').map(function(w){ return w[0]; }).join('').toUpperCase().slice(0, 2);
+            const picture     = ((profile.photos || [])[0] || {}).value || null;
+
+            if (!cleanEmail) return done(null, false, { message: 'No se pudo obtener el email de Google.' });
+
+            const users = await readUsers();
+            let user = users.find(function(u){ return u.googleId === googleId; })
+                    || users.find(function(u){ return u.email && u.email.toLowerCase() === cleanEmail; });
+
+            if (user) {
+                const idx = users.findIndex(function(u){ return u.id === user.id; });
+                if (user.active === false) return done(null, false, { message: 'Esta cuenta está suspendida.' });
+                let changed = false;
+                if (!user.googleId)           { users[idx].googleId = googleId; changed = true; }
+                if (!user.avatar && avatar)   { users[idx].avatar   = avatar;   changed = true; }
+                if (picture && !user.picture) { users[idx].picture  = picture;  changed = true; }
+                if (changed) await writeUsers(users);
+                return done(null, users[idx]);
+            }
+
+            // Usuario nuevo — crear cuenta
+            const newUser = {
+                id:          generateId(),
+                name:        sanitizeName(displayName, 100),
+                email:       cleanEmail,
+                password:    null,
+                googleId,
+                picture,
+                company:     '',
+                role:        'user',
+                mode:        'basic',
+                avatar,
+                companyId:   generateId(),
+                teamRole:    'owner',
+                permissions: null,
+                active:      true,
+                isDemo:      false,
+                mustChange:  false,
+                trialStart:  new Date().toISOString(),
+                createdAt:   new Date().toISOString(),
+                updatedAt:   new Date().toISOString(),
+                loginAttempts:      0,
+                lockedUntil:        null,
+                subscriptionStatus: 'trial',
+                subscriptionPlan:   null,
+            };
+            users.push(newUser);
+            await writeUsers(users);
+            try {
+                const defData = typeof DB.defaultData === 'function' ? DB.defaultData() : {};
+                await DB.writeCompanyDB(newUser.companyId, defData);
+            } catch(e2) { console.warn('[Google OAuth] No se pudo crear companyDB:', e2.message); }
+            console.log('✅ Google Sign-In — nuevo usuario: ' + cleanEmail);
+            return done(null, newUser);
+        } catch (e) {
+            console.error('[Google OAuth] Error en strategy:', e.message);
+            return done(e);
+        }
+    }));
+
+    passport.serializeUser(function(user, done){ done(null, user.id); });
+    passport.deserializeUser(function(id, done){ done(null, { id: id }); });
+    app.use(passport.initialize());
+
+    // GET /api/auth/google — inicio del flujo
+    app.get('/api/auth/google',
+        authLimiter,
+        passport.authenticate('google', { scope: ['profile', 'email'], prompt: 'select_account' })
+    );
+
+    // GET /api/auth/google/callback — respuesta de Google
+    app.get('/api/auth/google/callback',
+        passport.authenticate('google', { session: false, failureRedirect: '/?error=google_auth_failed' }),
+        async function(req, res) {
+            try {
+                const user = req.user;
+                if (!user) return res.redirect('/?error=google_auth_failed');
+
+                const token    = makeToken();
+                const sessions = await readSessions();
+                // Limpiar sesiones anteriores del mismo usuario
+                Object.keys(sessions).forEach(function(tok){
+                    const e = sessions[tok];
+                    if ((typeof e === 'object' ? e.userId : e) === user.id) delete sessions[tok];
+                });
+                sessions[token] = { userId: user.id, created: Date.now() };
+                await writeSessions(sessions);
+
+                res.cookie('fixpromax_token', token, {
+                    httpOnly: false,
+                    sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+                    secure:   process.env.NODE_ENV === 'production',
+                    maxAge:   30 * 24 * 60 * 60 * 1000,
+                    path:     '/',
+                });
+
+                console.log('✅ Google Sign-In exitoso: ' + user.email);
+                // Redirigir con el token — auth.js lo detectará y entrará a la app
+                res.redirect('/?google_token=' + token);
+            } catch (e) {
+                console.error('[Google OAuth callback]', e.message);
+                res.redirect('/?error=google_auth_failed');
+            }
+        }
+    );
+
+    console.log('✅ Google OAuth configurado — callback: ' + CALLBACK_URL);
+})();
+// ── FIN Google OAuth ──────────────────────────────────────────────────────────
 
 // ❌”€❌”€ CAMBIO DE CONTRASEÁ‘A (autenticado, para mustChange) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.post('/api/auth/change-password', requireAuth, async (req, res) => {

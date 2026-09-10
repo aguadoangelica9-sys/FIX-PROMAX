@@ -525,8 +525,33 @@
        VERIFICAR SESIÓN AL CARGAR
        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     async function checkExistingSession() {
+        // 0. Leer parámetros de URL (google_token, error, token)
+        const params      = new URLSearchParams(window.location.search);
+
+        // 0a. Token de Google OAuth en URL (?google_token=xxx desde /api/auth/google/callback)
+        const googleToken = params.get('google_token');
+        if (googleToken) {
+            localStorage.setItem(AUTH_KEY, googleToken);
+            history.replaceState({}, '', '/');
+            try {
+                const json = await _get(API_BASE + '/api/auth/me');
+                if (json && json.ok && json.data) { _enterApp(json.data); return; }
+            } catch {}
+            localStorage.removeItem(AUTH_KEY);
+        }
+
+        // 0b. Errores de Google OAuth (?error=xxx)
+        const googleError = params.get('error');
+        if (googleError) {
+            history.replaceState({}, '', '/');
+            if (googleError === 'google_auth_failed') {
+                setTimeout(() => _setError('login', '❌ No se pudo iniciar sesión con Google. Intenta de nuevo.'), 300);
+            } else if (googleError === 'google_not_configured') {
+                setTimeout(() => _setError('login', '⚠️ Google Sign-In no está disponible en este momento.'), 300);
+            }
+        }
+
         // 1. Token en URL (desde /entrar-como)
-        const params = new URLSearchParams(window.location.search);
         const urlToken = params.get('token');
         if (urlToken) {
             localStorage.setItem(AUTH_KEY, urlToken);
