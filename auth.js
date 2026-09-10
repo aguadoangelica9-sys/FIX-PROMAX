@@ -12,8 +12,9 @@
 
     /* â”€â”€ Constantes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     const AUTH_KEY        = 'fixpromax_token';
+    const TOKEN_EXP_KEY   = 'fixpromax_token_exp'; // expiración del accessToken (ms)
     const LOCAL_KEY       = 'fixpromax_local_users';
-    const RECOVER_KEY     = 'fixpromax_recover';          // código de recuperación en tránsito
+    const RECOVER_KEY     = 'fixpromax_recover';   // código de recuperación en tránsito
     const API_BASE        = (() => {
         const h = window.location.hostname;
         // Si es localhost, 127.0.0.1 o una IP privada → usar el origen actual
@@ -79,59 +80,130 @@
         users.push(user);
         _localSave(users);
     }
+    // ── HTTP Helpers — con soporte de refresh automático de accessToken ─────────
+    // Cuando el servidor devuelve 401 con code SESSION_EXPIRED, se intenta renovar
+    // el accessToken via POST /api/auth/refresh (usa cookie httpOnly refreshToken)
+    // y si tiene éxito reintenta la petición original una sola vez.
 
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       HTTP HELPER con timeout y manejo limpio de errores
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+    let _refreshPromise = null;  // evitar múltiples refresh simultáneos
+
+    /** Guarda el token y su tiempo de expiración en localStorage */
+    function _saveToken(token, expiresIn) {
+        localStorage.setItem(AUTH_KEY, token);
+        if (expiresIn) {
+            localStorage.setItem(TOKEN_EXP_KEY, String(Date.now() + expiresIn - 30000)); // -30s margen
+        }
+    }
+
+    /** Devuelve true si el accessToken actual está próximo a expirar o ya expiró */
+    function _tokenExpired() {
+        const token = localStorage.getItem(AUTH_KEY);
+        if (!token || token.startsWith('lt_')) return false;
+        const exp = parseInt(localStorage.getItem(TOKEN_EXP_KEY) || '0', 10);
+        return exp > 0 && Date.now() >= exp;
+    }
+
+    /** Llama a /api/auth/refresh y actualiza el token en localStorage.
+     *  Retorna el nuevo accessToken o null si falla. */
+    async function _refresh() {
+        if (_refreshPromise) return _refreshPromise;  // deduplicar
+        _refreshPromise = (async () => {
+            try {
+                const ctrl = new AbortController();
+                const tid  = setTimeout(() => ctrl.abort(), 6000);
+                const r    = await fetch(API_BASE + '/api/auth/refresh', {
+                    method: 'POST',
+                    credentials: 'include',   // enviar cookie httpOnly refreshToken
+                    headers: { 'Content-Type': 'application/json' },
+                    body: '{}'  ,
+                    signal: ctrl.signal,
+                });
+                clearTimeout(tid);
+                const json = await r.json().catch(() => null);
+                if (json && json.ok && json.data?.token) {
+                    _saveToken(json.data.token, json.data.expiresIn);
+                    return json.data.token;
+                }
+                // Refresh falló — sesión expirada, forzar logout
+                localStorage.removeItem(AUTH_KEY); localStorage.removeItem(TOKEN_EXP_KEY);
+                localStorage.removeItem(TOKEN_EXP_KEY);
+                return null;
+            } catch { return null; }
+            finally  { _refreshPromise = null; }
+        })();
+        return _refreshPromise;
+    }
+
+    /** Obtiene el token actual, renovándolo si está expirado */
+    async function _getToken() {
+        const token = localStorage.getItem(AUTH_KEY);
+        if (!token || token.startsWith('lt_')) return token;
+        if (_tokenExpired()) {
+            const fresh = await _refresh();
+            return fresh || token;  // si falla usar el viejo (el servidor lo rechazará)
+        }
+        return token;
+    }
+
     async function _post(path, body, token) {
+        const tok  = token || await _getToken();
         const ctrl = new AbortController();
         const tid  = setTimeout(() => ctrl.abort(), 6000);
         try {
             const headers = { 'Content-Type': 'application/json' };
-            if (token) headers['Authorization'] = 'Bearer ' + token;
+            if (tok) headers['Authorization'] = 'Bearer ' + tok;
             const r = await fetch(API_BASE + path, {
-                method: 'POST', headers,
+                method: 'POST', headers, credentials: 'include',
                 body: JSON.stringify(body), signal: ctrl.signal,
             });
             clearTimeout(tid);
-            return await r.json();
-        } catch (e) {
-            clearTimeout(tid);
-            return null;   // null = sin respuesta del servidor
-        }
+            const json = await r.json().catch(() => null);
+            // Si expiró el accessToken, refrescar y reintentar una vez
+            if (r.status === 401 && json?.data?.code === 'SESSION_EXPIRED' && !token) {
+                const newTok = await _refresh();
+                if (newTok) return _post(path, body, newTok);
+            }
+            return json;
+        } catch (e) { clearTimeout(tid); return null; }
     }
 
     async function _put(path, body, token) {
+        const tok  = token || await _getToken();
         const ctrl = new AbortController();
         const tid  = setTimeout(() => ctrl.abort(), 6000);
         try {
             const headers = { 'Content-Type': 'application/json' };
-            if (token) headers['Authorization'] = 'Bearer ' + token;
+            if (tok) headers['Authorization'] = 'Bearer ' + tok;
             const r = await fetch(API_BASE + path, {
-                method: 'PUT', headers,
+                method: 'PUT', headers, credentials: 'include',
                 body: JSON.stringify(body), signal: ctrl.signal,
             });
             clearTimeout(tid);
-            return await r.json();
-        } catch (e) {
-            clearTimeout(tid);
-            return null;
-        }
+            const json = await r.json().catch(() => null);
+            if (r.status === 401 && json?.data?.code === 'SESSION_EXPIRED' && !token) {
+                const newTok = await _refresh();
+                if (newTok) return _put(path, body, newTok);
+            }
+            return json;
+        } catch (e) { clearTimeout(tid); return null; }
     }
 
     async function _get(path, token) {
+        const tok  = token || await _getToken();
         const ctrl = new AbortController();
         const tid  = setTimeout(() => ctrl.abort(), 5000);
         try {
-            const headers = {};
-            if (token) headers['Authorization'] = 'Bearer ' + token;
-            const r = await fetch(API_BASE + path, { headers, signal: ctrl.signal });
+            const headers = { 'Accept': 'application/json' };
+            if (tok) headers['Authorization'] = 'Bearer ' + tok;
+            const r = await fetch(API_BASE + path, { headers, credentials: 'include', signal: ctrl.signal });
             clearTimeout(tid);
-            return await r.json();
-        } catch {
-            clearTimeout(tid);
-            return null;
-        }
+            const json = await r.json().catch(() => null);
+            if (r.status === 401 && json?.data?.code === 'SESSION_EXPIRED' && !token) {
+                const newTok = await _refresh();
+                if (newTok) return _get(path, newTok);
+            }
+            return json;
+        } catch { clearTimeout(tid); return null; }
     }
 
     /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -225,7 +297,7 @@
                 _setLoading('loginBtn', false);
                 return;
             }
-            localStorage.setItem(AUTH_KEY, json.data.token);
+            _saveToken(json.data.token, json.data.expiresIn);
             // Guardar localmente para fallback offline
             _saveLocalUser({ ...json.data.user, passwordHash: _h(password) });
             _setLoading('loginBtn', false);
@@ -267,7 +339,7 @@
         const json = await _post('/api/demo/login', {});
 
         if (json && json.ok) {
-            localStorage.setItem(AUTH_KEY, json.data.token);
+            _saveToken(json.data.token, json.data.expiresIn);
             _saveLocalUser({ ...json.data.user });
             if (btn) { btn.disabled = false; btn.innerHTML = '🎭 Probar Demo'; }
             _enterApp(json.data.user);
@@ -358,7 +430,7 @@
                 _setLoading('registerBtn', false);
                 return;
             }
-            localStorage.setItem(AUTH_KEY, json.data.token);
+            _saveToken(json.data.token, json.data.expiresIn);
             _saveLocalUser({ ...json.data.user, passwordHash: _h(password) });
             _setLoading('registerBtn', false);
             _enterApp(json.data.user);
@@ -525,33 +597,8 @@
        VERIFICAR SESIÓN AL CARGAR
        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     async function checkExistingSession() {
-        // 0. Leer parámetros de URL (google_token, error, token)
-        const params      = new URLSearchParams(window.location.search);
-
-        // 0a. Token de Google OAuth en URL (?google_token=xxx desde /api/auth/google/callback)
-        const googleToken = params.get('google_token');
-        if (googleToken) {
-            localStorage.setItem(AUTH_KEY, googleToken);
-            history.replaceState({}, '', '/');
-            try {
-                const json = await _get(API_BASE + '/api/auth/me');
-                if (json && json.ok && json.data) { _enterApp(json.data); return; }
-            } catch {}
-            localStorage.removeItem(AUTH_KEY);
-        }
-
-        // 0b. Errores de Google OAuth (?error=xxx)
-        const googleError = params.get('error');
-        if (googleError) {
-            history.replaceState({}, '', '/');
-            if (googleError === 'google_auth_failed') {
-                setTimeout(() => _setError('login', '❌ No se pudo iniciar sesión con Google. Intenta de nuevo.'), 300);
-            } else if (googleError === 'google_not_configured') {
-                setTimeout(() => _setError('login', '⚠️ Google Sign-In no está disponible en este momento.'), 300);
-            }
-        }
-
         // 1. Token en URL (desde /entrar-como)
+        const params   = new URLSearchParams(window.location.search);
         const urlToken = params.get('token');
         if (urlToken) {
             localStorage.setItem(AUTH_KEY, urlToken);
@@ -577,7 +624,7 @@
         if (token.startsWith('lt_')) {
             const u = _localSession(token);
             if (u) { _enterApp(u); return; }
-            localStorage.removeItem(AUTH_KEY);
+            localStorage.removeItem(AUTH_KEY); localStorage.removeItem(TOKEN_EXP_KEY);
             return;
         }
 
@@ -587,12 +634,12 @@
             // Sin servidor → intentar sesión local
             const u = _localSession(token);
             if (u) { _enterApp(u); return; }
-            localStorage.removeItem(AUTH_KEY);
+            localStorage.removeItem(AUTH_KEY); localStorage.removeItem(TOKEN_EXP_KEY);
             return;
         }
         if (!json.ok) {
             // Sesión expirada
-            localStorage.removeItem(AUTH_KEY);
+            localStorage.removeItem(AUTH_KEY); localStorage.removeItem(TOKEN_EXP_KEY);
             _showSessionExpired();
             return;
         }
@@ -635,7 +682,7 @@
         if (token && !token.startsWith('lt_')) {
             await _post('/api/auth/logout', {}, token).catch(() => {});
         }
-        localStorage.removeItem(AUTH_KEY);
+        localStorage.removeItem(AUTH_KEY); localStorage.removeItem(TOKEN_EXP_KEY);
         localStorage.removeItem('fixpromax_sub_cache');
         window._currentUser = null;
         // Limpiar formularios
@@ -971,7 +1018,7 @@
        LIMPIAR SESIÓN (botón emergencia)
        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     function clearSessionAndReload() {
-        localStorage.removeItem(AUTH_KEY);
+        localStorage.removeItem(AUTH_KEY); localStorage.removeItem(TOKEN_EXP_KEY);
         localStorage.removeItem('fixpromax_local_users');
         localStorage.removeItem('fixData_v4');
         localStorage.removeItem(RECOVER_KEY);
@@ -1094,7 +1141,7 @@
                 const d = JSON.parse(e.data);
                 try { _appSSE.close(); } catch {}
                 _appSSE = null; _appSSEActive = false;
-                localStorage.removeItem(AUTH_KEY);
+                localStorage.removeItem(AUTH_KEY); localStorage.removeItem(TOKEN_EXP_KEY);
                 localStorage.removeItem('fixpromax_sub_cache');
                 window._currentUser = null;
                 const reason = d.reason || 'Tu cuenta fue suspendida por el administrador.';

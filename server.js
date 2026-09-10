@@ -2159,38 +2159,116 @@ async function writeUsers(users) { return DB.writeUsers(users); }
 async function readSessions()    { return DB.readSessions(); }
 async function writeSessions(s)  { return DB.writeSessions(s); }
 
-// Token simple: random hex de 32 bytes
-function makeToken() {
-    return require('crypto').randomBytes(32).toString('hex');
+// ── Sistema de tokens: accessToken (15 min) + refreshToken (30 días) ─────────
+// accessToken: 64 bytes hex — enviado en Authorization: Bearer <token>
+//              TTL corto (15 min) — si se filtra, el daño es limitado
+// refreshToken: 64 bytes hex — enviado en cookie httpOnly (no accesible desde JS)
+//              TTL largo (30 días) — usado para renovar el accessToken silenciosamente
+//
+// Compatibilidad: requireAuth acepta tokens legacy (32 bytes) como accessTokens
+//   para no romper sesiones existentes al hacer deploy.
+
+function makeToken()        { return require('crypto').randomBytes(32).toString('hex'); }
+function makeAccessToken()  { return require('crypto').randomBytes(64).toString('hex'); }
+function makeRefreshToken() { return require('crypto').randomBytes(64).toString('hex'); }
+
+const ACCESS_TTL  = 15 * 60 * 1000;          // 15 minutos
+const REFRESH_TTL = 30 * 24 * 60 * 60 * 1000; // 30 días
+
+/** Crea sesión con accessToken + refreshToken y la persiste. */
+async function createSession(userId, extra) {
+    const accessToken  = makeAccessToken();
+    const refreshToken = makeRefreshToken();
+    const now          = Date.now();
+    const sessions     = await readSessions();
+    // Limpiar tokens anteriores del mismo usuario
+    for (const tok of Object.keys(sessions)) {
+        const e   = sessions[tok];
+        const uid = typeof e === 'object' ? e.userId : e;
+        if (uid === userId) delete sessions[tok];
+    }
+    sessions[accessToken]  = { userId, created: now, type: 'access',  exp: now + ACCESS_TTL,  ...(extra||{}) };
+    sessions[refreshToken] = { userId, created: now, type: 'refresh', exp: now + REFRESH_TTL, ...(extra||{}) };
+    await writeSessions(sessions);
+    return { accessToken, refreshToken };
 }
 
-// Hash simple de contraseÁ±a (SHA-256 "” sin librerías extra)
-function hashPassword(plain) {
-    return require('crypto').createHash('sha256').update(plain + (process.env.PASSWORD_SALT || 'fixpromax_salt_2026')).digest('hex');
+/** Setea la cookie httpOnly del refreshToken en la respuesta. */
+function setRefreshCookie(res, refreshToken) {
+    res.cookie('fixpromax_refresh', refreshToken, {
+        httpOnly: true,
+        sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+        secure:   process.env.NODE_ENV === 'production',
+        maxAge:   REFRESH_TTL,
+        path:     '/api/auth/refresh',  // solo enviada a este endpoint
+    });
 }
 
-// Middleware de autenticación "” extrae token del header Authorization
-const SESSION_TTL = 30 * 24 * 60 * 60 * 1000; // 30 días
+// ── Hashing de contraseñas con bcrypt ────────────────────────────────────────
+// bcrypt es resistente a fuerza bruta por su factor de costo (saltRounds).
+// SHA-256 legacy se mantiene para MIGRAR contraseñas antiguas al primer login.
+const bcrypt        = require('bcrypt');
+const BCRYPT_ROUNDS = 12;
+const SHA256_SALT   = process.env.PASSWORD_SALT || 'fixpromax_salt_2026';
+const BCRYPT_PREFIX = '\\$';
+
+/** Genera hash bcrypt (async) */
+async function hashPassword(plain) {
+    return bcrypt.hash(plain, BCRYPT_ROUNDS);
+}
+
+/** Hash síncrono para la cuenta demo (solo se llama al arrancar) */
+function hashPasswordSync(plain) {
+    return bcrypt.hashSync(plain, BCRYPT_ROUNDS);
+}
+
+/**
+ * Verifica contraseña — soporta bcrypt Y SHA-256 legacy.
+ * Si el hash es SHA-256 y es correcto, lo migra a bcrypt y devuelve el nuevo hash.
+ * @returns {{ ok: boolean, newHash: string|null }}
+ */
+async function verifyPassword(plain, storedHash) {
+    if (!plain || !storedHash) return { ok: false, newHash: null };
+    if (storedHash.startsWith(BCRYPT_PREFIX)) {
+        const ok = await bcrypt.compare(plain, storedHash);
+        return { ok, newHash: null };
+    }
+    // Hash SHA-256 legacy
+    const sha256Hash = require('crypto').createHash('sha256').update(plain + SHA256_SALT).digest('hex');
+    if (storedHash !== sha256Hash) return { ok: false, newHash: null };
+    // Correcto con hash antiguo — migrar a bcrypt
+    const newHash = await bcrypt.hash(plain, BCRYPT_ROUNDS);
+    console.log('[auth] Migrada SHA-256 → bcrypt');
+    return { ok: true, newHash };
+}
+
+// Middleware de autenticación — acepta accessToken nuevo (15 min) y tokens legacy (30 días)
+const SESSION_TTL = 30 * 24 * 60 * 60 * 1000; // TTL legacy — compatibilidad
 
 async function requireAuth(req, res, next) {
     const header = req.headers['authorization'] || '';
     const token  = header.replace('Bearer ', '').trim();
-    if (!token) return res.status(401).json({ ok: false, error: 'No autenticado' });
+    if (!token) return res.status(401).json({ ok: false, error: 'No autenticado', code: 'NO_TOKEN' });
     const sessions = await readSessions();
     const entry    = sessions[token];
-    if (!entry) return res.status(401).json({ ok: false, error: 'Tu sesión ha expirado. Inicia sesión nuevamente.' });
-    // Soporte para formato antiguo (string userId) y nuevo ({ userId, exp })
+    if (!entry) return res.status(401).json({ ok: false, error: 'Tu sesión ha expirado. Inicia sesión nuevamente.', code: 'SESSION_EXPIRED' });
+    // Rechazar refresh tokens usados como access tokens
+    if (typeof entry === 'object' && entry.type === 'refresh') {
+        return res.status(401).json({ ok: false, error: 'Token inválido.', code: 'INVALID_TOKEN' });
+    }
     const userId  = typeof entry === 'object' ? entry.userId : entry;
-    const created = typeof entry === 'object' ? entry.created : 0;
-    if (created && Date.now() - created > SESSION_TTL) {
+    const now     = Date.now();
+    // Verificar expiración: si tiene .exp usar eso, si no usar SESSION_TTL legacy
+    const exp     = typeof entry === 'object' && entry.exp ? entry.exp : (entry.created || 0) + SESSION_TTL;
+    if (now > exp) {
         delete sessions[token];
         await writeSessions(sessions);
-        return res.status(401).json({ ok: false, error: 'Tu sesión ha expirado. Inicia sesión nuevamente.' });
+        return res.status(401).json({ ok: false, error: 'Tu sesión ha expirado.', code: 'SESSION_EXPIRED' });
     }
     const users = await readUsers();
     const user  = users.find(u => u.id === userId);
-    if (!user) return res.status(401).json({ ok: false, error: 'Usuario no encontrado' });
-    if (user.active === false) return res.status(403).json({ ok: false, error: 'Esta cuenta ha sido suspendida.' });
+    if (!user) return res.status(401).json({ ok: false, error: 'Usuario no encontrado', code: 'USER_NOT_FOUND' });
+    if (user.active === false) return res.status(403).json({ ok: false, error: 'Esta cuenta ha sido suspendida.', code: 'SUSPENDED' });
     req.user = { id: user.id, name: user.name, email: user.email,
                  role: user.role, company: user.company, avatar: user.avatar,
                  mode: user.mode || 'basic',
@@ -2199,9 +2277,9 @@ async function requireAuth(req, res, next) {
                  permissions: user.permissions || DEFAULT_EMPLOYEE_PERMISSIONS,
                  isDemo:      user.isDemo || user.companyId === DEMO_COMPANY_ID || false };
     // Actualizar lastLogin (throttle: máx 1 vez por minuto para no sobrecargar)
-    const now = Date.now();
-    if (!user.lastLogin || now - new Date(user.lastLogin).getTime() > 60000) {
-        user.lastLogin = new Date(now).toISOString();
+    const _now = Date.now();
+    if (!user.lastLogin || _now - new Date(user.lastLogin).getTime() > 60000) {
+        user.lastLogin = new Date(_now).toISOString();
         await writeUsers(users);
     }
     // Inyectar companyId en contexto async para que readDB/writeDB usen la BD correcta
@@ -2251,7 +2329,7 @@ app.post('/api/auth/register', async (req, res) => {
         id:        generateId(),
         name,
         email,
-        password:  hashPassword(password),
+        password:  await hashPassword(password),
         company,
         role:      users.length === 0 ? 'admin' : 'user',
         mode,
@@ -2273,14 +2351,18 @@ app.post('/api/auth/register', async (req, res) => {
     users.push(newUser);
     await writeUsers(users);
 
-    const token    = makeToken();
-    const sessions = await readSessions();
-    sessions[token] = { userId: newUser.id, created: Date.now() };
-    await writeSessions(sessions);
+    const { accessToken, refreshToken } = await createSession(newUser.id);
 
     console.log(`✅ Nuevo usuario registrado: ${newUser.email} (${newUser.role}) modo:${newUser.mode}`);
+    res.cookie('fixpromax_token', accessToken, {
+        httpOnly: false,
+        sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+        secure:   process.env.NODE_ENV === 'production',
+        maxAge:   ACCESS_TTL, path: '/',
+    });
+    setRefreshCookie(res, refreshToken);
     ok(res, {
-        token,
+        token: accessToken, accessToken, expiresIn: ACCESS_TTL,
         user: { id: newUser.id, name: newUser.name, email: newUser.email,
                 role: newUser.role, company: newUser.company, avatar: newUser.avatar,
                 mode: newUser.mode, companyId: newUser.companyId, teamRole: newUser.teamRole }
@@ -2303,48 +2385,28 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     const users = await readUsers();
-    const user  = users.find(u => u.email.toLowerCase() === key);
-    if (!user || user.password !== hashPassword(password)) {
-        // Registrar intento fallido
-        entry.count = (entry.count || 0) + 1;
-        if (entry.count >= 5) {
-            entry.blockedUntil = Date.now() + 5 * 60 * 1000;  // 5 min
-            entry.count = 0;
-            _loginAttempts[key] = entry;
-            return err(res, 'Demasiados intentos. Tu cuenta está bloqueada por 5 minutos.', 429);
-        }
-        _loginAttempts[key] = entry;
-        const remaining = 5 - entry.count;
-        return err(res, `El correo electrónico o la contraseÁ±a son incorrectos.${remaining <= 2 ? ` Te quedan ${remaining} intento(s).` : ''}`, 401);
-    }
 
-    if (!user.active) return err(res, 'Esta cuenta está desactivada.', 403);
 
-    // Login exitoso "” limpiar intentos
-    delete _loginAttempts[key];
 
-    const token    = makeToken();
-    const sessions = await readSessions();
-    // Limpiar sesiones anteriores del mismo usuario para no acumular tokens
-    Object.keys(sessions).forEach(tok => {
-        const e = sessions[tok];
-        const uid = typeof e === 'object' ? e.userId : e;
-        if (uid === user.id) delete sessions[tok];
-    });
-    sessions[token] = { userId: user.id, created: Date.now() };
-    await writeSessions(sessions);
+    // Crear sesión con accessToken (15 min) + refreshToken (30 días)
+    const { accessToken, refreshToken } = await createSession(user.id);
 
     console.log(`✅ Login: ${user.email}`);
-    // Setear cookie de sesión para que GET / pueda inyectar los datos correctos
-    res.cookie('fixpromax_token', token, {
-        httpOnly: false,      // false para que el cliente JS pueda leerla
+    // Cookie legacy para compatibilidad con GET / (inyección de datos iniciales)
+    res.cookie('fixpromax_token', accessToken, {
+        httpOnly: false,
         sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
-        secure:   process.env.NODE_ENV === 'production',  // true en HTTPS
-        maxAge:   30 * 24 * 60 * 60 * 1000,  // 30 días
-        path:     '/'
+        secure:   process.env.NODE_ENV === 'production',
+        maxAge:   ACCESS_TTL,
+        path:     '/',
     });
+    // RefreshToken en cookie httpOnly — no accesible desde JS
+    setRefreshCookie(res, refreshToken);
     ok(res, {
-        token,
+        token:        accessToken,   // campo 'token' legacy para compatibilidad con auth.js
+        accessToken,
+        refreshToken: null,          // NO enviamos el refreshToken en el body — solo en cookie
+        expiresIn:    ACCESS_TTL,
         user: { id: user.id, name: user.name, email: user.email,
                 role: user.role, company: user.company, avatar: user.avatar,
                 mode: user.mode || 'basic', mustChange: user.mustChange || false,
@@ -2352,153 +2414,6 @@ app.post('/api/auth/login', async (req, res) => {
                 teamRole:  user.teamRole  || (user.role === 'admin' ? 'owner' : 'employee') }
     });
 });
-// ══════════════════════════════════════════════════════════════════════════════
-// GOOGLE SIGN-IN — OAuth 2.0 con passport-google-oauth20
-// Flujo:
-//   1. Usuario hace clic en "Continuar con Google"
-//   2. Browser redirige a GET /api/auth/google
-//   3. Google autentica y redirige a GET /api/auth/google/callback
-//   4. El servidor crea/actualiza el usuario y genera un token de sesión
-//   5. Redirige al cliente con el token en la URL (?google_token=xxx)
-//   6. auth.js detecta el token y entra a la app
-// ══════════════════════════════════════════════════════════════════════════════
-(function setupGoogleOAuth() {
-    const clientID     = process.env.GOOGLE_CLIENT_ID;
-    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-
-    if (!clientID || clientID === 'PEGA_TU_CLIENT_ID_AQUI' ||
-        !clientSecret || clientSecret === 'PEGA_TU_CLIENT_SECRET_AQUI') {
-        console.warn('⚠️  Google OAuth no configurado — GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET faltan en .env');
-        app.get('/api/auth/google',          (req, res) => res.status(503).json({ ok: false, error: 'Google Sign-In no está configurado aún.' }));
-        app.get('/api/auth/google/callback', (req, res) => res.redirect('/?error=google_not_configured'));
-        return;
-    }
-
-    const passport       = require('passport');
-    const GoogleStrategy = require('passport-google-oauth20').Strategy;
-    const APP_URL        = (process.env.APP_URL || 'http://localhost:3000').replace(/\/$/, '');
-    const CALLBACK_URL   = APP_URL + '/api/auth/google/callback';
-
-    passport.use(new GoogleStrategy({
-        clientID,
-        clientSecret,
-        callbackURL:        CALLBACK_URL,
-        passReqToCallback:  false,
-    }, async (accessToken, refreshToken, profile, done) => {
-        try {
-            const googleId    = profile.id;
-            const email       = ((profile.emails || [])[0] || {}).value || '';
-            const cleanEmail  = email.toLowerCase().trim();
-            const displayName = profile.displayName || cleanEmail.split('@')[0];
-            const avatar      = displayName.split(' ').map(function(w){ return w[0]; }).join('').toUpperCase().slice(0, 2);
-            const picture     = ((profile.photos || [])[0] || {}).value || null;
-
-            if (!cleanEmail) return done(null, false, { message: 'No se pudo obtener el email de Google.' });
-
-            const users = await readUsers();
-            let user = users.find(function(u){ return u.googleId === googleId; })
-                    || users.find(function(u){ return u.email && u.email.toLowerCase() === cleanEmail; });
-
-            if (user) {
-                const idx = users.findIndex(function(u){ return u.id === user.id; });
-                if (user.active === false) return done(null, false, { message: 'Esta cuenta está suspendida.' });
-                let changed = false;
-                if (!user.googleId)           { users[idx].googleId = googleId; changed = true; }
-                if (!user.avatar && avatar)   { users[idx].avatar   = avatar;   changed = true; }
-                if (picture && !user.picture) { users[idx].picture  = picture;  changed = true; }
-                if (changed) await writeUsers(users);
-                return done(null, users[idx]);
-            }
-
-            // Usuario nuevo — crear cuenta
-            const newUser = {
-                id:          generateId(),
-                name:        sanitizeName(displayName, 100),
-                email:       cleanEmail,
-                password:    null,
-                googleId,
-                picture,
-                company:     '',
-                role:        'user',
-                mode:        'basic',
-                avatar,
-                companyId:   generateId(),
-                teamRole:    'owner',
-                permissions: null,
-                active:      true,
-                isDemo:      false,
-                mustChange:  false,
-                trialStart:  new Date().toISOString(),
-                createdAt:   new Date().toISOString(),
-                updatedAt:   new Date().toISOString(),
-                loginAttempts:      0,
-                lockedUntil:        null,
-                subscriptionStatus: 'trial',
-                subscriptionPlan:   null,
-            };
-            users.push(newUser);
-            await writeUsers(users);
-            try {
-                const defData = typeof DB.defaultData === 'function' ? DB.defaultData() : {};
-                await DB.writeCompanyDB(newUser.companyId, defData);
-            } catch(e2) { console.warn('[Google OAuth] No se pudo crear companyDB:', e2.message); }
-            console.log('✅ Google Sign-In — nuevo usuario: ' + cleanEmail);
-            return done(null, newUser);
-        } catch (e) {
-            console.error('[Google OAuth] Error en strategy:', e.message);
-            return done(e);
-        }
-    }));
-
-    passport.serializeUser(function(user, done){ done(null, user.id); });
-    passport.deserializeUser(function(id, done){ done(null, { id: id }); });
-    app.use(passport.initialize());
-
-    // GET /api/auth/google — inicio del flujo
-    app.get('/api/auth/google',
-        authLimiter,
-        passport.authenticate('google', { scope: ['profile', 'email'], prompt: 'select_account' })
-    );
-
-    // GET /api/auth/google/callback — respuesta de Google
-    app.get('/api/auth/google/callback',
-        passport.authenticate('google', { session: false, failureRedirect: '/?error=google_auth_failed' }),
-        async function(req, res) {
-            try {
-                const user = req.user;
-                if (!user) return res.redirect('/?error=google_auth_failed');
-
-                const token    = makeToken();
-                const sessions = await readSessions();
-                // Limpiar sesiones anteriores del mismo usuario
-                Object.keys(sessions).forEach(function(tok){
-                    const e = sessions[tok];
-                    if ((typeof e === 'object' ? e.userId : e) === user.id) delete sessions[tok];
-                });
-                sessions[token] = { userId: user.id, created: Date.now() };
-                await writeSessions(sessions);
-
-                res.cookie('fixpromax_token', token, {
-                    httpOnly: false,
-                    sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
-                    secure:   process.env.NODE_ENV === 'production',
-                    maxAge:   30 * 24 * 60 * 60 * 1000,
-                    path:     '/',
-                });
-
-                console.log('✅ Google Sign-In exitoso: ' + user.email);
-                // Redirigir con el token — auth.js lo detectará y entrará a la app
-                res.redirect('/?google_token=' + token);
-            } catch (e) {
-                console.error('[Google OAuth callback]', e.message);
-                res.redirect('/?error=google_auth_failed');
-            }
-        }
-    );
-
-    console.log('✅ Google OAuth configurado — callback: ' + CALLBACK_URL);
-})();
-// ── FIN Google OAuth ──────────────────────────────────────────────────────────
 
 // ❌”€❌”€ CAMBIO DE CONTRASEÁ‘A (autenticado, para mustChange) ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
 app.post('/api/auth/change-password', requireAuth, async (req, res) => {
@@ -2508,7 +2423,7 @@ app.post('/api/auth/change-password', requireAuth, async (req, res) => {
     const users = await readUsers();
     const idx   = users.findIndex(u => u.id === req.user.id);
     if (idx === -1) return err(res, 'Usuario no encontrado', 404);
-    users[idx].password    = hashPassword(newPassword);
+    users[idx].password    = await hashPassword(newPassword);
     users[idx].mustChange  = false;
     await writeUsers(users);
     console.log(`🔑 ContraseÁ±a cambiada: ${users[idx].email}`);
@@ -2548,7 +2463,7 @@ app.post('/api/auth/recover-reset', async (req, res) => {
     const users = await readUsers();
     const idx   = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
     if (idx === -1) return err(res, 'Usuario no encontrado', 404);
-    users[idx].password   = hashPassword(newPassword);
+    users[idx].password   = await hashPassword(newPassword);
     users[idx].mustChange = false;
     await writeUsers(users);
     delete _recoverCodes[email.toLowerCase()];
@@ -2559,11 +2474,79 @@ app.post('/api/auth/logout', async (req, res) => {
     const header   = req.headers['authorization'] || '';
     const token    = header.replace('Bearer ', '').trim();
     const sessions = await readSessions();
-    delete sessions[token];
-    await writeSessions(sessions);
-    // Borrar la cookie de sesión
-    res.clearCookie('fixpromax_token', { path: '/' });
+    // Eliminar el accessToken y su refreshToken asociado
+    if (token) {
+        const entry = sessions[token];
+        const uid   = typeof entry === 'object' ? entry.userId : entry;
+        // Borrar todos los tokens del usuario (access + refresh)
+        for (const tok of Object.keys(sessions)) {
+            const e = sessions[tok];
+            if ((typeof e === 'object' ? e.userId : e) === uid) delete sessions[tok];
+        }
+        await writeSessions(sessions);
+    }
+    res.clearCookie('fixpromax_token',   { path: '/' });
+    res.clearCookie('fixpromax_refresh', { path: '/api/auth/refresh' });
     ok(res, { loggedOut: true });
+});
+
+// ── POST /api/auth/refresh — renovar accessToken con refreshToken ────────────
+// El refreshToken viaja en la cookie httpOnly 'fixpromax_refresh'.
+// No requiere Authorization header — el accessToken puede estar ya expirado.
+app.post('/api/auth/refresh', authLimiter, async (req, res) => {
+    const refreshToken = req.cookies?.['fixpromax_refresh'] || req.body?.refreshToken || '';
+    if (!refreshToken) return res.status(401).json({ ok: false, error: 'No autenticado', code: 'NO_REFRESH_TOKEN' });
+
+    const sessions = await readSessions();
+    const entry    = sessions[refreshToken];
+
+    if (!entry || typeof entry !== 'object' || entry.type !== 'refresh') {
+        return res.status(401).json({ ok: false, error: 'Sesión inválida o expirada.', code: 'INVALID_REFRESH' });
+    }
+    if (Date.now() > (entry.exp || 0)) {
+        delete sessions[refreshToken];
+        await writeSessions(sessions);
+        return res.status(401).json({ ok: false, error: 'Tu sesión ha expirado. Inicia sesión nuevamente.', code: 'REFRESH_EXPIRED' });
+    }
+
+    const users = await readUsers();
+    const user  = users.find(u => u.id === entry.userId);
+    if (!user || user.active === false) {
+        delete sessions[refreshToken];
+        await writeSessions(sessions);
+        return res.status(401).json({ ok: false, error: 'Usuario no encontrado o suspendido.', code: 'USER_NOT_FOUND' });
+    }
+
+    // Emitir nuevo accessToken — el refreshToken se reutiliza (sliding window)
+    const newAccessToken = makeAccessToken();
+    const now = Date.now();
+    // Limpiar accessTokens anteriores del usuario (sin tocar el refreshToken)
+    for (const tok of Object.keys(sessions)) {
+        const e = sessions[tok];
+        if (typeof e === 'object' && e.userId === user.id && e.type === 'access') delete sessions[tok];
+    }
+    sessions[newAccessToken] = { userId: user.id, created: now, type: 'access', exp: now + ACCESS_TTL };
+    await writeSessions(sessions);
+
+    // Actualizar cookie legacy para GET /
+    res.cookie('fixpromax_token', newAccessToken, {
+        httpOnly: false,
+        sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+        secure:   process.env.NODE_ENV === 'production',
+        maxAge:   ACCESS_TTL,
+        path:     '/',
+    });
+
+    ok(res, {
+        token:       newAccessToken,
+        accessToken: newAccessToken,
+        expiresIn:   ACCESS_TTL,
+        user: { id: user.id, name: user.name, email: user.email,
+                role: user.role, company: user.company, avatar: user.avatar,
+                mode: user.mode || 'basic',
+                companyId: user.companyId || user.id,
+                teamRole:  user.teamRole  || (user.role === 'admin' ? 'owner' : 'employee') }
+    });
 });
 
 // ❌”€❌”€ PERFIL del usuario actual ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
@@ -2596,11 +2579,11 @@ app.put('/api/auth/me', requireAuth, async (req, res) => {
     if (company) users[idx].company = company;
     if (mode)    users[idx].mode    = mode;
     if (password && newPassword) {
-        if (users[idx].password !== hashPassword(password)) {
+        if (!(await verifyPassword(password, users[idx].password)).ok) {
             return err(res, 'ContraseÁ±a actual incorrecta');
         }
         if (newPassword.length < 6) return err(res, 'La nueva contraseÁ±a debe tener al menos 6 caracteres');
-        users[idx].password = hashPassword(newPassword);
+        users[idx].password = await hashPassword(newPassword);
     }
     users[idx].avatar = users[idx].name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
     await writeUsers(users);
@@ -4018,7 +4001,7 @@ app.post('/api/team/invite', requireAuth, async (req, res) => {
         id:          generateId(),
         name:        name.trim(),
         email:       emailClean,
-        password:    hashPassword(password),
+                password:    await hashPassword(password),
         companyId:   req.user.companyId,
         company:     req.user.company || ownerFull.company || '',
         role:        'user',
@@ -4971,7 +4954,7 @@ app.post('/api/demo/login', async (req, res) => {
     if (!demoUser) {
         demoUser = {
             id: 'demo-user-fixed', name: 'Usuario Demo', email: DEMO_EMAIL,
-            password: hashPassword(DEMO_PASSWORD), company: 'Empresa Demo',
+            password: hashPasswordSync(DEMO_PASSWORD), company: 'Empresa Demo',
             role: 'user', mode: 'basic', avatar: 'DE',
             createdAt: new Date().toISOString(), trialStart: new Date().toISOString(),
             active: true, isDemo: true,
