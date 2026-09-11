@@ -268,6 +268,29 @@ app.get('/_version', (req, res) => {
 });
 
 // ══ ENDPOINT DE EMERGENCIA: desactivar maintenanceMode ══════════════════════
+// Endpoint de emergencia: resetear contrasena de usuario por email
+// POST /_admin_fix/reset-password?key=FIXPROMAX_MIGRATE_2026
+// Body: { "email": "usuario@ejemplo.com", "newPassword": "NuevaContrasena123" }
+app.post('/_admin_fix/reset-password', async (req, res) => {
+    if ((req.query.key || '') !== (process.env.ADMIN_MIGRATE_KEY || 'FIXPROMAX_MIGRATE_2026'))
+        return res.status(403).json({ ok: false, error: 'Clave incorrecta' });
+    const { email, newPassword } = req.body || {};
+    if (!email || !newPassword || newPassword.length < 6)
+        return res.status(400).json({ ok: false, error: 'email y newPassword (min 6 chars) requeridos' });
+    try {
+        const users = await readUsers();
+        const idx = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase().trim());
+        if (idx === -1) return res.status(404).json({ ok: false, error: 'Usuario no encontrado' });
+        users[idx].password   = await hashPassword(newPassword);
+        users[idx].mustChange = false;
+        await writeUsers(users);
+        console.log('[admin] Contrasena reseteada para:', email);
+        res.json({ ok: true, email: users[idx].email, name: users[idx].name });
+    } catch (e) {
+        res.status(500).json({ ok: false, error: e.message });
+    }
+});
+
 // Registrado ANTES de todos los middlewares /api para que nunca sea bloqueado.
 // GET /_admin_fix/disable-maintenance?key=FIXPROMAX_MIGRATE_2026
 app.get('/_admin_fix/disable-maintenance', async (req, res) => {
