@@ -73,43 +73,40 @@ async function startServer(port) {
     } catch (e) {
         console.warn('\u26a0\ufe0f No se pudo verificar maintenanceMode al arrancar:', e.message);
     }
-
-    // ── Servidor HTTP (redirige a HTTPS en desarrollo local) ──────────────────
-    const httpRedirectApp = express();
-    httpRedirectApp.use((req, res) => {
-        const host = (req.headers.host || "").replace(/:\d+$/, "");
-        res.redirect(301, `https://${host}:${HTTPS_PORT}${req.url}`);
-    });
-    const httpServer = http.createServer(httpRedirectApp);
-    httpServer.listen(port, "0.0.0.0", () => {
-        if (process.env.NODE_ENV !== "production") {
-            console.log(`  \uD83D\uDD04 HTTP  :\u0020http://localhost:${port}  \u2192 redirige a HTTPS`);
-        }
-    });
-    httpServer.on("error", (e) => {
-        if (e.code !== "EADDRINUSE") console.error("HTTP server error:", e.message);
-    });
-
-    // ── Servidor HTTPS / HTTP segun entorno ───────────────────────────────────
-    let server;
+    // ── Detectar entorno Render (proxy TLS externo) ──────────────────────────
     const isRender = !!(process.env.RENDER || process.env.RENDER_EXTERNAL_URL);
 
+    let server;
+
     if (isRender) {
-        // En Render el proxy ya termina TLS; escuchamos HTTP internamente
+        // En Render el proxy ya termina TLS; solo escuchamos HTTP en el puerto asignado
         server = http.createServer(app);
         server.listen(port, "0.0.0.0", () => {
             console.log("");
-            console.log("  \uD83D\uDE80 FIX PRO MAX \u2014 Backend corriendo (Render, HTTPS automatico)");
-            console.log(`  \uD83C\uDF10 URL publica: ${process.env.APP_URL || "https://fixpromax-erp.onrender.com"}`);
-            console.log(`  \uD83D\uDC51 Admin     : ${process.env.APP_URL || ""}/admin`);
-            console.log("  \uD83C\uDF43 Base de datos: MongoDB Atlas");
+            console.log("  FIX PRO MAX - Backend corriendo (Render, HTTPS automatico)");
+            console.log(`  URL publica: ${process.env.APP_URL || "https://fixpromax-erp.onrender.com"}`);
+            console.log(`  Admin     : ${process.env.APP_URL || ""}/admin`);
+            console.log("  Base de datos: MongoDB Atlas");
             console.log("");
         });
     } else {
-        // Desarrollo local: levantar HTTPS con certificado auto-firmado si existe
+        // Desarrollo local: servidor HTTP redirige a HTTPS
+        const httpRedirectApp = express();
+        httpRedirectApp.use((req, res) => {
+            const host = (req.headers.host || "").replace(/:\d+$/, "");
+            res.redirect(301, `https://${host}:${HTTPS_PORT}${req.url}`);
+        });
+        const httpServer = http.createServer(httpRedirectApp);
+        httpServer.listen(port, "0.0.0.0", () => {
+            console.log(`  HTTP  : http://localhost:${port}  -> redirige a HTTPS`);
+        });
+        httpServer.on("error", (e) => {
+            if (e.code !== "EADDRINUSE") console.error("HTTP server error:", e.message);
+        });
+
+        // HTTPS con certificado auto-firmado si existe
         const certPath = path.resolve(process.env.SSL_CERT_PATH || "./ssl/cert.pem");
         const keyPath  = path.resolve(process.env.SSL_KEY_PATH  || "./ssl/key.pem");
-
         const tlsOptions = {};
         if (fs.existsSync(certPath) && fs.existsSync(keyPath)) {
             try {
@@ -119,29 +116,23 @@ async function startServer(port) {
                 console.warn("  [SSL] No se pudieron leer los certificados:", e.message);
             }
         }
-
         if (tlsOptions.cert && tlsOptions.key) {
             server = https.createServer(tlsOptions, app);
             server.listen(HTTPS_PORT, "0.0.0.0", () => {
                 console.log("");
-                console.log("  \uD83D\uDD12 FIX PRO MAX \u2014 Backend corriendo con HTTPS");
-                console.log(`  \uD83C\uDF10 HTTPS : https://localhost:${HTTPS_PORT}`);
-                console.log(`  \uD83D\uDD04 HTTP  : http://localhost:${port}  (redirige \u2192 HTTPS)`);
-                console.log(`  \uD83D\uDC51 Admin : https://localhost:${HTTPS_PORT}/admin`);
-                console.log("  \uD83C\uDF43 Base de datos: MongoDB Atlas");
-                console.log("");
-                console.log("  \u26A0\uFE0F  Cert auto-firmado: acepta la excepcion en el navegador.");
+                console.log("  FIX PRO MAX - Backend corriendo con HTTPS local");
+                console.log(`  HTTPS : https://localhost:${HTTPS_PORT}`);
+                console.log(`  HTTP  : http://localhost:${port}  (redirige a HTTPS)`);
+                console.log("  Cert auto-firmado: acepta la excepcion en el navegador.");
                 console.log("");
             });
         } else {
-            // Sin certificados: HTTP normal con aviso
             server = http.createServer(app);
             server.listen(port, "0.0.0.0", () => {
                 console.log("");
-                console.log("  \u26A0\uFE0F  FIX PRO MAX \u2014 Backend corriendo en HTTP (sin SSL)");
-                console.log(`  \uD83C\uDF10 URL: http://localhost:${port}`);
-                console.log(`  \uD83D\uDC51 Admin: http://localhost:${port}/admin`);
-                console.log("  \uD83D\uDCA1 Para HTTPS local ejecuta: node generate-ssl-cert.js");
+                console.log("  FIX PRO MAX - Backend corriendo en HTTP (sin SSL)");
+                console.log(`  URL: http://localhost:${port}`);
+                console.log("  Para HTTPS local ejecuta: node generate-ssl-cert.js");
                 console.log("");
             });
         }
