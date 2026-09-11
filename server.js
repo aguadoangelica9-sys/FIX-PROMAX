@@ -7,10 +7,12 @@
 // Cargar variables de entorno (.env en desarrollo, variables del sistema en producción)
 require('dotenv').config();
 
-const express = require('express');
-const cors    = require('cors');
-const fs      = require('fs');
-const path    = require('path');
+const express  = require('express');
+const cors     = require('cors');
+const fs       = require('fs');
+const path     = require('path');
+const http     = require('http');
+const https    = require('https');
 
 // AsyncLocalStorage declarado AQUÍ (al inicio) para que todos los middlewares y
 // handlers posteriores puedan acceder a él sin riesgo de Temporal Dead Zone.
@@ -24,7 +26,8 @@ const DB = require('./db-mongo');
 const ExchangeRateService = require('./exchange-rate-service');
 
 const app  = express();
-const PORT = process.env.PORT || 3000;
+const PORT       = process.env.PORT       || 3000;
+const HTTPS_PORT = process.env.HTTPS_PORT || 3443;
 // DB_PATH se mantiene solo para compatibilidad con exchange-rate-service que lo necesita como referencia de directorio
 const DB_PATH = path.join(__dirname, 'db.json');
 
@@ -71,16 +74,81 @@ async function startServer(port) {
         console.warn('\u26a0\ufe0f No se pudo verificar maintenanceMode al arrancar:', e.message);
     }
 
-    const server = app.listen(port, '0.0.0.0', () => {
-        console.log('');
-        console.log('  ❌š¡ FIX PRO MAX "” Backend corriendo');
-        console.log(`  🖥️ï¸  URL: http://localhost:${port}`);
-        console.log(`  👑 Panel admin: http://localhost:${port}/admin`);
-        console.log(`  🍃 Base de datos: MongoDB Atlas`);
-        console.log('');
+    // ── Servidor HTTP (redirige a HTTPS en desarrollo local) ──────────────────
+    const httpRedirectApp = express();
+    httpRedirectApp.use((req, res) => {
+        const host = (req.headers.host || "").replace(/:\d+$/, "");
+        res.redirect(301, `https://${host}:${HTTPS_PORT}${req.url}`);
     });
-    server.on('error', (e) => {
-        console.error('Error del servidor:', e.message);
+    const httpServer = http.createServer(httpRedirectApp);
+    httpServer.listen(port, "0.0.0.0", () => {
+        if (process.env.NODE_ENV !== "production") {
+            console.log(`  \uD83D\uDD04 HTTP  :\u0020http://localhost:${port}  \u2192 redirige a HTTPS`);
+        }
+    });
+    httpServer.on("error", (e) => {
+        if (e.code !== "EADDRINUSE") console.error("HTTP server error:", e.message);
+    });
+
+    // ── Servidor HTTPS / HTTP segun entorno ───────────────────────────────────
+    let server;
+    const isRender = !!(process.env.RENDER || process.env.RENDER_EXTERNAL_URL);
+
+    if (isRender) {
+        // En Render el proxy ya termina TLS; escuchamos HTTP internamente
+        server = http.createServer(app);
+        server.listen(port, "0.0.0.0", () => {
+            console.log("");
+            console.log("  \uD83D\uDE80 FIX PRO MAX \u2014 Backend corriendo (Render, HTTPS automatico)");
+            console.log(`  \uD83C\uDF10 URL publica: ${process.env.APP_URL || "https://fixpromax-erp.onrender.com"}`);
+            console.log(`  \uD83D\uDC51 Admin     : ${process.env.APP_URL || ""}/admin`);
+            console.log("  \uD83C\uDF43 Base de datos: MongoDB Atlas");
+            console.log("");
+        });
+    } else {
+        // Desarrollo local: levantar HTTPS con certificado auto-firmado si existe
+        const certPath = path.resolve(process.env.SSL_CERT_PATH || "./ssl/cert.pem");
+        const keyPath  = path.resolve(process.env.SSL_KEY_PATH  || "./ssl/key.pem");
+
+        const tlsOptions = {};
+        if (fs.existsSync(certPath) && fs.existsSync(keyPath)) {
+            try {
+                tlsOptions.cert = fs.readFileSync(certPath);
+                tlsOptions.key  = fs.readFileSync(keyPath);
+            } catch (e) {
+                console.warn("  [SSL] No se pudieron leer los certificados:", e.message);
+            }
+        }
+
+        if (tlsOptions.cert && tlsOptions.key) {
+            server = https.createServer(tlsOptions, app);
+            server.listen(HTTPS_PORT, "0.0.0.0", () => {
+                console.log("");
+                console.log("  \uD83D\uDD12 FIX PRO MAX \u2014 Backend corriendo con HTTPS");
+                console.log(`  \uD83C\uDF10 HTTPS : https://localhost:${HTTPS_PORT}`);
+                console.log(`  \uD83D\uDD04 HTTP  : http://localhost:${port}  (redirige \u2192 HTTPS)`);
+                console.log(`  \uD83D\uDC51 Admin : https://localhost:${HTTPS_PORT}/admin`);
+                console.log("  \uD83C\uDF43 Base de datos: MongoDB Atlas");
+                console.log("");
+                console.log("  \u26A0\uFE0F  Cert auto-firmado: acepta la excepcion en el navegador.");
+                console.log("");
+            });
+        } else {
+            // Sin certificados: HTTP normal con aviso
+            server = http.createServer(app);
+            server.listen(port, "0.0.0.0", () => {
+                console.log("");
+                console.log("  \u26A0\uFE0F  FIX PRO MAX \u2014 Backend corriendo en HTTP (sin SSL)");
+                console.log(`  \uD83C\uDF10 URL: http://localhost:${port}`);
+                console.log(`  \uD83D\uDC51 Admin: http://localhost:${port}/admin`);
+                console.log("  \uD83D\uDCA1 Para HTTPS local ejecuta: node generate-ssl-cert.js");
+                console.log("");
+            });
+        }
+    }
+
+    server.on("error", (e) => {
+        console.error("Error del servidor:", e.message);
         process.exit(1);
     });
     // Arrancar el cron de tasas BCV despues de que el servidor este listo
@@ -101,6 +169,18 @@ async function startServer(port) {
 }
 
 // ❌”€❌”€ Middlewares ❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€❌”€
+
+// ── Importar middleware de seguridad avanzado ────────────────────────────────
+const securityMiddleware = require('./security-middleware');
+
+// Aplicar middlewares de seguridad
+app.use(securityMiddleware.httpsRedirect());    // Redirección HTTPS
+app.use(securityMiddleware.securityHeaders());  // Headers de seguridad HTTP
+app.use(securityMiddleware.attackPrevention()); // Prevención de ataques
+app.use(securityMiddleware.securityTimeout());  // Timeouts de seguridad
+app.use(securityMiddleware.securityLogging());  // Logging de seguridad
+
+// Middlewares básicos
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -2195,13 +2275,9 @@ async function createSession(userId, extra) {
 
 /** Setea la cookie httpOnly del refreshToken en la respuesta. */
 function setRefreshCookie(res, refreshToken) {
-    res.cookie('fixpromax_refresh', refreshToken, {
-        httpOnly: true,
-        sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
-        secure:   process.env.NODE_ENV === 'production',
-        maxAge:   REFRESH_TTL,
-        path:     '/api/auth/refresh',  // solo enviada a este endpoint
-    });
+    // Usar la nueva configuración de cookies seguras
+    const { setSecureRefreshCookie } = require('./cookie-security');
+    setSecureRefreshCookie(res, refreshToken, 'fixpromax_refresh');
 }
 
 // ── Hashing de contraseñas con bcrypt ────────────────────────────────────────
@@ -2210,7 +2286,7 @@ function setRefreshCookie(res, refreshToken) {
 const bcrypt        = require('bcrypt');
 const BCRYPT_ROUNDS = 12;
 const SHA256_SALT   = process.env.PASSWORD_SALT || 'fixpromax_salt_2026';
-const BCRYPT_PREFIX = '\\$';
+const BCRYPT_PREFIX = '$';
 
 /** Genera hash bcrypt (async) */
 async function hashPassword(plain) {
@@ -2354,12 +2430,9 @@ app.post('/api/auth/register', async (req, res) => {
     const { accessToken, refreshToken } = await createSession(newUser.id);
 
     console.log(`✅ Nuevo usuario registrado: ${newUser.email} (${newUser.role}) modo:${newUser.mode}`);
-    res.cookie('fixpromax_token', accessToken, {
-        httpOnly: false,
-        sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
-        secure:   process.env.NODE_ENV === 'production',
-        maxAge:   ACCESS_TTL, path: '/',
-    });
+    // Configurar cookies seguras usando el nuevo sistema
+    const { setAccessTokenCookie } = require('./cookie-security');
+    setAccessTokenCookie(res, accessToken, 'fixpromax_token');
     setRefreshCookie(res, refreshToken);
     ok(res, {
         token: accessToken, accessToken, expiresIn: ACCESS_TTL,
@@ -2383,23 +2456,45 @@ app.post('/api/auth/login', async (req, res) => {
         const mins = Math.ceil((entry.blockedUntil - Date.now()) / 60000);
         return err(res, `Demasiados intentos fallidos. Intenta de nuevo en ${mins} minuto(s).`, 429);
     }
-
     const users = await readUsers();
-
-
-
+    const user  = users.find(u => u.email.toLowerCase() === key);
+    if (!user) {
+        entry.count = (entry.count || 0) + 1;
+        if (entry.count >= 5) {
+            entry.blockedUntil = Date.now() + 15 * 60 * 1000;
+            entry.count = 0;
+            _loginAttempts[key] = entry;
+            return err(res, 'Demasiados intentos. Bloqueado por 15 minutos.', 429);
+        }
+        _loginAttempts[key] = entry;
+        return err(res, 'El correo o la contrasena son incorrectos.', 401);
+    }
+    const { ok: pwOk, newHash } = await verifyPassword(password, user.password);
+    if (!pwOk) {
+        entry.count = (entry.count || 0) + 1;
+        if (entry.count >= 5) {
+            entry.blockedUntil = Date.now() + 15 * 60 * 1000;
+            entry.count = 0;
+            _loginAttempts[key] = entry;
+            return err(res, 'Demasiados intentos. Bloqueado por 15 minutos.', 429);
+        }
+        _loginAttempts[key] = entry;
+        return err(res, 'El correo o la contrasena son incorrectos.', 401);
+    }
+    if (user.active === false) return err(res, 'Esta cuenta esta desactivada.', 403);
+    delete _loginAttempts[key];
+    if (newHash) {
+        const idx2 = users.findIndex(u => u.id === user.id);
+        if (idx2 !== -1) { users[idx2].password = newHash; await writeUsers(users); }
+    }
     // Crear sesión con accessToken (15 min) + refreshToken (30 días)
     const { accessToken, refreshToken } = await createSession(user.id);
 
     console.log(`✅ Login: ${user.email}`);
     // Cookie legacy para compatibilidad con GET / (inyección de datos iniciales)
-    res.cookie('fixpromax_token', accessToken, {
-        httpOnly: false,
-        sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
-        secure:   process.env.NODE_ENV === 'production',
-        maxAge:   ACCESS_TTL,
-        path:     '/',
-    });
+    // Configurar cookie de access token usando el nuevo sistema
+    const { setAccessTokenCookie } = require('./cookie-security');
+    setAccessTokenCookie(res, accessToken, 'fixpromax_token');
     // RefreshToken en cookie httpOnly — no accesible desde JS
     setRefreshCookie(res, refreshToken);
     ok(res, {

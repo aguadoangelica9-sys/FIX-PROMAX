@@ -54,6 +54,12 @@ test-team*.txt
 test-team*.js
 tsx
 
+# ── Certificados SSL (desarrollo local) ──────────────────────────────────────
+# NUNCA subir claves privadas a Git
+ssl/key.pem
+ssl/cert.pem
+ssl/
+
 # ── Logs y archivos de sistema ────────────────────────────────────────────────
 *.log
 .DS_Store
