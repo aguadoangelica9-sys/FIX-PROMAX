@@ -4283,7 +4283,8 @@
                 </div>
                 <div class="flex gap-2">
                     <input type="text" placeholder="Código de barras" id="barcodeInput" style="padding:8px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit;width:180px;outline:none;transition:all var(--transition);" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter') barcodeScan()" />
-                    <button class="btn btn-sm" onclick="barcodeScan()">📷 Escanear</button>
+                    <button class="btn btn-sm" onclick="barcodeScan()" title="Buscar por código (teclado/lector USB)">🔍 Código</button>
+                    <button class="btn btn-sm btn-primary" onclick="openCameraScanner()" id="btnCameraScanner" title="Escanear con cámara del dispositivo" style="display:flex;align-items:center;gap:5px;">📷 <span>Cámara</span></button>
                     <!-- ── Selector de cliente POS ── -->
                     <div style="position:relative;display:inline-block;" id="posClientWrapper">
                         <input type="text" id="posClientSearch" placeholder="👤 Cliente..."
@@ -8299,17 +8300,13 @@
     function filterPOS() { renderPOS(); }
 
     function barcodeScan() {
-        const input = document.getElementById('barcodeInput');
-        const code = input.value.trim();
-        if (!code) return;
-        const product = data.products.find(p => p.sku === code && p.status !== 'anulado');
-        if (product) {
-            addToCart(product.id);
+        const input   = document.getElementById('barcodeInput');
+        const code    = (input.value || '').trim();
+        if (!code) { input.focus(); return; }
+        _posHandleScannedCode(code, function(product) {
             input.value = '';
-            showToast('📷', `"${product.name}" agregado por código`);
-        } else {
-            showToast('⚠️', 'Código no encontrado');
-        }
+            input.focus();
+        });
     }
 
     function addToCart(productId) {
@@ -17948,5 +17945,710 @@
 
     <!-- ── Script móvil ── -->
     <script src="/mobile.js"></script>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     ESCÁNER DE CÓDIGO DE BARRAS — FIX PRO MAX
+     Integración real con cámara usando @zxing/browser vía CDN.
+     Reutiliza: addToCart(), data.products, showToast(), CSS variables.
+     Compatible: Android, iPhone, Tablet, PC con cámara.
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<!-- ZXing Browser — librería de escaneo de códigos de barras por cámara -->
+<script src="https://unpkg.com/@zxing/browser@0.1.4/umd/index.min.js"></script>
+
+<!-- Modal del escáner -->
+<div id="scannerOverlay" style="
+    display:none;
+    position:fixed;inset:0;z-index:9999;
+    background:rgba(0,0,0,0.85);
+    align-items:center;justify-content:center;
+    padding:16px;
+    backdrop-filter:blur(4px);
+    -webkit-backdrop-filter:blur(4px);
+" role="dialog" aria-modal="true" aria-label="Escáner de código de barras">
+
+    <div id="scannerBox" style="
+        background:var(--surface);
+        border-radius:20px;
+        width:100%;
+        max-width:440px;
+        overflow:hidden;
+        box-shadow:0 24px 64px rgba(0,0,0,0.5);
+        display:flex;
+        flex-direction:column;
+        max-height:95dvh;
+    ">
+        <!-- Header -->
+        <div style="
+            display:flex;align-items:center;justify-content:space-between;
+            padding:16px 20px;
+            border-bottom:1px solid var(--border);
+            background:var(--surface);
+            position:sticky;top:0;z-index:2;
+        ">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-size:22px;">📷</span>
+                <div>
+                    <div style="font-size:15px;font-weight:700;color:var(--text);">Escanear producto</div>
+                    <div id="scannerStatusText" style="font-size:12px;color:var(--text-3);margin-top:1px;">Iniciando cámara...</div>
+                </div>
+            </div>
+            <button onclick="closeCameraScanner()" style="
+                width:36px;height:36px;border:none;border-radius:10px;
+                background:var(--surface-2);color:var(--text);
+                font-size:18px;cursor:pointer;display:flex;
+                align-items:center;justify-content:center;
+                transition:background .15s;flex-shrink:0;
+            " title="Cerrar escáner" aria-label="Cerrar escáner">✕</button>
+        </div>
+
+        <!-- Área de cámara -->
+        <div style="position:relative;background:#000;aspect-ratio:4/3;overflow:hidden;">
+            <video id="scannerVideo" style="
+                width:100%;height:100%;
+                object-fit:cover;
+                display:block;
+            " playsinline autoplay muted></video>
+
+            <!-- Overlay de guía visual -->
+            <div style="
+                position:absolute;inset:0;
+                display:flex;align-items:center;justify-content:center;
+                pointer-events:none;
+            ">
+                <!-- Marco de escaneo animado -->
+                <div id="scannerFrame" style="
+                    width:65%;
+                    aspect-ratio:3/2;
+                    position:relative;
+                ">
+                    <!-- Esquinas del marco -->
+                    <div style="position:absolute;top:0;left:0;width:22px;height:22px;border-top:3px solid #4f46e5;border-left:3px solid #4f46e5;border-radius:3px 0 0 0;"></div>
+                    <div style="position:absolute;top:0;right:0;width:22px;height:22px;border-top:3px solid #4f46e5;border-right:3px solid #4f46e5;border-radius:0 3px 0 0;"></div>
+                    <div style="position:absolute;bottom:0;left:0;width:22px;height:22px;border-bottom:3px solid #4f46e5;border-left:3px solid #4f46e5;border-radius:0 0 0 3px;"></div>
+                    <div style="position:absolute;bottom:0;right:0;width:22px;height:22px;border-bottom:3px solid #4f46e5;border-right:3px solid #4f46e5;border-radius:0 0 3px 0;"></div>
+                    <!-- Línea de escaneo animada -->
+                    <div id="scanLine" style="
+                        position:absolute;left:6px;right:6px;
+                        height:2px;
+                        background:linear-gradient(90deg,transparent,#4f46e5,transparent);
+                        top:50%;
+                        animation:scanAnim 1.8s ease-in-out infinite;
+                    "></div>
+                </div>
+            </div>
+
+            <!-- Selector de cámara (si hay varias) -->
+            <div style="position:absolute;bottom:10px;right:10px;">
+                <button id="switchCameraBtn" onclick="_scannerSwitchCamera()" style="
+                    display:none;
+                    width:38px;height:38px;border:none;border-radius:50%;
+                    background:rgba(0,0,0,0.55);color:#fff;
+                    font-size:18px;cursor:pointer;
+                    align-items:center;justify-content:center;
+                    backdrop-filter:blur(4px);
+                " title="Cambiar cámara">🔄</button>
+            </div>
+        </div>
+
+        <!-- Panel inferior: resultado + controles -->
+        <div style="padding:16px 20px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;">
+
+            <!-- Resultado del último escaneo -->
+            <div id="scannerResult" style="display:none;
+                padding:12px 14px;
+                border-radius:12px;
+                border:1.5px solid var(--border);
+                background:var(--surface-2);
+                font-size:14px;
+            ">
+                <div id="scannerResultContent"></div>
+            </div>
+
+            <!-- Error / producto no encontrado -->
+            <div id="scannerError" style="display:none;
+                padding:12px 14px;
+                border-radius:12px;
+                border:1.5px solid rgba(239,68,68,0.35);
+                background:rgba(239,68,68,0.08);
+                font-size:13px;
+                color:var(--danger,#ef4444);
+            ">
+                <div id="scannerErrorContent"></div>
+                <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                    <button onclick="_scannerResumeAfterError()" class="btn btn-sm" style="flex:1;min-width:120px;">🔄 Intentar nuevamente</button>
+                    <button onclick="_scannerManualSearch()" class="btn btn-sm" style="flex:1;min-width:120px;">🔍 Buscar manualmente</button>
+                    <button id="btnCreateProduct" onclick="_scannerCreateProduct()" class="btn btn-sm" style="display:none;flex:1;min-width:120px;">➕ Crear producto</button>
+                </div>
+            </div>
+
+            <!-- Toggle: escaneo continuo -->
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;">
+                <div>
+                    <div style="font-size:13px;font-weight:600;color:var(--text);">Escaneo continuo</div>
+                    <div style="font-size:11px;color:var(--text-3);">Sigue escaneando sin cerrar la cámara</div>
+                </div>
+                <div id="continuousScanToggle" class="switch on" onclick="_scannerToggleContinuous()"
+                     style="flex-shrink:0;" title="Activar/desactivar escaneo continuo">
+                    <div class="thumb"></div>
+                </div>
+            </div>
+
+            <!-- Botón cerrar -->
+            <button onclick="closeCameraScanner()" class="btn" style="
+                width:100%;padding:12px;font-size:14px;font-weight:600;
+                border-radius:12px;
+            ">Cerrar cámara</button>
+        </div>
+    </div>
+</div>
+
+<!-- Estilos del escáner -->
+<style>
+    @keyframes scanAnim {
+        0%   { top: 8%; opacity: 1; }
+        50%  { top: 88%; opacity: 1; }
+        100% { top: 8%; opacity: 1; }
+    }
+    #scannerOverlay.open { display: flex !important; }
+    /* Responsive: pantalla pequeña ocupa todo */
+    @media (max-width: 500px) {
+        #scannerBox {
+            max-width: 100% !important;
+            border-radius: 20px 20px 0 0 !important;
+            margin-top: auto;
+        }
+        #scannerOverlay {
+            align-items: flex-end !important;
+            padding: 0 !important;
+        }
+    }
+    /* Animación de éxito en el marco */
+    #scannerFrame.success-flash {
+        animation: frameFlash 0.4s ease;
+    }
+    @keyframes frameFlash {
+        0%   { filter: brightness(1); }
+        40%  { filter: brightness(2) drop-shadow(0 0 8px #10b981); }
+        100% { filter: brightness(1); }
+    }
+</style>
+
+<!-- Lógica del escáner -->
+<script>
+(function() {
+    'use strict';
+
+    // ── Estado del escáner ────────────────────────────────────────────
+    var _scanner        = null;   // instancia ZXing
+    var _stream         = null;   // MediaStream activo
+    var _scanning       = false;  // está escaneando
+    var _continuous     = true;   // modo continuo activado
+    var _debounceTimer  = null;   // timer anti-duplicados
+    var _debounceMs     = 1800;   // ms de bloqueo tras lectura
+    var _lastCode       = '';     // último código leído
+    var _cameras        = [];     // lista de cámaras disponibles
+    var _cameraIdx      = 0;      // índice de cámara activa
+    var _pendingBarcode = '';     // código guardado para "crear producto"
+    var _zxingReady     = false;  // ZXing cargado
+
+    // ── Función central: procesar un código escaneado ─────────────────
+    // Exportada globalmente para que barcodeScan() (input manual) la use
+    window._posHandleScannedCode = function(code, onSuccess) {
+        if (!code) return;
+        var prods = (window.data && window.data.products) ? window.data.products : [];
+        var codeL = code.trim().toLowerCase();
+
+        // Buscar en barcode, sku e internalCode (insensible a mayúsculas)
+        var product = prods.find(function(p) {
+            if (p.status === 'anulado') return false;
+            if (p.barcode      && p.barcode.trim().toLowerCase()      === codeL) return true;
+            if (p.sku          && p.sku.trim().toLowerCase()          === codeL) return true;
+            if (p.internalCode && p.internalCode.trim().toLowerCase() === codeL) return true;
+            return false;
+        });
+
+        if (product) {
+            // Validar permisos de venta
+            if (typeof window.checkModuleAccess === 'function') {
+                if (!window.checkModuleAccess('pos')) {
+                    if (typeof showToast === 'function') showToast('🔒', 'Sin permiso para el POS');
+                    return;
+                }
+            }
+            // Agregar al carrito usando la función existente del POS
+            if (typeof window.addToCart === 'function') {
+                window.addToCart(product.id);
+            }
+            if (typeof onSuccess === 'function') onSuccess(product);
+            return product;
+        } else {
+            if (typeof showToast === 'function') showToast('⚠️', 'Código no encontrado: ' + code);
+            return null;
+        }
+    };
+
+    // ── Abrir escáner ──────────────────────────────────────────────────
+    window.openCameraScanner = function() {
+        var overlay = document.getElementById('scannerOverlay');
+        if (!overlay) return;
+
+        // Resetear UI
+        _setStatus('Solicitando acceso a la cámara...');
+        _hideResult();
+        _hideError();
+        _lastCode = '';
+        overlay.classList.add('open');
+        overlay.style.display = 'flex';
+
+        // Verificar soporte
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            _showError(
+                '❌ Tu dispositivo o navegador no soporta acceso a la cámara.<br>' +
+                'Usa el campo de texto "Código de barras" con un lector USB.'
+            );
+            return;
+        }
+
+        // Verificar si ZXing está cargado
+        if (typeof ZXingBrowser === 'undefined' && typeof window.ZXing === 'undefined') {
+            _showError(
+                '⏳ Cargando librería de escaneo...<br>' +
+                '<small>Verifica tu conexión a internet e intenta de nuevo.</small>'
+            );
+            // Reintentar en 2s
+            setTimeout(function() {
+                if (typeof ZXingBrowser !== 'undefined' || typeof window.ZXing !== 'undefined') {
+                    window.openCameraScanner();
+                }
+            }, 2000);
+            return;
+        }
+
+        _startScanner();
+    };
+
+    // ── Iniciar el escáner de cámara ──────────────────────────────────
+    function _startScanner() {
+        _stopScanner(); // Limpiar instancia previa
+
+        // Obtener referencia al objeto ZXing
+        var ZXing = window.ZXingBrowser || window.ZXing;
+        if (!ZXing) {
+            _showError('No se pudo cargar la librería de escaneo.');
+            return;
+        }
+
+        var video = document.getElementById('scannerVideo');
+        if (!video) return;
+
+        _setStatus('Iniciando cámara...');
+        _scanning = false;
+
+        try {
+            // Preferir cámara trasera en móviles
+            var hints = new Map();
+            var formats = [];
+            // Si ZXing tiene BarcodeFormat disponible, configurar formatos comunes
+            if (ZXing.BarcodeFormat) {
+                var BF = ZXing.BarcodeFormat;
+                formats = [
+                    BF.EAN_13, BF.EAN_8, BF.UPC_A, BF.UPC_E,
+                    BF.CODE_128, BF.CODE_39, BF.CODE_93,
+                    BF.ITF, BF.DATA_MATRIX, BF.QR_CODE, BF.AZTEC
+                ].filter(Boolean);
+                if (ZXing.DecodeHintType && formats.length > 0) {
+                    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
+                }
+            }
+
+            // Crear lector
+            var readerClass = ZXing.BrowserMultiFormatReader || ZXing.MultiFormatReader;
+            if (!readerClass) {
+                _showError('Versión de ZXing no compatible. Actualiza la página.');
+                return;
+            }
+            _scanner = new readerClass(hints);
+
+            // Enumerar cámaras disponibles
+            var listDevices = _scanner.listVideoInputDevices || (ZXing.BrowserMultiFormatReader
+                ? function() { return ZXing.BrowserMultiFormatReader.listVideoInputDevices(); }
+                : null);
+
+            Promise.resolve(
+                typeof _scanner.listVideoInputDevices === 'function'
+                    ? _scanner.listVideoInputDevices()
+                    : ZXing.BrowserCodeReader && typeof ZXing.BrowserCodeReader.listVideoInputDevices === 'function'
+                        ? ZXing.BrowserCodeReader.listVideoInputDevices()
+                        : navigator.mediaDevices.enumerateDevices().then(function(d) {
+                            return d.filter(function(x) { return x.kind === 'videoinput'; });
+                          })
+            ).then(function(devices) {
+                _cameras = devices || [];
+                var switchBtn = document.getElementById('switchCameraBtn');
+                if (switchBtn) {
+                    switchBtn.style.display = _cameras.length > 1 ? 'flex' : 'none';
+                }
+                // Preferir cámara trasera (environment)
+                _cameraIdx = 0;
+                for (var i = 0; i < _cameras.length; i++) {
+                    var label = (_cameras[i].label || '').toLowerCase();
+                    if (label.includes('back') || label.includes('rear') || label.includes('trasera') || label.includes('environment')) {
+                        _cameraIdx = i;
+                        break;
+                    }
+                }
+                return _startDecoding();
+            }).catch(function(err) {
+                _handleCameraError(err);
+            });
+
+        } catch(e) {
+            _handleCameraError(e);
+        }
+    }
+
+    // ── Iniciar decodificación con la cámara seleccionada ─────────────
+    function _startDecoding() {
+        var video    = document.getElementById('scannerVideo');
+        var ZXing    = window.ZXingBrowser || window.ZXing;
+        var deviceId = _cameras[_cameraIdx] ? _cameras[_cameraIdx].deviceId : undefined;
+
+        _setStatus('Cámara activa — apunta al código de barras');
+        _scanning = true;
+
+        // Constraints de video — preferir cámara trasera si no hay deviceId específico
+        var constraints = deviceId
+            ? { deviceId: { exact: deviceId } }
+            : { facingMode: { ideal: 'environment' } };
+
+        return _scanner.decodeFromConstraints(
+            { video: constraints },
+            video,
+            function(result, error, controls) {
+                if (!_scanning) return;
+                if (result) {
+                    var code = result.getText();
+                    _onCodeDetected(code, controls);
+                }
+                // Los errores de "no barcode found" son normales durante el escaneo
+            }
+        ).catch(function(err) {
+            _handleCameraError(err);
+        });
+    }
+
+    // ── Código detectado ──────────────────────────────────────────────
+    function _onCodeDetected(code, controls) {
+        if (!code || !_scanning) return;
+
+        // Debounce: evitar lecturas duplicadas
+        if (code === _lastCode && _debounceTimer) return;
+        _lastCode = code;
+        clearTimeout(_debounceTimer);
+        _debounceTimer = setTimeout(function() {
+            _lastCode = '';
+        }, _debounceMs);
+
+        // Feedback visual en el marco
+        var frame = document.getElementById('scannerFrame');
+        if (frame) {
+            frame.classList.remove('success-flash');
+            void frame.offsetWidth; // reflow para reiniciar animación
+            frame.classList.add('success-flash');
+        }
+
+        // Vibración discreta (si disponible)
+        if (navigator.vibrate) {
+            try { navigator.vibrate(60); } catch(e) {}
+        }
+
+        // Sonido de confirmación (corto, discreto)
+        _playBeep();
+
+        // Buscar producto
+        var product = window._posHandleScannedCode(code);
+
+        if (product) {
+            _showProductResult(product, code);
+            if (!_continuous) {
+                // Modo single: pausar tras lectura exitosa
+                _scanning = false;
+                _setStatus('Producto encontrado ✓');
+            } else {
+                _setStatus('✓ Agregado — sigue escaneando...');
+                // En continuo: mantener cámara, resetear status en 2s
+                setTimeout(function() {
+                    if (_scanning) _setStatus('Cámara activa — apunta al código de barras');
+                }, 2000);
+            }
+        } else {
+            // Producto no encontrado
+            _scanning = false; // Pausar para mostrar error
+            _hideResult();
+            _pendingBarcode = code;
+            var canCreate = window._currentUser && window._currentUser.role === 'admin';
+            var btnCreate = document.getElementById('btnCreateProduct');
+            if (btnCreate) btnCreate.style.display = canCreate ? 'flex' : 'none';
+            _showError(
+                '<strong>Código no encontrado:</strong> <code style="background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;">' + _escHtml(code) + '</code><br>' +
+                '<span style="color:var(--text-3);font-size:12px;">No existe ningún producto con este código de barras, SKU o código interno.</span>'
+            );
+        }
+    }
+
+    // ── Mostrar resultado de producto encontrado ──────────────────────
+    function _showProductResult(product, code) {
+        _hideError();
+        var priceStr = '';
+        if (typeof window.dcFmt === 'function') {
+            priceStr = window.dcFmt(product.price, product.currency || 'USD');
+        } else {
+            priceStr = '$' + (product.price || 0).toFixed(2);
+        }
+        var stockInfo = product.stock > 0
+            ? '<span style="color:var(--success,#10b981);font-weight:600;">Stock: ' + product.stock + '</span>'
+            : '<span style="color:var(--danger,#ef4444);font-weight:600;">Agotado</span>';
+
+        document.getElementById('scannerResultContent').innerHTML =
+            '<div style="display:flex;align-items:center;gap:10px;">' +
+                '<span style="font-size:24px;">✅</span>' +
+                '<div style="flex:1;min-width:0;">' +
+                    '<div style="font-weight:700;color:var(--text);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _escHtml(product.name) + '</div>' +
+                    '<div style="font-size:12px;color:var(--text-3);margin-top:2px;">' +
+                        (product.sku ? 'SKU: ' + _escHtml(product.sku) + ' · ' : '') +
+                        priceStr + ' · ' + stockInfo +
+                    '</div>' +
+                    '<div style="font-size:11px;color:var(--text-3);margin-top:2px;">Código: <code>' + _escHtml(code) + '</code></div>' +
+                '</div>' +
+            '</div>';
+        document.getElementById('scannerResult').style.display = 'block';
+    }
+
+    // ── Reanudar escaneo tras error ───────────────────────────────────
+    window._scannerResumeAfterError = function() {
+        _hideError();
+        _hideResult();
+        _lastCode = '';
+        _pendingBarcode = '';
+        _scanning = true;
+        _setStatus('Cámara activa — apunta al código de barras');
+    };
+
+    // ── Buscar manualmente (cierra escáner, enfoca posSearch) ─────────
+    window._scannerManualSearch = function() {
+        closeCameraScanner();
+        setTimeout(function() {
+            var el = document.getElementById('posSearch');
+            if (el) { el.focus(); el.select(); }
+        }, 200);
+    };
+
+    // ── Crear producto con el código detectado ────────────────────────
+    window._scannerCreateProduct = function() {
+        var code = _pendingBarcode;
+        closeCameraScanner();
+        setTimeout(function() {
+            if (typeof window.openNewProductModal === 'function') {
+                window.openNewProductModal();
+            } else if (typeof window.openModal === 'function') {
+                window.openModal('product');
+            }
+            // Pre-rellenar el campo barcode
+            setTimeout(function() {
+                var barcodeField = document.getElementById('f_barcode');
+                if (barcodeField && code) {
+                    barcodeField.value = code;
+                    barcodeField.dispatchEvent(new Event('input'));
+                }
+            }, 350);
+        }, 200);
+    };
+
+    // ── Toggle modo continuo ──────────────────────────────────────────
+    window._scannerToggleContinuous = function() {
+        _continuous = !_continuous;
+        var toggle = document.getElementById('continuousScanToggle');
+        if (toggle) {
+            if (_continuous) toggle.classList.add('on');
+            else             toggle.classList.remove('on');
+        }
+        // Si estaba pausado, reanudar
+        if (_continuous && !_scanning && _scanner) {
+            window._scannerResumeAfterError();
+        }
+    };
+
+    // ── Cambiar entre cámaras ─────────────────────────────────────────
+    window._scannerSwitchCamera = function() {
+        if (_cameras.length < 2) return;
+        _cameraIdx = (_cameraIdx + 1) % _cameras.length;
+        _stopScanner();
+        _startScanner();
+    };
+
+    // ── Cerrar escáner ────────────────────────────────────────────────
+    window.closeCameraScanner = function() {
+        _stopScanner();
+        var overlay = document.getElementById('scannerOverlay');
+        if (overlay) {
+            overlay.classList.remove('open');
+            overlay.style.display = 'none';
+        }
+        _hideResult();
+        _hideError();
+        _setStatus('Iniciando cámara...');
+        _pendingBarcode = '';
+        _lastCode = '';
+    };
+
+    // ── Detener completamente el escáner ──────────────────────────────
+    function _stopScanner() {
+        _scanning = false;
+        clearTimeout(_debounceTimer);
+        _debounceTimer = null;
+
+        // Detener ZXing
+        if (_scanner) {
+            try {
+                if (typeof _scanner.stopContinuousDecode === 'function') {
+                    _scanner.stopContinuousDecode();
+                }
+                if (typeof _scanner.reset === 'function') {
+                    _scanner.reset();
+                }
+            } catch(e) {}
+            _scanner = null;
+        }
+
+        // Detener todos los tracks del stream de video
+        var video = document.getElementById('scannerVideo');
+        if (video && video.srcObject) {
+            try {
+                var tracks = video.srcObject.getTracks();
+                tracks.forEach(function(t) { try { t.stop(); } catch(e) {} });
+                video.srcObject = null;
+            } catch(e) {}
+        }
+
+        // Liberar stream global si existe
+        if (_stream) {
+            try {
+                _stream.getTracks().forEach(function(t) { try { t.stop(); } catch(e) {} });
+            } catch(e) {}
+            _stream = null;
+        }
+    }
+
+    // ── Manejo de errores de cámara ───────────────────────────────────
+    function _handleCameraError(err) {
+        _scanning = false;
+        var msg = '';
+        if (!err) {
+            msg = 'Error desconocido al acceder a la cámara.';
+        } else if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+            msg = '🔒 <strong>Permiso de cámara denegado.</strong><br>' +
+                  'Ve a la configuración de tu navegador y permite el acceso a la cámara para esta página.';
+        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+            msg = '📷 <strong>No se encontró ninguna cámara.</strong><br>' +
+                  'Usa el campo "Código de barras" con un lector USB o Bluetooth.';
+        } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+            msg = '⚠️ <strong>Cámara ocupada por otra aplicación.</strong><br>' +
+                  'Cierra otras apps que usen la cámara e intenta de nuevo.';
+        } else if (err.name === 'OverconstrainedError') {
+            msg = '⚠️ <strong>No se pudo acceder a la cámara solicitada.</strong><br>' +
+                  'Intentando con la cámara disponible...';
+            // Reintentar sin restricción de deviceId
+            setTimeout(function() {
+                if (_scanner) {
+                    _cameraIdx = 0;
+                    _cameras = [];
+                    _startDecoding();
+                }
+            }, 500);
+            return;
+        } else {
+            msg = '❌ Error de cámara: ' + _escHtml(err.message || err.toString());
+        }
+        _showError(msg);
+        _setStatus('Error — cámara no disponible');
+    }
+
+    // ── Helpers de UI ──────────────────────────────────────────────────
+    function _setStatus(text) {
+        var el = document.getElementById('scannerStatusText');
+        if (el) el.textContent = text;
+    }
+    function _showError(html) {
+        var box = document.getElementById('scannerError');
+        var content = document.getElementById('scannerErrorContent');
+        if (box && content) {
+            content.innerHTML = html;
+            box.style.display = 'block';
+        }
+    }
+    function _hideError() {
+        var box = document.getElementById('scannerError');
+        if (box) box.style.display = 'none';
+    }
+    function _hideResult() {
+        var box = document.getElementById('scannerResult');
+        if (box) box.style.display = 'none';
+    }
+    function _escHtml(str) {
+        return String(str || '')
+            .replace(/&/g,'&amp;')
+            .replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;')
+            .replace(/"/g,'&quot;');
+    }
+
+    // ── Sonido de confirmación (beep corto) ───────────────────────────
+    function _playBeep() {
+        try {
+            var ctx = new (window.AudioContext || window.webkitAudioContext)();
+            var osc = ctx.createOscillator();
+            var gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.frequency.value = 1480;
+            osc.type = 'sine';
+            gain.gain.setValueAtTime(0.18, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.12);
+            setTimeout(function() { try { ctx.close(); } catch(e) {} }, 300);
+        } catch(e) {}
+    }
+
+    // ── Cerrar con ESC ────────────────────────────────────────────────
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            var overlay = document.getElementById('scannerOverlay');
+            if (overlay && overlay.style.display === 'flex') {
+                window.closeCameraScanner();
+            }
+        }
+    });
+
+    // ── Cerrar al pulsar fuera del modal ──────────────────────────────
+    document.addEventListener('click', function(e) {
+        var overlay = document.getElementById('scannerOverlay');
+        if (overlay && e.target === overlay) {
+            window.closeCameraScanner();
+        }
+    });
+
+    // ── Limpiar al salir/recargar ──────────────────────────────────────
+    window.addEventListener('beforeunload', function() {
+        _stopScanner();
+    });
+
+    // ── Exponer también para compatibilidad con lector USB ─────────────
+    // El input #barcodeInput + Enter ya llama barcodeScan() → _posHandleScannedCode()
+    // Nada que cambiar ahí, la función ya está corregida arriba.
+
+})();
+</script>
 </body>
 </html>
