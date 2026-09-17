@@ -6910,6 +6910,19 @@
             } else if (type === 'invoice') {
                 const isEdit = !!id;
                 const inv = id ? data.invoices.find(x => x.id === id) : null;
+                // FIX legado: si la factura no existe en data.invoices, buscar en accountMovements
+                if (isEdit && !inv && id) {
+                    const relMov = (data.accountMovements||[]).find(m => m.invoiceId === id || m.legacyId === id);
+                    if (relMov) { openEditMovement(relMov.id); return; }
+                    showToast('⚠️', 'Registro no encontrado — puede haber sido eliminado'); return;
+                }
+                // FIX: si la factura no existe en data.invoices, puede ser un accountMovement legado
+                if (isEdit && !inv && id) {
+                    const relatedMov = (data.accountMovements||[]).find(m => m.invoiceId === id || m.legacyId === id);
+                    if (relatedMov) { openEditMovement(relatedMov.id); return; }
+                    showToast('⚠️', 'Registro no encontrado — puede haber sido eliminado');
+                    return;
+                }
                 title.textContent = isEdit ? 'Editar Factura' : 'Nueva Factura';
                 const customerOptions = data.customers.filter(c => c.status !== 'anulado').map(c =>
                     `<option value="${c.id}" ${inv && inv.customerId === c.id ? 'selected' : ''}>${c.firstName} ${c.lastName}</option>`
@@ -7623,6 +7636,10 @@
                 const old = data.invoices[idx];
                 data.invoices[idx] = invoice;
                 logAudit('update', 'invoice', invoice.id, { old, new: invoice });
+            } else {
+                // FIX legado: la factura no está en data.invoices — insertar para no perder cambios
+                data.invoices.push(invoice);
+                logAudit('create', 'invoice', invoice.id, { source: 'legacy-fix', invoice });
             }
         } else {
             data.invoices.push(invoice);
@@ -12670,7 +12687,12 @@
 
         if (recordType === 'invoice') {
             const inv = (data.invoices||[]).find(i => i.id === id);
-            if (!inv) { showToast('⚠️', 'Registro no encontrado'); return; }
+            if (!inv) {
+                // FIX legado: si no está en invoices, buscar en accountMovements y eliminar de ahí
+                const relMov = (data.accountMovements||[]).find(m => m.invoiceId === id || m.legacyId === id);
+                if (relMov) { await deleteMovement(relMov.id); return; }
+                showToast('⚠️', 'Registro no encontrado'); return;
+            }
             // Revertir asiento CxC
             const amt = Number(inv.total) || 0;
             const acc = data.chartOfAccounts?.find(a=>a.code==='1-02');
@@ -12681,7 +12703,12 @@
             logAudit('delete','invoice', id, { number: inv.number });
         } else if (recordType === 'purchase') {
             const pur = (data.purchases||[]).find(p => p.id === id);
-            if (!pur) { showToast('⚠️', 'Registro no encontrado'); return; }
+            if (!pur) {
+                // FIX legado: buscar en accountMovements
+                const relMov = (data.accountMovements||[]).find(m => m.invoiceId === id || m.legacyId === id);
+                if (relMov) { await deleteMovement(relMov.id); return; }
+                showToast('⚠️', 'Registro no encontrado'); return;
+            }
             // Revertir asiento CxP
             const amt = Number(pur.total) || 0;
             const acc = data.chartOfAccounts?.find(a=>a.code==='2-01');
@@ -12938,13 +12965,15 @@
     }
 
     function openPaymentModal(target, invoiceId) {
-        // Si es un movement (no invoice/purchase legacy), usar openMovementPayment
+        // Primero verificar si el id corresponde a un accountMovement directo
         if (target === 'receivable' || target === 'payable') {
-            const mov = data.accountMovements?.find(m => m.id === invoiceId && m.type === target);
-            if (mov) {
-                openMovementPayment(invoiceId);
-                return;
-            }
+            const mov = (data.accountMovements||[]).find(m => m.id === invoiceId && m.type === target);
+            if (mov) { openMovementPayment(invoiceId); return; }
+            // FIX legado: buscar también por invoiceId/legacyId dentro de accountMovements
+            const relMov = (data.accountMovements||[]).find(m =>
+                m.type === target && (m.invoiceId === invoiceId || m.legacyId === invoiceId)
+            );
+            if (relMov) { openMovementPayment(relMov.id); return; }
         }
         modalContext.extra = { target, invoiceId };
         openModal('payment');
@@ -12961,8 +12990,17 @@
         let invoice, paymentType;
         const defCurr = data?.settings?.defaultCurrency || 'VES';
         if (target === 'receivable') {
-            invoice = data.invoices.find(i => i.id === invoiceId);
-            if (!invoice) { showToast('⚠️', 'Factura no encontrada'); return; }
+            // FIX legado: buscar por id, luego por number, luego en accountMovements
+            invoice = data.invoices.find(i => i.id === invoiceId)
+                   || data.invoices.find(i => i.number === invoiceId);
+            if (!invoice) {
+                // Intentar redirigir al sistema moderno de movimientos
+                const relMov = (data.accountMovements||[]).find(m =>
+                    m.id === invoiceId || m.invoiceId === invoiceId || m.legacyId === invoiceId
+                );
+                if (relMov) { closeModal(); openMovementPayment(relMov.id); return; }
+                showToast('⚠️', 'Factura no encontrada'); return;
+            }
             invoice.paid = (invoice.paid || 0) + amount;
             const customer = data.customers.find(c => c.id === invoice.customerId);
             if (customer) customer.balance = (customer.balance || 0) - amount;
