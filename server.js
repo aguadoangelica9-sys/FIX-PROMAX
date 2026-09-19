@@ -227,7 +227,18 @@ const apiLimiter = rateLimit({
     skip:            (req) => process.env.NODE_ENV === 'development',
 });
 
-// NIVEL 3 — Escritura costosa: import masivo, restore, PUT /api/db
+// NIVEL 3a — Escritura de BD ERP: PUT /api/db (guardado frecuente del estado completo)
+// 120 operaciones por IP cada 5 minutos — suficiente para uso intensivo normal
+const dbWriteLimiter = rateLimit({
+    windowMs:        5 * 60 * 1000,    // 5 minutos
+    max:             120,
+    standardHeaders: true,
+    legacyHeaders:   false,
+    handler:         rateLimitHandler,
+    skip:            (req) => process.env.NODE_ENV === 'development',
+});
+
+// NIVEL 3b — Operaciones costosas: import masivo, restore de backup
 // 20 operaciones por IP cada 5 minutos
 const heavyLimiter = rateLimit({
     windowMs:        5 * 60 * 1000,    // 5 minutos
@@ -804,29 +815,35 @@ app.get('/api/db', requireAuth, requireSubscription, async (req, res) => {
     ok(res, await readDB()); // await readDB() ya usa el companyId del contexto async
 });
 
-app.put('/api/db', heavyLimiter, requireAuth, requireSubscription, async (req, res) => {
+app.put('/api/db', dbWriteLimiter, requireAuth, requireSubscription, async (req, res) => {
     try {
         const incoming = req.body;
-        // Protección contra sobreescritura accidental con BD vacía:
-        // Si el cliente manda 0 productos pero en Mongo ya hay productos, rechazar.
         const current = await readDB();
         const currentProds  = (current?.products  || []).length;
-        const currentCusts  = (current?.customers || []).length;
         const incomingProds = (incoming?.products  || []).length;
-        const incomingCusts = (incoming?.customers || []).length;
+        const incomingSales = (incoming?.sales     || []).length;
+        const currentSales  = (current?.sales      || []).length;
 
+        // Protección 1: evitar sobreescribir con BD completamente vacía
         if (currentProds > 10 && incomingProds === 0) {
-            console.warn(`[PUT /api/db] BLOQUEADO: intento de sobreescribir ${currentProds} productos con 0 — usuario ${req.user.email}`);
-            return ok(res, { saved: true, warning: 'BD local vacía ignorada — se conservan datos del servidor' });
+            console.warn(`[PUT /api/db] BLOQUEADO vacío: ${currentProds} productos → 0 por ${req.user.email}`);
+            // Devolver error real para que el cliente lo detecte y no muestre éxito falso
+            return err(res, 'Guardado bloqueado: la BD enviada está vacía. Recarga la página para sincronizar.', 409);
         }
-        if (currentProds > 0 && incomingProds < currentProds * 0.3) {
-            console.warn(`[PUT /api/db] BLOQUEADO: reducción sospechosa de ${currentProds} a ${incomingProds} productos — usuario ${req.user.email}`);
-            return ok(res, { saved: true, warning: 'Reducción masiva de productos bloqueada' });
+
+        // Protección 2: reducción masiva sospechosa (>70% de caída en productos)
+        // EXCEPCIÓN: si las ventas aumentaron, significa que el cliente está activo y el
+        // conteo bajo puede ser por eliminar productos — permitir
+        const salesGrew = incomingSales > currentSales;
+        if (currentProds > 5 && incomingProds < currentProds * 0.3 && !salesGrew) {
+            console.warn(`[PUT /api/db] BLOQUEADO reducción: ${currentProds}→${incomingProds} productos por ${req.user.email}`);
+            return err(res, 'Guardado bloqueado: reducción masiva de productos detectada. Recarga la página.', 409);
         }
 
         await writeDB(incoming);
         ok(res, { saved: true });
     } catch (e) {
+        console.error('[PUT /api/db] Error:', e.message);
         err(res, 'Error al guardar la base de datos', 500);
     }
 });

@@ -6018,6 +6018,20 @@
                     return { ok: false, error: 'Token inválido', status: 401 };
                 }
 
+                // 409 → servidor bloqueó el guardado por protección de datos
+                // No reintentar — el cliente necesita sincronizar primero
+                if (res.status === 409) {
+                    const errMsg = json.error || "Guardado bloqueado por el servidor";
+                    console.error("[persist] Guardado bloqueado (409):", errMsg);
+                    _pendingSync = true;
+                    _setSyncIndicator("error");
+                    _isSaving = false;
+                    // Forzar sincronización con el servidor para obtener datos frescos
+                    setTimeout(() => { if (typeof syncFromServer === "function") syncFromServer(); }, 1000);
+                    return { ok: false, error: errMsg, status: 409, blocked: true };
+                }
+
+
                 console.warn(`[persist] Intento ${attempt + 1} fallido:`, res.status, json.error || '');
             } catch (e) {
                 _backendAvailable = false;
@@ -6280,7 +6294,7 @@
             entityId,
             details: details || {},
         });
-        persist();
+        // persist() no se llama aquí — la función de negocio que llamó logAudit() ya llama _persistAndNotify()
     }
 
     /* ═══════════════════════════════════════════════════════════════
@@ -7512,15 +7526,22 @@
     async function _persistAndNotify(successMsg, errorMsg) {
         const result = await persist();
         if (result.ok) {
-            showToast('✅', successMsg);
+            showToast("✅", successMsg);
         } else if (result.local) {
-            showToast('✅', successMsg + ' (local)');
+            showToast("✅", successMsg + " (local)");
         } else if (result.queued) {
-            // Encolado — se guardará cuando termine el guardado actual. Éxito probable.
-            showToast('✅', successMsg);
+            showToast("✅", successMsg);
+        } else if (result.status === 409 || result.blocked) {
+            // Servidor bloqueó el guardado — datos desincronizados
+            showToast("🔄", "Datos desincronizados — recargando desde el servidor...");
+            setTimeout(() => { if (typeof syncFromServer === "function") syncFromServer(); }, 500);
+        } else if (result.status === 429) {
+            // Rate limit alcanzado — guardar en cola y reintentar
+            showToast("⏳", "Guardando... (alta actividad)");
+            setTimeout(() => persist(), 5000);
         } else {
-            showToast('⚠️', errorMsg || 'Guardado localmente — sin conexión con el servidor');
-            console.warn('[_persistAndNotify] Backend no confirmó:', result.error);
+            showToast("⚠️", errorMsg || "Guardado localmente — sin conexión con el servidor");
+            console.warn("[_persistAndNotify] Backend no confirmó:", result.error);
         }
     }
 
