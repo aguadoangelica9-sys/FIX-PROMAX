@@ -7076,9 +7076,10 @@
                     return;
                 }
                 const balance = invoice.total - invoice.paid;
+                const invCurr = invoice.currency || (data?.settings?.defaultCurrency || 'USD');
                 title.textContent = `Registrar Pago - ${invoice.number || invoice.id}`;
                 body.innerHTML = `
-                    <div class="form-group"><label>Monto a pagar</label><input id="f_paymentAmount" type="number" step="0.01" inputmode="decimal" value="${balance}" /></div>
+                    <div class="form-group"><label>Monto a pagar en <strong>${invCurr}</strong> (saldo: ${formatCurrency(balance, invCurr)})</label><input id="f_paymentAmount" type="number" step="0.01" inputmode="decimal" value="${balance}" max="${balance}" /></div>
                     <div class="form-group"><label>Método de pago</label><select id="f_paymentMethod">
                         <option value="CASH">Efectivo</option>
                         <option value="BANK_TRANSFER">Transferencia</option>
@@ -12792,24 +12793,29 @@
         const overlay = document.getElementById('modalOverlay');
 
         title.textContent = isRec ? `💰 Registrar cobro — ${mov.number}` : `💸 Registrar pago — ${mov.number}`;
+        // FIX: usar la moneda nativa del movimiento para el input y la validación
+        // dcFmt convierte a moneda de visualización (VES/EUR) pero la validación usa saldo en mov.currency
+        // Para evitar la confusión, mostramos TODO en la moneda original del movimiento
+        const movCurr = mov.currency || defCurr;
+        const fmtMov = (n) => formatCurrency(n, movCurr);
         body.innerHTML = `
             <div class="card" style="background:var(--bg-2);padding:12px;margin-bottom:14px;border-radius:8px;">
                 <div style="font-size:13px;font-weight:600;">${entityName}</div>
                 <div style="font-size:12px;color:var(--text-3);margin-top:4px;">${mov.concept||mov.number}</div>
                 <div style="display:flex;gap:16px;margin-top:8px;font-size:13px;">
-                    <span>Total: <strong>${dcFmt(mov.amount, mov.currency||defCurr)}</strong></span>
-                    <span>Pagado: <strong style="color:var(--success);">${dcFmt(mov.paid||0, mov.currency||defCurr)}</strong></span>
-                    <span>Saldo: <strong style="color:var(--warning);">${dcFmt(saldo, mov.currency||defCurr)}</strong></span>
+                    <span>Total: <strong>${fmtMov(mov.amount)}</strong></span>
+                    <span>Pagado: <strong style="color:var(--success);">${fmtMov(mov.paid||0)}</strong></span>
+                    <span>Saldo: <strong style="color:var(--warning);">${fmtMov(saldo)}</strong></span>
                 </div>
             </div>
             <div class="form-group">
-                <label>Monto a ${isRec?'cobrar':'pagar'} *</label>
+                <label>Monto a ${isRec?'cobrar':'pagar'} en <strong>${movCurr}</strong> *</label>
                 <input id="mp_amount" type="number" step="0.01" inputmode="decimal" placeholder="0.00" max="${saldo}" />
-                <small style="color:var(--text-3);">Máximo: ${dcFmt(saldo, mov.currency||defCurr)}</small>
+                <small style="color:var(--text-3);">Escribe en ${movCurr} — Máximo: ${fmtMov(saldo)}</small>
             </div>
             <div style="display:flex;gap:8px;margin-bottom:10px;">
                 <button class="btn btn-sm" onclick="document.getElementById('mp_amount').value='${saldo.toFixed(2)}'">
-                    ✅ Pagar total (${dcFmt(saldo, mov.currency||defCurr)})
+                    ✅ Pagar total (${fmtMov(saldo)})
                 </button>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
