@@ -12911,17 +12911,20 @@
             status: 'activo', ref: payment.ref,
         });
         logAudit('payment','accountMovement', movId, { amount, method: payment.method });
+
+        // Actualizar UI inmediatamente — sin delays ni esperar al servidor
+        // 1. Cerrar el modal de pago
         closeModal();
-        renderAll();
-        // Re-abrir el detalle de la cuenta automáticamente para que el usuario vea
-        // el abono reflejado de inmediato sin tener que navegar manualmente
-        setTimeout(() => {
-            try { openAccountDetail(mov.type, mov.entityId); } catch(e) {}
-        }, 150);
-        await _persistAndNotify(
-            `${mov.type==='receivable'?'Cobro':'Pago'} de ${dcFmt(amount, mov.currency||defCurr)} registrado`,
-            'Pago guardado localmente — verifica conexión'
-        );
+        // 2. Actualizar las listas de CxC/CxP
+        try { renderReceivables(); } catch(e) {}
+        try { renderPayables();    } catch(e) {}
+        // 3. Re-abrir el detalle de la cuenta con los datos ya actualizados en memoria
+        try { openAccountDetail(mov.type, mov.entityId); } catch(e) {}
+
+        // Guardar en servidor en paralelo (no bloquea la UI)
+        const msgOk   = `${mov.type==='receivable'?'Cobro':'Pago'} de ${dcFmt(amount, mov.currency||defCurr)} registrado`;
+        const msgFail = 'Pago guardado localmente — verifica conexión';
+        _persistAndNotify(msgOk, msgFail);
     }
 
     // ── migrateToAccountMovements() ───────────────────────────────────────────
