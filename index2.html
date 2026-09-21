@@ -12810,7 +12810,7 @@
             </div>
             <div class="form-group">
                 <label>Monto a ${isRec?'cobrar':'pagar'} en <strong>${movCurr}</strong> *</label>
-                <input id="mp_amount" type="number" step="0.01" inputmode="decimal" placeholder="0.00" max="${saldo}" />
+                <input id="mp_amount" type="number" step="0.01" inputmode="decimal" placeholder="0.00" max="${saldo}" data-saldo="${saldo}" data-paid="${mov.paid||0}" data-movid="${movId}" />
                 <small style="color:var(--text-3);">Escribe en ${movCurr} — Máximo: ${fmtMov(saldo)}</small>
             </div>
             <div style="display:flex;gap:8px;margin-bottom:10px;">
@@ -12856,8 +12856,13 @@
         const mov    = data.accountMovements[idx];
         const amount = parseFloat(document.getElementById('mp_amount')?.value) || 0;
         if (amount<=0) { showToast('⚠️','El monto debe ser mayor a cero'); return; }
-        const saldo  = (Number(mov.amount)||0) - (Number(mov.paid)||0);
-        if (amount > saldo + 0.001) { showToast('⚠️',`El pago ($${amount}) supera el saldo ($${saldo.toFixed(2)})`); return; }
+        // FIX: usar el saldo capturado cuando se abrió el modal (data-saldo)
+        // Así evitamos que un sync entre apertura y guardado cambie el mov y dé saldo=0
+        const saldoSnap = parseFloat(document.getElementById('mp_amount')?.dataset?.saldo ?? '');
+        const saldo = isNaN(saldoSnap)
+            ? (Number(mov.amount)||0) - (Number(mov.paid)||0)
+            : saldoSnap;
+        if (amount > saldo + 0.001) { showToast('⚠️',`El pago ($${amount}) supera el saldo disponible ($${saldo.toFixed(2)})`); return; }
 
         const payment = {
             id:        generateId(),
@@ -12872,7 +12877,10 @@
         const defCurr = data?.settings?.defaultCurrency||'VES';
         mov.payments = mov.payments || [];
         mov.payments.push(payment);
-        mov.paid      = (Number(mov.paid)||0) + amount;
+        // FIX: usar paid del snapshot para no acumular doble si sync actualizó el mov
+        const paidSnap = parseFloat(document.getElementById('mp_amount')?.dataset?.paid ?? '');
+        const basePaid = isNaN(paidSnap) ? (Number(mov.paid)||0) : paidSnap;
+        mov.paid      = basePaid + amount;
         mov.updatedAt = new Date().toISOString();
         mov.status    = calcMovStatus(mov);
         data.accountMovements[idx] = mov;
