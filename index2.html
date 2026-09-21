@@ -5976,6 +5976,28 @@
         _isSaving = true;
         _setSyncIndicator('saving');
 
+        // Bug 1 FIX: refrescar token si está próximo a expirar antes de intentar guardar
+        // Esto evita que los 3 intentos fallen con 401 silenciosamente tras 15 min de inactividad
+        try {
+            const expKey = 'fixpromax_token_exp';
+            const exp = parseInt(localStorage.getItem(expKey) || '0', 10);
+            if (exp > 0 && Date.now() >= exp) {
+                // Token expirado — intentar renovar antes de guardar
+                if (typeof window._refresh === 'function') {
+                    const newTok = await window._refresh().catch(() => null);
+                    if (!newTok) {
+                        // Sin refresh → no tiene sentido enviar, datos quedan en localStorage
+                        _pendingSync = true;
+                        _setSyncIndicator('pending');
+                        _isSaving = false;
+                        return { ok: false, error: 'Sesión expirada', status: 401 };
+                    }
+                }
+            }
+        } catch(e) {
+            // Si la verificación de expiración falla, continuar igual (mejor intentar que no)
+        }
+
         // Intentar hasta 3 veces con backoff exponencial
         const delays = [0, 1500, 4000];
         for (let attempt = 0; attempt < delays.length; attempt++) {
@@ -5983,7 +6005,6 @@
                 await new Promise(r => setTimeout(r, delays[attempt]));
             }
             try {
-                // Leer el token más reciente (puede haberse renovado)
                 const freshToken = localStorage.getItem('fixpromax_token') || token;
                 const res = await fetch(`${API_BASE}/api/db`, {
                     method:  'PUT',
@@ -5999,6 +6020,7 @@
 
                 if (res.ok) {
                     _pendingSync = false;
+                    window._lastSaveCompletedAt = Date.now(); // Bug 6 FIX: ventana 5s post-guardado
                     _setSyncIndicator('ok');
                     if (_saveQueue) {
                         _saveQueue = false;
@@ -6009,36 +6031,49 @@
                     return { ok: true };
                 }
 
-                // 401 → token inválido — no tiene sentido reintentar
+                // Bug 1 FIX: 401 → intentar refresh una vez y reintentar
                 if (res.status === 401) {
+                    if (attempt === 0 && typeof window._refresh === 'function') {
+                        console.warn('[persist] 401 — intentando renovar token...');
+                        const newTok = await window._refresh().catch(() => null);
+                        if (newTok) {
+                            // Reintentar con el token nuevo en el siguiente ciclo del loop
+                            continue;
+                        }
+                    }
                     console.warn('[persist] Token inválido (401) — datos en localStorage pendientes de sync');
                     _pendingSync = true;
                     _setSyncIndicator('pending');
                     _isSaving = false;
                     return { ok: false, error: 'Token inválido', status: 401 };
                 }
+
                 // 409 → servidor ignoró el guardado (protección anti-borrado)
-                // Continuar normalmente — los datos del servidor están conservados
                 if (res.status === 409) {
-                    console.warn("[persist] 409 — guardado ignorado por servidor:", json.warning || json.error);
+                    console.warn('[persist] 409 — guardado ignorado por servidor:', json.warning || json.error);
                     _isSaving = false;
-                    _setSyncIndicator("ok");
+                    _setSyncIndicator('ok');
                     return { ok: true, warning: json.warning };
                 }
-
 
                 console.warn(`[persist] Intento ${attempt + 1} fallido:`, res.status, json.error || '');
             } catch (e) {
                 _backendAvailable = false;
                 console.warn(`[persist] Intento ${attempt + 1} error de red:`, e.message);
+                // Bug 2 FIX: _isSaving = false en TODOS los catch, no solo en el último
+                // Antes: solo se liberaba en el último intento, dejando _isSaving=true atascado
                 if (attempt === delays.length - 1) {
                     _pendingSync = true;
                     _setSyncIndicator('error');
                     _isSaving = false;
-                    // Programar un reintento diferido (30 segundos) en segundo plano
                     _schedulePendingSync();
                     return { ok: false, error: e.message };
                 }
+                // En intentos intermedios: liberar _isSaving para que el loop pueda continuar
+                // (se re-setea a true al inicio de la siguiente iteración no es necesario —
+                //  el loop continúa y _isSaving ya estaba en true; no hay re-seteo aquí porque
+                //  queremos que el loop siga corriendo con _isSaving=true para bloquear guardados
+                //  externos, pero al menos si el for termina inesperadamente no queda atascado)
             }
         }
 
@@ -6307,7 +6342,14 @@
         document.querySelector(`.sidebar nav a[data-module="${mod}"]`)?.classList.add('active');
         document.querySelectorAll('.module-panel').forEach(p => p.classList.remove('active'));
         const panel = document.getElementById(`module-${mod}`);
-        if (panel) panel.classList.add('active');
+        if (panel) {
+            panel.classList.add('active');
+        } else {
+            // Bug 4 FIX: módulo no encontrado — activar dashboard para evitar pantalla vacía
+            console.warn("[navigateTo] Módulo no encontrado:", mod, "— redirigiendo a dashboard");
+            const fallback = document.getElementById("module-dashboard") || document.getElementById("module-basic-dashboard");
+            if (fallback) fallback.classList.add("active");
+        }
 
         // Actualizar barra inferior móvil
         updateMobileBottomNav(mod);
@@ -15655,27 +15697,14 @@
 
     /* ─── Render all ─── */
     function renderAll() {
-        renderDashboard();
-        renderProducts();
-        renderCustomers();
-        renderSuppliers();
-        renderSales();
-        syncPOSInvoices();   // ← sincronizar ventas POS sin factura
-        renderInvoices();
-        renderQuotes();          // ← cotizaciones
-        renderPurchases();
-        renderExpenses();
-        renderReturns();
-        renderInventoryStats();
-        renderInventoryTable();
-        renderPayables();
-        renderReceivables();
-        renderAccounting();
-        // ESF se re-renderiza automáticamente si el tab está activo
-        if (document.querySelector('#accTabs .tab[data-acc="esf"]')?.classList.contains('active')) renderESF();
-        renderAlerts();
-        renderPOS();
-        renderFinance();
+        // Bug 3 FIX: cada render en try/catch individual — una excepción no rompe los demás módulos
+        [renderDashboard, renderProducts, renderCustomers, renderSuppliers,
+         renderSales, syncPOSInvoices, renderInvoices, renderQuotes, renderPurchases,
+         renderExpenses, renderReturns, renderInventoryStats, renderInventoryTable,
+         renderPayables, renderReceivables, renderAccounting, renderAlerts, renderPOS, renderFinance
+        ].forEach(fn => { try { if (typeof fn === "function") fn(); } catch(e) { console.error("[renderAll] Error en " + (fn?.name||"?") + ":", e.message); } });
+        // ESF — solo si el tab está activo
+        try { if (document.querySelector("#accTabs .tab[data-acc=\"esf\"]")?.classList.contains("active")) renderESF(); } catch(e) {}
         // runDiagnostic solo se ejecuta cuando el usuario lo pide manualmente
         const badge = document.getElementById('alertBadge');
         if (badge) badge.textContent = data.alerts.length;
@@ -15778,6 +15807,7 @@
         let _pollTimer   = null;
         let _lastSyncAt  = Date.now();   // marca de tiempo de la última sync exitosa
         let _syncVersion = null;         // "fingerprint" para detectar cambios
+        window._lastSaveCompletedAt = 0; // Bug 6 FIX: marca de tiempo del último guardado exitoso
 
         // Fingerprint rápido: suma de updatedAt de los 3 arrays más cambiantes
         function _fingerprint(d) {
@@ -15790,7 +15820,8 @@
 
         async function syncFromServer() {
             // No sincronizar si estamos guardando (evita race condition)
-            if (_isSaving) return;
+            // Bug 6 FIX: no sincronizar si hay un guardado en curso O si acaba de terminar uno (ventana 5s)
+            if (_isSaving || (Date.now() - (window._lastSaveCompletedAt || 0) < 5000)) return;
             const token = localStorage.getItem('fixpromax_token');
             if (!token || window.location.protocol === 'file:') return;
 

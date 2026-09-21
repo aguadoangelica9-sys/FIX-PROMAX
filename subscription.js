@@ -43,9 +43,27 @@
                 signal: ctrl.signal,
             });
             if (!r.ok) {
-                // 401 = sesión inválida → bloquear
+                // Bug 5 FIX: 401 puede ser token expirado — intentar refresh antes de bloquear
                 if (r.status === 401 || r.status === 403) {
-                    return { access: false, status: 'no_access' };
+                    if (r.status === 401 && typeof window._refresh === "function") {
+                        try {
+                            const newTok = await window._refresh();
+                            if (newTok) {
+                                // Reintentar con el token nuevo
+                                const r2 = await fetch(_apiBase() + "/api/subscription/status", {
+                                    headers: { "Authorization": "Bearer " + newTok }
+                                });
+                                if (r2.ok) {
+                                    const j2 = await r2.json();
+                                    if (j2.ok && j2.data) {
+                                        if (j2.data.access) localStorage.setItem(SUB_CACHE_KEY, JSON.stringify({ data: j2.data, ts: Date.now() }));
+                                        return j2.data;
+                                    }
+                                }
+                            }
+                        } catch(e) { /* refresh falló — continuar con bloqueo */ }
+                    }
+                    return { access: false, status: "no_access" };
                 }
                 return _getCached();
             }
