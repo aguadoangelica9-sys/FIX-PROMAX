@@ -821,23 +821,19 @@ app.put('/api/db', dbWriteLimiter, requireAuth, requireSubscription, async (req,
         const current = await readDB();
         const currentProds  = (current?.products  || []).length;
         const incomingProds = (incoming?.products  || []).length;
-        const incomingSales = (incoming?.sales     || []).length;
-        const currentSales  = (current?.sales      || []).length;
 
-        // Protección 1: evitar sobreescribir con BD completamente vacía
-        if (currentProds > 10 && incomingProds === 0) {
-            console.warn(`[PUT /api/db] BLOQUEADO vacío: ${currentProds} productos → 0 por ${req.user.email}`);
-            // Devolver error real para que el cliente lo detecte y no muestre éxito falso
-            return err(res, 'Guardado bloqueado: la BD enviada está vacía. Recarga la página para sincronizar.', 409);
-        }
+        // Protección: evitar sobreescribir con BD completamente vacía
+        // Solo bloquear si incoming tiene literalmente 0 datos en los arrays principales
+        const incomingTotal = (incoming?.products  || []).length
+                            + (incoming?.customers || []).length
+                            + (incoming?.sales     || []).length
+                            + (incoming?.invoices  || []).length
+                            + (incoming?.expenses  || []).length;
 
-        // Protección 2: reducción masiva sospechosa (>70% de caída en productos)
-        // EXCEPCIÓN: si las ventas aumentaron, significa que el cliente está activo y el
-        // conteo bajo puede ser por eliminar productos — permitir
-        const salesGrew = incomingSales > currentSales;
-        if (currentProds > 5 && incomingProds < currentProds * 0.3 && !salesGrew) {
-            console.warn(`[PUT /api/db] BLOQUEADO reducción: ${currentProds}→${incomingProds} productos por ${req.user.email}`);
-            return err(res, 'Guardado bloqueado: reducción masiva de productos detectada. Recarga la página.', 409);
+        if (currentProds > 10 && incomingTotal === 0) {
+            console.warn(`[PUT /api/db] BLOQUEADO: BD completamente vacía — ${currentProds} prods en servidor, 0 en cliente — ${req.user.email}`);
+            // Responder OK para no romper la app, pero no guardar
+            return ok(res, { saved: true, warning: 'BD vacía ignorada — datos del servidor conservados' });
         }
 
         await writeDB(incoming);

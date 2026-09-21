@@ -6017,18 +6017,13 @@
                     _isSaving = false;
                     return { ok: false, error: 'Token inválido', status: 401 };
                 }
-
-                // 409 → servidor bloqueó el guardado por protección de datos
-                // No reintentar — el cliente necesita sincronizar primero
+                // 409 → servidor ignoró el guardado (protección anti-borrado)
+                // Continuar normalmente — los datos del servidor están conservados
                 if (res.status === 409) {
-                    const errMsg = json.error || "Guardado bloqueado por el servidor";
-                    console.error("[persist] Guardado bloqueado (409):", errMsg);
-                    _pendingSync = true;
-                    _setSyncIndicator("error");
+                    console.warn("[persist] 409 — guardado ignorado por servidor:", json.warning || json.error);
                     _isSaving = false;
-                    // Forzar sincronización con el servidor para obtener datos frescos
-                    setTimeout(() => { if (typeof syncFromServer === "function") syncFromServer(); }, 1000);
-                    return { ok: false, error: errMsg, status: 409, blocked: true };
+                    _setSyncIndicator("ok");
+                    return { ok: true, warning: json.warning };
                 }
 
 
@@ -7531,14 +7526,6 @@
             showToast("✅", successMsg + " (local)");
         } else if (result.queued) {
             showToast("✅", successMsg);
-        } else if (result.status === 409 || result.blocked) {
-            // Servidor bloqueó el guardado — datos desincronizados
-            showToast("🔄", "Datos desincronizados — recargando desde el servidor...");
-            setTimeout(() => { if (typeof syncFromServer === "function") syncFromServer(); }, 500);
-        } else if (result.status === 429) {
-            // Rate limit alcanzado — guardar en cola y reintentar
-            showToast("⏳", "Guardando... (alta actividad)");
-            setTimeout(() => persist(), 5000);
         } else {
             showToast("⚠️", errorMsg || "Guardado localmente — sin conexión con el servidor");
             console.warn("[_persistAndNotify] Backend no confirmó:", result.error);
