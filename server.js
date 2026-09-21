@@ -275,7 +275,7 @@ app.use('/',            publicLimiter); // página principal, assets estáticos 
 
 // ══ ENDPOINT DE VERSION — para verificar qué commit corre en producción ═════
 app.get('/_version', (req, res) => {
-    res.json({ ok: true, commit: 'c0c1bc8', ts: Date.now() });
+    res.json({ ok: true, commit: '8a624ec', ts: Date.now() });
 });
 
 // ══ ENDPOINT DE EMERGENCIA: desactivar maintenanceMode ══════════════════════
