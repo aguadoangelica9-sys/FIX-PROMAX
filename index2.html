@@ -7660,7 +7660,7 @@
         const total = parseFloat(document.getElementById('f_total').value) || 0;
         const paid = parseFloat(document.getElementById('f_paid').value) || 0;
         const notes = document.getElementById('f_notes').value.trim();
-        const currency = document.getElementById('f_invoice_currency')?.value || data?.settings?.defaultCurrency || 'VES';
+        const currency = document.getElementById('f_invoice_currency')?.value || data?.settings?.defaultCurrency || 'USD';
         if (!customerId || total <= 0) {
             showToast('⚠️', 'Cliente y total son obligatorios');
             return;
@@ -7757,7 +7757,7 @@
         const amount = parseFloat(document.getElementById('f_amount').value) || 0;
         const method = document.getElementById('f_method').value;
         const date = document.getElementById('f_date').value;
-        const currency = document.getElementById('f_expense_currency')?.value || data?.settings?.defaultCurrency || 'VES';
+        const currency = document.getElementById('f_expense_currency')?.value || data?.settings?.defaultCurrency || 'USD';
         if (!description || amount <= 0) {
             showToast('⚠️', 'Descripción y monto son obligatorios');
             return;
@@ -9057,7 +9057,7 @@
 
     /* ─── Dashboard ─── */
     function renderDashboard() {
-        const defCurr = data?.settings?.defaultCurrency || 'VES';
+        const defCurr = data?.settings?.defaultCurrency || 'USD';
         const disp    = window._displayCurrency || defCurr;
         const now     = new Date();
 
@@ -9315,7 +9315,7 @@
             const invoiceCount   = data.invoices.filter(i => i.customerId === c.id && i.status !== 'Anulada').length;
             const saleCount      = data.sales.filter(s => s.customerId === c.id).length;
             const totalPurchased = data.sales.filter(s => s.customerId === c.id).reduce((a,s)=>a+(s.total||0),0);
-            const defCurr        = data?.settings?.defaultCurrency || 'VES';
+            const defCurr        = data?.settings?.defaultCurrency || 'USD';
             const hasBalance     = (c.balance || 0) > 0;
             const balanceFmt     = dcFmt(c.balance || 0, defCurr);
             return `<tr>
@@ -9344,7 +9344,7 @@
         if (!c) return;
         const sales  = data.sales.filter(s => s.customerId === id);
         const invs   = data.invoices.filter(i => i.customerId === id && i.status !== 'Anulada');
-        const defC   = data?.settings?.defaultCurrency || 'VES';
+        const defC   = data?.settings?.defaultCurrency || 'USD';
         const total  = sales.reduce((a,s)=>a+(s.total||0),0);
         const old = document.getElementById('customerHistoryPanel');
         if (old) old.remove();
@@ -9450,7 +9450,7 @@
         if (!s) return;
         const purchases = data.purchases.filter(p => p.supplierId === id && p.status !== 'Anulada');
         const total     = purchases.reduce((a,p)=>a+(p.total||0),0);
-        const defC      = data?.settings?.defaultCurrency || 'VES';
+        const defC      = data?.settings?.defaultCurrency || 'USD';
         const old = document.getElementById('supplierHistoryPanel');
         if (old) old.remove();
         const ov = document.createElement('div');
@@ -9526,7 +9526,7 @@
 
         const list = data.sales.filter(s => {
             if (st   && (s.status || 'Pagada') !== st)   return false;
-            if (curr && (s.currency || data?.settings?.defaultCurrency || 'VES') !== curr) return false;
+            if (curr && (s.currency || data?.settings?.defaultCurrency || 'USD') !== curr) return false;
             if (dateFrom && s.date && s.date.slice(0,10) < dateFrom) return false;
             if (dateTo   && s.date && s.date.slice(0,10) > dateTo)   return false;
             if (!q) return true;
@@ -9542,7 +9542,7 @@
         const totalByEUR = list.filter(s=>s.currency==='EUR').reduce((a,s)=>a+(s.total||0),0);
         const totalByUSD = list.filter(s=>s.currency==='USD').reduce((a,s)=>a+(s.total||0),0);
         const totalDisp  = dcSum(list, 'total', 'currency');
-        const disp       = window._displayCurrency || data?.settings?.defaultCurrency || 'VES';
+        const disp       = window._displayCurrency || data?.settings?.defaultCurrency || 'USD';
         const totEl = document.getElementById('salesTotals');
         if (totEl) {
             const parts = [];
@@ -10605,7 +10605,7 @@
         const terms      = document.getElementById('qf_terms')?.value?.trim();
         const notes      = document.getElementById('qf_notes')?.value?.trim();
         const quoteStatus = document.getElementById('qf_status')?.value || 'Borrador';
-        const quoteCurrency = document.getElementById('qf_currency')?.value || data?.settings?.defaultCurrency || 'VES';
+        const quoteCurrency = document.getElementById('qf_currency')?.value || data?.settings?.defaultCurrency || 'USD';
         const items      = _collectQuoteItems();
         const totals     = calcQuoteTotals() || {};
 
@@ -10765,7 +10765,7 @@
             tax: qt.tax||0, total: qt.total||0, method, notes,
             date: today, createdAt: now, updatedAt: now,
             fromQuoteId: qt.id, fromQuoteNumber: qt.number,
-            currency: qt.currency || data?.settings?.defaultCurrency || 'VES',
+            currency: qt.currency || data?.settings?.defaultCurrency || 'USD',
             user: window._currentUser?.name || 'admin',
         };
         data.sales.push(sale);
@@ -10927,7 +10927,7 @@
         const q        = (document.getElementById('purchasesSearch')?.value || '').toLowerCase().trim();
         const dateFrom = document.getElementById('purchasesDateFrom')?.value || '';
         const dateTo   = document.getElementById('purchasesDateTo')?.value   || '';
-        const defCurr  = data?.settings?.defaultCurrency || 'VES';
+        const defCurr  = data?.settings?.defaultCurrency || 'USD';
 
         const list = data.purchases.filter(p => {
             if (p.status === 'Anulada') return false;
@@ -11002,7 +11002,7 @@
         const currF    = document.getElementById('expensesCurrFilter')?.value || '';
         const dateFrom = document.getElementById('expensesDateFrom')?.value   || '';
         const dateTo   = document.getElementById('expensesDateTo')?.value     || '';
-        const defCurr  = data?.settings?.defaultCurrency || 'VES';
+        const defCurr  = data?.settings?.defaultCurrency || 'USD';
 
         const list = data.expenses.filter(e => {
             if (e.status === 'anulado') return false;
@@ -11116,7 +11116,7 @@
         const title   = document.getElementById('modalTitle');
         const body    = document.getElementById('modalBody');
         const overlay = document.getElementById('modalOverlay');
-        const defCurr = data?.settings?.defaultCurrency || 'VES';
+        const defCurr = data?.settings?.defaultCurrency || 'USD';
 
         // Construir opciones de ventas (solo las no anuladas)
         const saleOpts = (data.sales || [])
@@ -11307,7 +11307,7 @@
         const notes     = (document.getElementById('ret_notes')?.value||'').trim();
         const date      = document.getElementById('ret_date')?.value || new Date().toISOString().slice(0,10);
         const amtInp    = parseFloat(document.getElementById('ret_amount')?.value) || 0;
-        const defCurr   = data?.settings?.defaultCurrency || 'VES';
+        const defCurr   = data?.settings?.defaultCurrency || 'USD';
 
         // Validaciones
         if (origin === 'sale' && !saleId)    { showToast('⚠️','Selecciona una venta'); return; }
@@ -11451,7 +11451,7 @@
     }
 
     function renderReturns() {
-        const defCurr  = data?.settings?.defaultCurrency || 'VES';
+        const defCurr  = data?.settings?.defaultCurrency || 'USD';
         const disp     = window._displayCurrency || defCurr;
         const q        = (document.getElementById('returnsSearch')?.value || '').toLowerCase().trim();
         const stFilter = document.getElementById('returnsFilter')?.value || '';
@@ -11533,7 +11533,7 @@
 
         const qty   = Number(ret.quantity) || 0;
         const amt   = Number(ret.amount)   || 0;
-        const defCurr = data?.settings?.defaultCurrency || 'VES';
+        const defCurr = data?.settings?.defaultCurrency || 'USD';
 
         // Revertir stock
         const product = (data.products||[]).find(p => p.id === ret.productId);
@@ -11600,7 +11600,7 @@
         const title = document.getElementById('modalTitle');
         const body  = document.getElementById('modalBody');
         const overlay = document.getElementById('modalOverlay');
-        const defCurr = data?.settings?.defaultCurrency || 'VES';
+        const defCurr = data?.settings?.defaultCurrency || 'USD';
 
         // Construir opciones de clientes
         const customerOpts = (data.customers || [])
@@ -11710,7 +11710,7 @@
         const title = document.getElementById('modalTitle');
         const body  = document.getElementById('modalBody');
         const overlay = document.getElementById('modalOverlay');
-        const defCurr = data?.settings?.defaultCurrency || 'VES';
+        const defCurr = data?.settings?.defaultCurrency || 'USD';
 
         // Construir opciones de proveedores
         const supplierOpts = (data.suppliers || [])
@@ -11910,7 +11910,7 @@
         const today   = new Date().toISOString().slice(0,10);
         const soon    = new Date(); soon.setDate(soon.getDate()+7);
         const soonStr = soon.toISOString().slice(0,10);
-        const defCurr = data?.settings?.defaultCurrency || 'VES';
+        const defCurr = data?.settings?.defaultCurrency || 'USD';
         const disp    = window._displayCurrency || defCurr;
         const q       = (document.getElementById('payablesSearch')?.value || '').toLowerCase().trim();
         const viewMode = document.getElementById('payablesViewMode')?.value || 'consolidated';
@@ -12086,7 +12086,7 @@
         const today   = new Date().toISOString().slice(0,10);
         const soon    = new Date(); soon.setDate(soon.getDate()+7);
         const soonStr = soon.toISOString().slice(0,10);
-        const defCurr = data?.settings?.defaultCurrency || 'VES';
+        const defCurr = data?.settings?.defaultCurrency || 'USD';
         const disp    = window._displayCurrency || defCurr;
         const q       = (document.getElementById('receivablesSearch')?.value || '').toLowerCase().trim();
         const viewMode = document.getElementById('receivablesViewMode')?.value || 'consolidated';
@@ -12265,7 +12265,7 @@
     function openAccountDetail(type, entityId) {
         ensureAM();
         const isRec   = type === 'receivable';
-        const defCurr = data?.settings?.defaultCurrency || 'VES';
+        const defCurr = data?.settings?.defaultCurrency || 'USD';
         const disp    = window._displayCurrency || defCurr;
 
         const entity = isRec
@@ -12389,7 +12389,7 @@
     // Si entityId ya tiene valor → abre el formulario directo para ese cliente/proveedor.
     function openNewAccountMovement(type, entityId) {
         const isRec   = type === 'receivable';
-        const defCurr = data?.settings?.defaultCurrency || 'VES';
+        const defCurr = data?.settings?.defaultCurrency || 'USD';
         const title   = document.getElementById('modalTitle');
         const body    = document.getElementById('modalBody');
         const overlay = document.getElementById('modalOverlay');
@@ -12488,7 +12488,7 @@
         if (amount<=0) { showToast('⚠️', 'El monto debe ser mayor a cero'); return; }
 
         ensureAM();
-        const defCurr = data?.settings?.defaultCurrency || 'VES';
+        const defCurr = data?.settings?.defaultCurrency || 'USD';
         const seq     = data.accountMovements.filter(m=>m.type===type).length + 1;
         const prefix  = type==='receivable'?'CXC':'CXP';
         const number  = `${prefix}-${String(seq).padStart(6,'0')}`;
@@ -12678,7 +12678,7 @@
             `Esta acción NO se puede deshacer.`
         )) return;
 
-        const defCurr = data?.settings?.defaultCurrency || 'VES';
+        const defCurr = data?.settings?.defaultCurrency || 'USD';
 
         // Revertir asientos contables de todos los movimientos nuevos
         movs.forEach(m => {
@@ -12734,7 +12734,7 @@
     async function deleteLegacyRecord(recordType, id, label) {
         if (!confirm(`¿Eliminar el registro "${label}"?\n\nEsta acción no se puede deshacer.`)) return;
 
-        const defCurr = data?.settings?.defaultCurrency || 'VES';
+        const defCurr = data?.settings?.defaultCurrency || 'USD';
 
         if (recordType === 'invoice') {
             const inv = (data.invoices||[]).find(i => i.id === id);
@@ -12913,6 +12913,11 @@
         logAudit('payment','accountMovement', movId, { amount, method: payment.method });
         closeModal();
         renderAll();
+        // Re-abrir el detalle de la cuenta automáticamente para que el usuario vea
+        // el abono reflejado de inmediato sin tener que navegar manualmente
+        setTimeout(() => {
+            try { openAccountDetail(mov.type, mov.entityId); } catch(e) {}
+        }, 150);
         await _persistAndNotify(
             `${mov.type==='receivable'?'Cobro':'Pago'} de ${dcFmt(amount, mov.currency||defCurr)} registrado`,
             'Pago guardado localmente — verifica conexión'
@@ -13052,7 +13057,7 @@
         if (amount <= 0) { showToast('⚠️', 'El monto debe ser mayor a cero'); return; }
 
         let invoice, paymentType;
-        const defCurr = data?.settings?.defaultCurrency || 'VES';
+        const defCurr = data?.settings?.defaultCurrency || 'USD';
         if (target === 'receivable') {
             // FIX legado: buscar por id, luego por number, luego en accountMovements
             invoice = data.invoices.find(i => i.id === invoiceId)
@@ -13193,7 +13198,7 @@
 
     /* ─── Contabilidad ─── */
     function renderAccounting() {
-        const defCurr = data?.settings?.defaultCurrency || 'VES';
+        const defCurr = data?.settings?.defaultCurrency || 'USD';
         const disp    = window._displayCurrency || defCurr;
         // Los saldos contables se guardan en la moneda por defecto de la empresa
         document.getElementById('chartOfAccountsBody').innerHTML = data.chartOfAccounts.map(a =>
@@ -13246,7 +13251,7 @@
         const container = document.getElementById('esfContent');
         if (!container) return;
 
-        const defCurr = data?.settings?.defaultCurrency || 'VES';
+        const defCurr = data?.settings?.defaultCurrency || 'USD';
         const disp    = window._displayCurrency || defCurr;
         const today   = new Date().toLocaleDateString('es-VE', { year:'numeric', month:'long', day:'numeric' });
         const company = data?.settings?.companyName || 'Mi Empresa';
@@ -13455,7 +13460,7 @@
 
     // ── printESF() — abre el modal de impresión con el ESF formateado ────────
     function printESF() {
-        const defCurr = data?.settings?.defaultCurrency || 'VES';
+        const defCurr = data?.settings?.defaultCurrency || 'USD';
         const disp    = window._displayCurrency || defCurr;
         const today   = new Date().toLocaleDateString('es-VE', { year:'numeric', month:'long', day:'numeric' });
         const company = data?.settings?.companyName || 'Mi Empresa';
@@ -13496,7 +13501,7 @@
         const dateFrom  = document.getElementById('reportDateFrom')?.value  || '';
         const dateTo    = document.getElementById('reportDateTo')?.value    || '';
         const monedaF   = document.getElementById('reportMoneda')?.value    || '';
-        const defCurr   = data?.settings?.defaultCurrency || 'VES';
+        const defCurr   = data?.settings?.defaultCurrency || 'USD';
 
         const _inRange  = (dateStr) => {
             if (!dateStr) return true;
@@ -13720,7 +13725,7 @@
 
     /* ─── Módulo Finanzas / P&L ─── */
     function renderFinance() {
-        const defCurr = data?.settings?.defaultCurrency || 'VES';
+        const defCurr = data?.settings?.defaultCurrency || 'USD';
         const disp    = window._displayCurrency || defCurr;
 
         // Convertir todo a la moneda de visualizacion (sin doble conversion)
@@ -13859,7 +13864,7 @@
 
     /* ─── Inventario (tabla, estadísticas, filtros) ─── */
     function renderInventoryStats() {
-        const defCurr    = data?.settings?.defaultCurrency || 'VES';
+        const defCurr    = data?.settings?.defaultCurrency || 'USD';
         const disp       = window._displayCurrency || defCurr;
         const totalUnits = data.products.reduce((sum, p) => sum + p.stock, 0);
         // Valor del inventario: convertir cada producto desde su moneda original
