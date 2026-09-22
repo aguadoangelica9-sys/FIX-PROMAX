@@ -275,7 +275,7 @@ app.use('/',            publicLimiter); // página principal, assets estáticos 
 
 // ══ ENDPOINT DE VERSION — para verificar qué commit corre en producción ═════
 app.get('/_version', (req, res) => {
-    res.json({ ok: true, commit: 'f29e77d', ts: Date.now() });
+    res.json({ ok: true, commit: '5632aa6', ts: Date.now() });
 });
 
 // ── Migrar registros legados (invoices/purchases sin accountMovement) a accountMovements ──
