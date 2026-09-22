@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Recuperar datos perdidos — FIX PRO MAX</title>
+<style>
+  body { font-family: Inter, sans-serif; background: #0f172a; color: #f8fafc; padding: 24px; max-width: 700px; margin: 0 auto; }
+  h1 { color: #818cf8; }
+  .card { background: #1e293b; border-radius: 12px; padding: 20px; margin: 16px 0; border: 1px solid #334155; }
+  .btn { background: #4f46e5; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; margin: 6px 4px; }
+  .btn-green { background: #10b981; }
+  .btn-red { background: #ef4444; }
+  pre { background: #0f172a; padding: 12px; border-radius: 8px; overflow: auto; font-size: 12px; color: #94a3b8; max-height: 300px; }
+  .ok { color: #10b981; }
+  .warn { color: #f59e0b; }
+  .err { color: #ef4444; }
+  label { font-size: 13px; color: #94a3b8; display: block; margin-bottom: 4px; }
+  input { width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #f8fafc; font-size: 14px; box-sizing: border-box; }
+</style>
+</head>
+<body>
+<h1>🔧 Recuperar datos perdidos — FIX PRO MAX</h1>
+
+<div class="card">
+  <h3 style="margin:0 0 8px">📋 Instrucciones</h3>
+  <p style="color:#94a3b8;font-size:14px;">
+    Abre esta página en el <strong>mismo dispositivo y navegador</strong> donde usaste la app el día que se perdieron los datos (19-20 Sep 2026 en la noche).<br><br>
+    Paso 1: Haz clic en <b>"Ver datos en localStorage"</b> para ver qué hay guardado localmente.<br>
+    Paso 2: Si hay datos más recientes que los del servidor (47 ventas), haz clic en <b>"Enviar datos al servidor"</b>.
+  </p>
+</div>
+
+<div class="card">
+  <h3 style="margin:0 0 12px">📊 Estado</h3>
+  <div id="status" style="color:#94a3b8;">Haz clic en "Analizar" para comenzar...</div>
+  <br>
+  <button class="btn" onclick="analizar()">🔍 Analizar localStorage</button>
+  <button class="btn btn-green" onclick="enviar()" id="btnEnviar" style="display:none">⬆️ Enviar datos al servidor</button>
+  <button class="btn" onclick="descargar()" id="btnDescargar" style="display:none">💾 Descargar copia local</button>
+</div>
+
+<div class="card" id="cardDetalle" style="display:none">
+  <h3 style="margin:0 0 8px">📋 Datos encontrados</h3>
+  <pre id="detalle"></pre>
+</div>
+
+<div class="card">
+  <h3 style="margin:0 0 8px">🔗 Configuración (si la app está en otro dominio)</h3>
+  <label>URL de la app</label>
+  <input id="apiBase" value="https://fixpromax-erp.onrender.com" />
+</div>
+
+<div class="card" id="cardLog" style="display:none">
+  <h3 style="margin:0 0 8px">📝 Log</h3>
+  <pre id="log"></pre>
+</div>
+
+<script>
+const DB_KEY = 'fixData_v4';
+const AUTH_KEY = 'fixpromax_token';
+
+function log(msg, cls) {
+  const el = document.getElementById('log');
+  const card = document.getElementById('cardLog');
+  card.style.display = 'block';
+  el.innerHTML += `<span class="${cls||''}">${new Date().toLocaleTimeString()} — ${msg}\n</span>`;
+  el.scrollTop = el.scrollHeight;
+}
+
+function analizar() {
+  const raw = localStorage.getItem(DB_KEY);
+  const token = localStorage.getItem(AUTH_KEY);
+  const status = document.getElementById('status');
+
+  if (!raw) {
+    status.innerHTML = '<span class="err">❌ No hay datos en localStorage (fixData_v4). Prueba en el dispositivo correcto.</span>';
+    return;
+  }
+
+  let d;
+  try { d = JSON.parse(raw); } catch(e) {
+    status.innerHTML = '<span class="err">❌ Datos corruptos en localStorage: ' + e.message + '</span>';
+    return;
+  }
+
+  const ventas = (d.sales || []).length;
+  const facturas = (d.invoices || []).length;
+  const abonos = (d.accountMovements || []).filter(m => (m.payments||[]).length > 0).length;
+  const savedAt = d._savedAt || 'desconocido';
+  const serverVentas = 47; // ventas conocidas en el servidor
+
+  const detalle = document.getElementById('detalle');
+  const cardDetalle = document.getElementById('cardDetalle');
+  cardDetalle.style.display = 'block';
+
+  const ultimas = (d.sales || []).sort((a,b) => new Date(b.date||0)-new Date(a.date||0)).slice(0,5);
+  detalle.textContent = [
+    `Último guardado : ${savedAt}`,
+    `Ventas          : ${ventas} (servidor tiene 47)`,
+    `Facturas        : ${facturas}`,
+    `Mov. con abonos : ${abonos}`,
+    `Token           : ${token ? token.substring(0,16)+'...' : 'NO HAY TOKEN'}`,
+    '',
+    '=== Últimas ventas en localStorage ===',
+    ...ultimas.map(s => `  ${s.invoice} | ${s.date} | $${s.total} | ${s.status}`)
+  ].join('\n');
+
+  if (ventas > serverVentas) {
+    status.innerHTML = `<span class="ok">✅ Encontrados ${ventas} ventas en localStorage — ${ventas - serverVentas} más que el servidor. ¡Se pueden recuperar!</span>`;
+    document.getElementById('btnEnviar').style.display = 'inline-block';
+    document.getElementById('btnDescargar').style.display = 'inline-block';
+  } else if (ventas === serverVentas) {
+    status.innerHTML = `<span class="warn">⚠️ localStorage tiene ${ventas} ventas — igual que el servidor. Los datos pueden haberse perdido antes de llegar aquí. Intenta en el dispositivo original.</span>`;
+    document.getElementById('btnDescargar').style.display = 'inline-block';
+  } else {
+    status.innerHTML = `<span class="err">❌ localStorage tiene ${ventas} ventas — menos que el servidor (47). Este no es el dispositivo correcto.</span>`;
+  }
+
+  if (!token) {
+    status.innerHTML += '<br><span class="warn">⚠️ No hay token de sesión — necesitas iniciar sesión primero en la app.</span>';
+  }
+}
+
+async function enviar() {
+  const raw = localStorage.getItem(DB_KEY);
+  const token = localStorage.getItem(AUTH_KEY);
+  const base = document.getElementById('apiBase').value.trim();
+
+  if (!raw || !token) {
+    log('❌ No hay datos o token', 'err');
+    return;
+  }
+
+  log('Enviando datos al servidor...', 'warn');
+  document.getElementById('btnEnviar').disabled = true;
+  document.getElementById('btnEnviar').textContent = '⏳ Enviando...';
+
+  try {
+    const res = await fetch(base + '/api/db', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      body: raw
+    });
+    const json = await res.json().catch(() => ({}));
+
+    if (res.ok && json.data?.saved) {
+      log('✅ Datos enviados correctamente. Recarga la app para ver los datos recuperados.', 'ok');
+      document.getElementById('btnEnviar').textContent = '✅ Enviado';
+      document.getElementById('status').innerHTML = '<span class="ok">✅ Datos recuperados y enviados al servidor. Abre la app para verificar.</span>';
+    } else {
+      log('❌ Error: ' + (json.error || JSON.stringify(json)), 'err');
+      document.getElementById('btnEnviar').disabled = false;
+      document.getElementById('btnEnviar').textContent = '⬆️ Enviar datos al servidor';
+    }
+  } catch(e) {
+    log('❌ Error de red: ' + e.message, 'err');
+    document.getElementById('btnEnviar').disabled = false;
+    document.getElementById('btnEnviar').textContent = '⬆️ Enviar datos al servidor';
+  }
+}
+
+function descargar() {
+  const raw = localStorage.getItem(DB_KEY);
+  if (!raw) { log('No hay datos', 'err'); return; }
+  const blob = new Blob([raw], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'recuperacion_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  log('💾 Archivo descargado: ' + a.download, 'ok');
+}
+</script>
+</body>
+</html>
