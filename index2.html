@@ -12973,13 +12973,19 @@
     function migrateToAccountMovements() {
         ensureAM();
         const existingNums = new Set(data.accountMovements.map(m=>m.legacyId||m.number));
+        // También indexar por invoiceId para no duplicar
+        const existingInvIds = new Set(data.accountMovements.map(m=>m.invoiceId).filter(Boolean));
         let migrated = 0;
-        const defCurr = data?.settings?.defaultCurrency||'VES';
+        const defCurr = data?.settings?.defaultCurrency||'USD';
 
         // Migrar invoices → accountMovements CxC
+        // Incluir source='manual', source='' y source=null (facturas antiguas sin source)
         (data.invoices||[])
-            .filter(inv => inv.status!=='Anulada' && inv.source==='manual'
-                        && !existingNums.has(inv.id) && !existingNums.has(inv.number))
+            .filter(inv => inv.status!=='Anulada'
+                        && (!inv.source || inv.source==='manual' || inv.source==='pos')
+                        && (Number(inv.total||0) - Number(inv.paid||0)) > 0.001
+                        && !existingNums.has(inv.id) && !existingNums.has(inv.number)
+                        && !existingInvIds.has(inv.id))
             .forEach(inv => {
                 const seq = data.accountMovements.filter(m=>m.type==='receivable').length + 1;
                 const movement = {
@@ -13011,7 +13017,9 @@
 
         // Migrar purchases → accountMovements CxP
         (data.purchases||[])
-            .filter(pur => pur.status!=='Anulada' && pur.source==='manual'
+            .filter(pur => pur.status!=='Anulada'
+                        && (!pur.source || pur.source==='manual')
+                        && (Number(pur.total||0) - Number(pur.paid||0)) > 0.001
                         && !existingNums.has(pur.id) && !existingNums.has(pur.number))
             .forEach(pur => {
                 const seq = data.accountMovements.filter(m=>m.type==='payable').length + 1;
