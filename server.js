@@ -278,6 +278,131 @@ app.get('/_version', (req, res) => {
     res.json({ ok: true, commit: '6c62be0', ts: Date.now() });
 });
 
+// ── Migrar registros legados (invoices/purchases sin accountMovement) a accountMovements ──
+// POST /_admin_fix/migrate-legacy?key=FIXPROMAX_MIGRATE_2026
+// Body: { "companyId": "msuuifzwc1tx" }
+app.post('/_admin_fix/migrate-legacy', async (req, res) => {
+    if ((req.query.key || '') !== (process.env.ADMIN_MIGRATE_KEY || 'FIXPROMAX_MIGRATE_2026'))
+        return res.status(403).json({ ok: false, error: 'Clave incorrecta' });
+
+    const companyId = req.body?.companyId;
+    if (!companyId) return res.status(400).json({ ok: false, error: 'companyId requerido' });
+
+    try {
+        const { CompanyDB } = require('./models/index');
+        const doc = await CompanyDB.findOne({ companyId }).lean();
+        if (!doc) return res.status(404).json({ ok: false, error: 'Empresa no encontrada' });
+
+        const data = doc;
+        if (!Array.isArray(data.accountMovements)) data.accountMovements = [];
+
+        const defCurr = data.settings?.defaultCurrency || 'USD';
+        const genId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        const calcStatus = (m) => {
+            const amt = Number(m.amount) || 0;
+            const pd  = Number(m.paid)   || 0;
+            if (pd >= amt && amt > 0) return 'Pagado';
+            const today = new Date().toISOString().slice(0, 10);
+            if (m.dueDate && m.dueDate < today) return 'Vencido';
+            if (pd > 0) return 'Parcial';
+            return 'Pendiente';
+        };
+
+        // IDs ya migrados
+        const migratedIds = new Set();
+        data.accountMovements.forEach(m => {
+            if (m.invoiceId) migratedIds.add(m.invoiceId);
+            if (m.legacyId)  migratedIds.add(m.legacyId);
+        });
+
+        const newMovements = [];
+        const migrated = { cxc: 0, cxp: 0 };
+
+        // Migrar facturas → CxC
+        (data.invoices || [])
+            .filter(inv => inv.status !== 'Anulada' &&
+                (Number(inv.total) - Number(inv.paid || 0)) > 0.001 &&
+                !migratedIds.has(inv.id))
+            .forEach(inv => {
+                const m = {
+                    id:          genId(),
+                    type:        'receivable',
+                    entityId:    inv.customerId,
+                    legacyId:    inv.id,
+                    invoiceId:   inv.id,
+                    number:      inv.number || `CXC-MIGR-${migrated.cxc + 1}`,
+                    date:        (inv.date || '').slice(0, 10) || new Date().toISOString().slice(0, 10),
+                    dueDate:     inv.dueDate || '',
+                    concept:     inv.description || inv.notes || inv.number || 'Cuenta por cobrar (migrada)',
+                    description: '',
+                    reference:   inv.number || '',
+                    amount:      Number(inv.total) || 0,
+                    currency:    inv.currency || defCurr,
+                    paid:        Number(inv.paid) || 0,
+                    status:      'Pendiente',
+                    notes:       inv.notes || '',
+                    source:      'migrated',
+                    createdAt:   inv.createdAt || new Date().toISOString(),
+                    updatedAt:   new Date().toISOString(),
+                    payments:    [],
+                };
+                m.status = calcStatus(m);
+                newMovements.push(m);
+                migrated.cxc++;
+            });
+
+        // Migrar compras → CxP
+        (data.purchases || [])
+            .filter(pur => pur.status !== 'Anulada' &&
+                (Number(pur.total) - Number(pur.paid || 0)) > 0.001 &&
+                !migratedIds.has(pur.id))
+            .forEach(pur => {
+                const m = {
+                    id:          genId(),
+                    type:        'payable',
+                    entityId:    pur.supplierId || pur.supplier || null,
+                    legacyId:    pur.id,
+                    invoiceId:   null,
+                    number:      pur.number || `CXP-MIGR-${migrated.cxp + 1}`,
+                    date:        (pur.date || '').slice(0, 10) || new Date().toISOString().slice(0, 10),
+                    dueDate:     pur.dueDate || '',
+                    concept:     pur.description || pur.notes || pur.number || 'Cuenta por pagar (migrada)',
+                    description: '',
+                    reference:   pur.number || '',
+                    amount:      Number(pur.total) || 0,
+                    currency:    pur.currency || defCurr,
+                    paid:        Number(pur.paid) || 0,
+                    status:      'Pendiente',
+                    notes:       pur.notes || '',
+                    source:      'migrated',
+                    createdAt:   pur.createdAt || new Date().toISOString(),
+                    updatedAt:   new Date().toISOString(),
+                    payments:    [],
+                };
+                m.status = calcStatus(m);
+                newMovements.push(m);
+                migrated.cxp++;
+            });
+
+        if (newMovements.length === 0) {
+            return res.json({ ok: true, migrated: 0, message: 'No hay registros pendientes de migrar' });
+        }
+
+        const allMovements = [...data.accountMovements, ...newMovements];
+        await CompanyDB.findOneAndUpdate(
+            { companyId },
+            { $set: { accountMovements: allMovements, updatedAt: new Date().toISOString() } }
+        );
+
+        console.log(`[migrate-legacy] ${companyId}: CxC=${migrated.cxc} CxP=${migrated.cxp}`);
+        res.json({ ok: true, migrated: newMovements.length, cxc: migrated.cxc, cxp: migrated.cxp,
+                   total: allMovements.length });
+    } catch (e) {
+        console.error('[migrate-legacy] Error:', e.message);
+        err(res, e.message, 500);
+    }
+});
+
 // ══ ENDPOINT DE EMERGENCIA: desactivar maintenanceMode ══════════════════════
 // Endpoint de emergencia: resetear contrasena de usuario por email
 // POST /_admin_fix/reset-password?key=FIXPROMAX_MIGRATE_2026
