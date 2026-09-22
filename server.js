@@ -6187,6 +6187,25 @@ app.get('/api/admin/company/:companyId/export', async (req, res) => {
     }
 });
 
+// Endpoint de emergencia — listar y restaurar backups por key (sin requireAdmin)
+app.get("/_admin_fix/company/:companyId/backups", async (req, res) => {
+    if ((req.query.key || "") !== (process.env.ADMIN_MIGRATE_KEY || "FIXPROMAX_MIGRATE_2026"))
+        return res.status(403).json({ ok: false, error: "Clave incorrecta" });
+    try {
+        const backups = await DB.listBackups(req.params.companyId);
+        ok(res, backups);
+    } catch(e) { err(res, e.message, 500); }
+});
+app.get("/_admin_fix/backups/:backupId", async (req, res) => {
+    if ((req.query.key || "") !== (process.env.ADMIN_MIGRATE_KEY || "FIXPROMAX_MIGRATE_2026"))
+        return res.status(403).json({ ok: false, error: "Clave incorrecta" });
+    try {
+        const backup = await DB.getBackup(req.params.backupId);
+        if (!backup) return err(res, "Backup no encontrado", 404);
+        ok(res, backup);
+    } catch(e) { err(res, e.message, 500); }
+});
+
 // GET /api/admin/company/:companyId/backups — listar backups de una empresa
 app.get('/api/admin/company/:companyId/backups', requireAdmin, async (req, res) => {
     try {
