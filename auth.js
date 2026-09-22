@@ -952,6 +952,7 @@
                     const dbKey = typeof DB_KEY !== 'undefined' ? DB_KEY : 'fixData_v4';
                     if (json && json.ok && json.data) {
                         if (typeof window._setAppData === 'function') window._setAppData(json.data);
+                        if (typeof ensureArrays === 'function') ensureArrays();
                         try { localStorage.setItem(dbKey, JSON.stringify(json.data)); } catch(e) {}
                     }
                     if (typeof renderAll            === 'function') renderAll();

@@ -6115,8 +6115,25 @@
     // ── Exponer data globalmente para que auth.js pueda actualizarlo tras login ──
     window._appData   = () => data;
     window._setAppData = function(newData) {
+        // Arrays que NUNCA deben ser null — si el servidor devuelve null los convertimos a []
+        const mustBeArrays = [
+            'auditLog','journalEntries','payments','inventoryMovements','inventoryHistory',
+            'sales','invoices','purchases','expenses','returns','quotes','customers','products',
+            'accountMovements','categories','suppliers','warehouses','currencies','exchangeRates',
+            'chartOfAccounts','alerts','importHistory'
+        ];
         // Actualizar cada clave de data sin romper referencias
-        Object.keys(newData).forEach(k => { data[k] = newData[k]; });
+        Object.keys(newData).forEach(k => {
+            const val = newData[k];
+            // Proteger arrays críticos: null/undefined → []
+            if (mustBeArrays.includes(k) && !Array.isArray(val)) {
+                data[k] = Array.isArray(data[k]) ? data[k] : [];
+            } else {
+                data[k] = val;
+            }
+        });
+        // Segunda pasada: garantizar que los arrays críticos no sean null aunque no vengan en newData
+        mustBeArrays.forEach(k => { if (!Array.isArray(data[k])) data[k] = []; });
     };
 
     // ─── Helpers ───
@@ -6315,10 +6332,11 @@
 
     // ─── Auditoría ───
     function logAudit(action, entity, entityId, details) {
+        if (!Array.isArray(data.auditLog)) data.auditLog = [];
         data.auditLog.push({
             id: generateId(),
             timestamp: new Date().toISOString(),
-            user: 'admin',
+            user: window._currentUser?.name || 'admin',
             action,
             entity,
             entityId,
@@ -7532,6 +7550,9 @@
        ══════════════════════════════════════════════════════════════ */
     async function saveSafe(btn, fn) {
         if (!btn || btn.disabled) return; // ya en proceso
+
+        // Garantizar que todos los arrays críticos existen antes de cualquier guardado
+        if (typeof ensureArrays === 'function') ensureArrays();
 
         const originalText  = btn.textContent;
         const originalTitle = btn.title || '';
@@ -11851,6 +11872,18 @@
         if (!Array.isArray(data.accountMovements)) data.accountMovements = [];
     }
 
+    // Garantiza que todos los arrays críticos de data son arrays (nunca null/undefined)
+    // Llamar al inicio de cualquier función que haga .push en data.*
+    function ensureArrays() {
+        const arrays = [
+            'auditLog','journalEntries','payments','inventoryMovements','inventoryHistory',
+            'sales','invoices','purchases','expenses','returns','quotes','customers','products',
+            'accountMovements','categories','suppliers','warehouses','currencies','exchangeRates',
+            'chartOfAccounts','alerts','importHistory'
+        ];
+        arrays.forEach(k => { if (!Array.isArray(data[k])) data[k] = []; });
+    }
+
     // Sincronizar ventas POS que no tienen factura en data.invoices
     // (ventas creadas con versiones anteriores del código)
     function syncPOSInvoices() {
@@ -15868,6 +15901,8 @@
 
                 // Actualizar el estado de la app con datos frescos del servidor
                 window._setAppData(remoteData);
+                // Garantizar arrays críticos (el servidor puede devolver null en arrays vacíos)
+                if (typeof ensureArrays === 'function') ensureArrays();
                 _syncVersion = remoteFingerprint;
                 _lastSyncAt  = Date.now();
 
