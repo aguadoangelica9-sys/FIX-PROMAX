@@ -7075,17 +7075,23 @@
                 let isMovement = false;
                 if (target === 'receivable') {
                     invoice = data.invoices.find(i => i.id === invoiceId);
-                    // Si no es factura legacy, buscar en accountMovements
+                    // Si no es factura legacy, buscar en accountMovements (por id directo O por invoiceId/legacyId)
                     if (!invoice) {
-                        const mov = data.accountMovements?.find(m => m.id === invoiceId && m.type === 'receivable');
-                        if (mov) { openMovementPayment(invoiceId); return; }
+                        const mov = (data.accountMovements||[]).find(m =>
+                            (m.id === invoiceId || m.invoiceId === invoiceId || m.legacyId === invoiceId)
+                            && m.type === 'receivable'
+                        );
+                        if (mov) { closeModal(); openMovementPayment(mov.id); return; }
                     }
                 } else if (target === 'payable') {
                     invoice = data.purchases.find(i => i.id === invoiceId);
-                    // Si no es compra legacy, buscar en accountMovements
+                    // Si no es compra legacy, buscar en accountMovements (por id directo O por invoiceId/legacyId)
                     if (!invoice) {
-                        const mov = data.accountMovements?.find(m => m.id === invoiceId && m.type === 'payable');
-                        if (mov) { openMovementPayment(invoiceId); return; }
+                        const mov = (data.accountMovements||[]).find(m =>
+                            (m.id === invoiceId || m.invoiceId === invoiceId || m.legacyId === invoiceId)
+                            && m.type === 'payable'
+                        );
+                        if (mov) { closeModal(); openMovementPayment(mov.id); return; }
                     }
                 }
                 if (!invoice) {
