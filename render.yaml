@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     branch: master
-    buildCommand: npm install
+    buildCommand: npm install --omit=dev
     startCommand: npm start
     healthCheckPath: /health
     autoDeploy: true
