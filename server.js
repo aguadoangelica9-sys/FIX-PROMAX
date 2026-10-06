@@ -6554,6 +6554,81 @@ app.get('/api/config/global', async (req, res) => {
     }
 });
 
+// ── robots.txt — bloquea indexación del ERP en buscadores ───────────────────
+app.get('/robots.txt', (req, res) => {
+    res.type('text/plain');
+    res.send(
+        'User-agent: *\n' +
+        'Disallow: /\n' +
+        '\n' +
+        '# FIX PRO MAX es un sistema ERP privado.\n' +
+        '# No hay contenido público para indexar.\n'
+    );
+});
+
+// ── 404 personalizado — debe ir DESPUÉS de todas las rutas ───────────────────
+app.use((req, res) => {
+    // Las peticiones a /api/* devuelven JSON
+    if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ ok: false, error: 'Endpoint no encontrado', path: req.path });
+    }
+    // Todo lo demás devuelve una página HTML amigable
+    res.status(404).send(`<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Página no encontrada — FIX PRO MAX</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f1f5f9;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #0f172a;
+        }
+        .card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 48px 40px;
+            max-width: 480px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.07);
+        }
+        .code { font-size: 80px; font-weight: 800; color: #4f46e5; line-height: 1; }
+        h1 { font-size: 22px; font-weight: 700; margin: 16px 0 8px; }
+        p  { font-size: 15px; color: #64748b; margin-bottom: 28px; }
+        a  {
+            display: inline-block;
+            background: #4f46e5;
+            color: #fff;
+            text-decoration: none;
+            padding: 12px 28px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 15px;
+            transition: background 0.2s;
+        }
+        a:hover { background: #4338ca; }
+        .path { font-size: 12px; color: #94a3b8; margin-top: 20px; word-break: break-all; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="code">404</div>
+        <h1>Página no encontrada</h1>
+        <p>La ruta que buscas no existe o fue movida.<br>Vuelve al sistema y continúa desde ahí.</p>
+        <a href="/">← Ir al inicio</a>
+        <p class="path">${req.path}</p>
+    </div>
+</body>
+</html>`);
+});
+
 // Iniciar servidor
 startServer(PORT);
 

@@ -13,7 +13,18 @@
     "security-check": "node security-verification.js",
     "audit": "npm audit",
     "audit-fix": "npm audit fix",
-    "audit-fix-force": "npm audit fix --force"
+    "audit-fix-force": "npm audit fix --force",
+    "test": "node test-components.js --unit",
+    "test:api": "node test-components.js --api --base-url https://fixpromax-erp.onrender.com",
+    "test:api:local": "node test-components.js --api --base-url http://localhost:3000",
+    "test:all": "node test-components.js",
+    "test:integration": "node test-integration.js --base-url https://fixpromax-erp.onrender.com",
+    "test:integration:local": "node test-integration.js --base-url http://localhost:3000",
+    "test:e2e": "npx playwright test --project=chromium",
+    "test:e2e:ui": "npx playwright test --ui",
+    "test:e2e:headed": "npx playwright test --headed --project=chromium",
+    "test:e2e:report": "npx playwright show-report e2e-report",
+    "test:e2e:mobile": "npx playwright test --project=mobile-chrome"
   },
   "dependencies": {
     "@mapbox/node-pre-gyp": "^2.0.3",
@@ -29,6 +40,7 @@
     "tar": "^7.5.22"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "selfsigned": "^5.5.0"
   }
 }

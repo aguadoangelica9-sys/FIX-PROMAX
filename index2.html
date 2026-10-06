@@ -32,6 +32,12 @@
     <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
 
+    <!-- ── Velocidad: preconnect a dominios externos ── -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://cdn.tailwindcss.com" />
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com" />
+
     <!-- ── PWA Manifest ── -->
     <link rel="manifest"         href="/manifest.json" />
 
@@ -7069,8 +7075,11 @@
                 `;
             } else if (type === 'payment') {
                 // Para pagos de facturas (existente)
-                const target = modalContext.extra?.target || 'receivable';
+                // NO usar 'receivable' como default — si target no está definido,
+                // cerrar el modal para evitar que un pago de proveedor se trate como cobro de cliente.
+                const target = modalContext.extra?.target;
                 const invoiceId = modalContext.extra?.invoiceId;
+                if (!target) { closeModal(); showToast('⚠️', 'Error interno: tipo de pago no definido'); return; }
                 let invoice = null;
                 let isMovement = false;
                 if (target === 'receivable') {
@@ -9093,8 +9102,17 @@
         const totalExpDisp   = dcSum(data.expenses.filter(e => e.status !== 'anulado'), 'amount', 'currency');
         const totalRecDisp   = data.invoices.filter(i => i.status !== 'Anulada')
             .reduce((s, i) => s + dc(i.total - i.paid, i.currency || defCurr), 0);
-        const totalPayDisp   = data.purchases.filter(p => p.status !== 'Anulada')
-            .reduce((s, p) => s + dc(p.total - p.paid, p.currency || defCurr), 0);
+        // Calcular CxP: accountMovements modernos + purchases legacy no migradas (sin doble conteo)
+        const _dashMigratedPayIds = new Set(
+            (data.accountMovements || [])
+                .filter(m => m.type === 'payable' && (m.invoiceId || m.legacyId))
+                .map(m => m.invoiceId || m.legacyId)
+        );
+        const totalPayDisp   = (data.accountMovements || [])
+                .filter(m => m.type === 'payable')
+                .reduce((s, m) => s + dc((Number(m.amount)||0) - (Number(m.paid)||0), m.currency || defCurr), 0)
+            + data.purchases.filter(p => p.status !== 'Anulada' && !_dashMigratedPayIds.has(p.id))
+                .reduce((s, p) => s + dc((p.total||0) - (p.paid||0), p.currency || defCurr), 0);
 
         const totalCustomers = data.customers.filter(c => c.status !== 'anulado').length;
         const lowStock       = data.products.filter(p => p.stock < 5 && p.status !== 'anulado').length;
@@ -11878,6 +11896,22 @@
         if (!Array.isArray(data.accountMovements)) data.accountMovements = [];
     }
 
+    // ── Helpers de nombre de entidad ─────────────────────────────────────────
+    // Resuelven el nombre legible de un proveedor o cliente a partir de su ID.
+    // Devuelven una cadena vacía si no se encuentra — nunca undefined/null.
+    function getSupplierName(supplierId) {
+        if (!supplierId) return '—';
+        const s = (data.suppliers || []).find(s => s.id === supplierId);
+        return s ? (s.name || s.businessName || supplierId) : supplierId;
+    }
+
+    function getCustomerName(customerId) {
+        if (!customerId) return '—';
+        const c = (data.customers || []).find(c => c.id === customerId);
+        if (!c) return customerId;
+        return ((c.firstName || '') + ' ' + (c.lastName || '')).trim() || c.name || customerId;
+    }
+
     // Garantiza que todos los arrays críticos de data son arrays (nunca null/undefined)
     // Llamar al inicio de cualquier función que haga .push en data.*
     function ensureArrays() {
@@ -11930,6 +11964,7 @@
     // Agrupa movimientos por entityId y calcula totales consolidados
     function groupMovements(type) {
         ensureAM();
+        const defCurr = data?.settings?.defaultCurrency || 'USD';
         const movs = data.accountMovements.filter(m => m.type === type);
         const groups = {};
         movs.forEach(m => {
@@ -11937,8 +11972,9 @@
                 groups[m.entityId] = { entityId: m.entityId, movements: [], totalAmount: 0, totalPaid: 0 };
             }
             groups[m.entityId].movements.push(m);
-            groups[m.entityId].totalAmount += Number(m.amount) || 0;
-            groups[m.entityId].totalPaid   += Number(m.paid)   || 0;
+            // Convertir a moneda de display para que los totales sean comparables
+            groups[m.entityId].totalAmount += dc(Number(m.amount) || 0, m.currency || defCurr);
+            groups[m.entityId].totalPaid   += dc(Number(m.paid)   || 0, m.currency || defCurr);
         });
         Object.values(groups).forEach(g => { g.balance = g.totalAmount - g.totalPaid; });
         return groups;
@@ -11958,7 +11994,18 @@
 
         // ── Estadísticas (incluye legacy purchases con source=manual) ──────
         const allMovsPay = data.accountMovements.filter(m => m.type === 'payable');
-        const legacyPay  = (data.purchases || []).filter(p => p.status !== 'Anulada' && (p.total - (p.paid||0)) > 0);
+        // IDs de purchases que ya tienen un accountMovement equivalente (migradas) — excluirlas
+        // para evitar doble conteo en el stat card "Por pagar"
+        const _migratedPayIds = new Set(
+            (data.accountMovements || [])
+                .filter(m => m.type === 'payable' && (m.invoiceId || m.legacyId))
+                .map(m => m.invoiceId || m.legacyId)
+        );
+        const legacyPay = (data.purchases || []).filter(p =>
+            p.status !== 'Anulada' &&
+            (p.total - (p.paid||0)) > 0 &&
+            !_migratedPayIds.has(p.id)   // excluir purchases ya representadas en accountMovements
+        );
 
         const totalPayDisp = allMovsPay.reduce((s,m)=> s + dc((Number(m.amount)||0)-(Number(m.paid)||0), m.currency||defCurr), 0)
                            + legacyPay.reduce((s,p)=> s + dc((p.total||0)-(p.paid||0), p.currency||defCurr), 0);
@@ -12008,11 +12055,12 @@
                 !(supplier?.email||'').toLowerCase().includes(q)) return;
 
             const g = groups[suppId] || { movements: [], totalAmount: 0, totalPaid: 0, balance: 0 };
-            // Sumar legacy
+            // Sumar legacy (convertidas a moneda de display)
             const leg = legacyBySupp[suppId] || [];
             const legAmt  = leg.reduce((s,p)=> s + dc(p.total||0, p.currency||defCurr), 0);
             const legPaid = leg.reduce((s,p)=> s + dc(p.paid||0,  p.currency||defCurr), 0);
-            const totalBalance = dc(g.balance, defCurr) + (legAmt - legPaid);
+            // g.balance ya está en moneda de display (groupMovements ya convirtió con dc())
+            const totalBalance = g.balance + (legAmt - legPaid);
             const totalMovements = g.movements.length + leg.length;
             if (totalBalance <= 0.001 && totalMovements === 0) return;
 
@@ -12187,7 +12235,8 @@
             const leg = legacyByCust[custId] || [];
             const legAmt  = leg.reduce((s,i)=> s + dc(i.total||0, i.currency||defCurr), 0);
             const legPaid = leg.reduce((s,i)=> s + dc(i.paid||0,  i.currency||defCurr), 0);
-            const totalBalance   = dc(g.balance, defCurr) + (legAmt - legPaid);
+            // g.balance ya está en moneda de display (groupMovements ya convirtió con dc())
+            const totalBalance   = g.balance + (legAmt - legPaid);
             const totalMovements = g.movements.length + leg.length;
             if (totalBalance <= 0.001 && totalMovements === 0) return;
 
@@ -13087,35 +13136,45 @@
         // Primero verificar si el id corresponde a un accountMovement directo
         if (target === 'receivable' || target === 'payable') {
             const mov = (data.accountMovements||[]).find(m => m.id === invoiceId && m.type === target);
-            if (mov) { openMovementPayment(invoiceId); return; }
+            if (mov) { closeModal(); openMovementPayment(invoiceId); return; }
             // FIX legado: buscar también por invoiceId/legacyId dentro de accountMovements
             const relMov = (data.accountMovements||[]).find(m =>
                 m.type === target && (m.invoiceId === invoiceId || m.legacyId === invoiceId)
             );
-            if (relMov) { openMovementPayment(relMov.id); return; }
+            if (relMov) { closeModal(); openMovementPayment(relMov.id); return; }
+        }
+        // Cerrar modal actual (puede estar el de detalle de cuenta) antes de abrir el de pago
+        // para que modalContext quede limpio
+        const overlay = document.getElementById('modalOverlay');
+        if (overlay?.classList.contains('open')) {
+            overlay.classList.remove('open');
         }
         modalContext.extra = { target, invoiceId };
-        openModal('payment');
+        openModal('payment', null, { target, invoiceId });
     }
 
     async function registerPayment() {
         const amount    = parseFloat(document.getElementById('f_paymentAmount').value) || 0;
         const method    = document.getElementById('f_paymentMethod').value;
         const ref       = document.getElementById('f_paymentRef').value.trim();
-        const target    = modalContext.extra?.target || 'receivable';
+        // IMPORTANTE: NO usar 'receivable' como default — si target no está definido,
+        // abortar para evitar que un pago de proveedor se registre como cobro de cliente.
+        const target    = modalContext.extra?.target;
         const invoiceId = modalContext.extra?.invoiceId;
+        if (!target) { showToast('⚠️', 'Error interno: tipo de pago no definido'); return; }
         if (amount <= 0) { showToast('⚠️', 'El monto debe ser mayor a cero'); return; }
 
         let invoice, paymentType;
         const defCurr = data?.settings?.defaultCurrency || 'USD';
         if (target === 'receivable') {
-            // FIX legado: buscar por id, luego por number, luego en accountMovements
+            // Buscar por id, luego por number, luego redirigir a accountMovements moderno
             invoice = data.invoices.find(i => i.id === invoiceId)
                    || data.invoices.find(i => i.number === invoiceId);
             if (!invoice) {
                 // Intentar redirigir al sistema moderno de movimientos
                 const relMov = (data.accountMovements||[]).find(m =>
-                    m.id === invoiceId || m.invoiceId === invoiceId || m.legacyId === invoiceId
+                    (m.id === invoiceId || m.invoiceId === invoiceId || m.legacyId === invoiceId)
+                    && m.type === 'receivable'
                 );
                 if (relMov) { closeModal(); openMovementPayment(relMov.id); return; }
                 showToast('⚠️', 'Factura no encontrada'); return;
@@ -13134,7 +13193,15 @@
             );
         } else if (target === 'payable') {
             invoice = data.purchases.find(i => i.id === invoiceId);
-            if (!invoice) { showToast('⚠️', 'Compra no encontrada'); return; }
+            if (!invoice) {
+                // Intentar redirigir al sistema moderno de movimientos de CxP
+                const relMov = (data.accountMovements||[]).find(m =>
+                    (m.id === invoiceId || m.invoiceId === invoiceId || m.legacyId === invoiceId)
+                    && m.type === 'payable'
+                );
+                if (relMov) { closeModal(); openMovementPayment(relMov.id); return; }
+                showToast('⚠️', 'Compra no encontrada'); return;
+            }
             invoice.paid = (invoice.paid || 0) + amount;
             const supplier = data.suppliers.find(s => s.id === invoice.supplierId);
             if (supplier) supplier.balance = (supplier.balance || 0) - amount;
@@ -18798,5 +18865,89 @@
 
 })();
 </script>
+
+<!-- ── Botón flotante de WhatsApp ─────────────────────────────────────────────
+     Número configurable: editar WA_SUPPORT_NUMBER en el bloque de abajo.
+     Posición: inferior derecho, encima de cualquier otro elemento flotante.
+     Se oculta automáticamente cuando hay un modal abierto.
+─────────────────────────────────────────────────────────────────────────────-->
+<style>
+    #wa-float-btn {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 8888;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #25d366;
+        color: #fff;
+        border: none;
+        border-radius: 50px;
+        padding: 12px 20px 12px 14px;
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 16px rgba(37,211,102,0.40);
+        transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+        text-decoration: none;
+    }
+    #wa-float-btn:hover {
+        transform: translateY(-2px) scale(1.03);
+        box-shadow: 0 8px 24px rgba(37,211,102,0.50);
+    }
+    #wa-float-btn:active { transform: scale(0.97); }
+    #wa-float-btn svg { flex-shrink: 0; }
+    #wa-float-btn.wa-hidden { opacity: 0; pointer-events: none; }
+
+    /* En móvil: solo ícono, sin texto */
+    @media (max-width: 600px) {
+        #wa-float-btn span.wa-label { display: none; }
+        #wa-float-btn { padding: 14px; border-radius: 50%; }
+    }
+</style>
+
+<a id="wa-float-btn"
+   href="#"
+   target="_blank"
+   rel="noopener noreferrer"
+   title="Contactar soporte por WhatsApp"
+   aria-label="Abrir chat de soporte en WhatsApp">
+    <!-- Ícono oficial WhatsApp SVG (sin dependencia externa) -->
+    <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path fill="#fff" d="M16 2.667C8.636 2.667 2.667 8.636 2.667 16c0 2.37.627 4.588 1.72 6.51L2.667 29.333l6.99-1.696A13.27 13.27 0 0016 29.333c7.364 0 13.333-5.97 13.333-13.333S23.364 2.667 16 2.667zm0 24.222a10.85 10.85 0 01-5.574-1.538l-.4-.237-4.148 1.005 1.03-3.986-.26-.413A10.85 10.85 0 015.111 16c0-5.997 4.892-10.889 10.889-10.889S26.889 10.003 26.889 16 21.997 26.889 16 26.889zm5.97-8.152c-.327-.163-1.933-.953-2.233-1.062-.3-.108-.518-.163-.736.164-.218.327-.845 1.062-1.036 1.28-.19.218-.381.245-.708.082-.327-.164-1.38-.508-2.629-1.621-.972-.866-1.628-1.935-1.819-2.262-.19-.327-.02-.503.144-.666.147-.146.327-.381.49-.572.164-.19.218-.327.327-.545.109-.218.055-.409-.027-.572-.082-.163-.736-1.775-1.008-2.43-.266-.637-.536-.55-.736-.56l-.627-.01c-.218 0-.572.082-.872.409-.3.327-1.145 1.118-1.145 2.726s1.172 3.162 1.335 3.38c.163.218 2.307 3.524 5.59 4.94.782.337 1.392.539 1.867.69.784.249 1.498.214 2.063.13.629-.094 1.933-.79 2.206-1.553.272-.763.272-1.416.19-1.553-.08-.136-.3-.218-.627-.381z"/>
+    </svg>
+    <span class="wa-label">Soporte</span>
+</a>
+
+<script>
+(function () {
+    // ── Configuración del botón WhatsApp ─────────────────────────────────────
+    // Cambiar este número por el de soporte real (solo dígitos, con código de país)
+    var WA_SUPPORT_NUMBER = '584121234567'; // Ejemplo: 58 = Venezuela, 412 = área, etc.
+    var WA_MESSAGE        = 'Hola, necesito soporte con FIX PRO MAX.';
+
+    var btn = document.getElementById('wa-float-btn');
+    if (!btn) return;
+
+    // Construir URL de WhatsApp
+    btn.href = 'https://wa.me/' + WA_SUPPORT_NUMBER + '?text=' + encodeURIComponent(WA_MESSAGE);
+
+    // Ocultar el botón cuando un modal esté abierto (para no tapar el modal)
+    var overlay = document.getElementById('modalOverlay');
+    if (overlay) {
+        var observer = new MutationObserver(function () {
+            if (overlay.classList.contains('open')) {
+                btn.classList.add('wa-hidden');
+            } else {
+                btn.classList.remove('wa-hidden');
+            }
+        });
+        observer.observe(overlay, { attributes: true, attributeFilter: ['class'] });
+    }
+})();
+</script>
+
 </body>
 </html>
