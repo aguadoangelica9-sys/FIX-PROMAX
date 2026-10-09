@@ -444,6 +444,98 @@ app.get('/_admin_fix/disable-maintenance', async (req, res) => {
     }
 });
 
+// ── Diagnóstico: CxC/CxP vinculadas a facturas Anuladas o inexistentes ───────
+// GET /_admin_fix/check-discrepancies?key=FIXPROMAX_MIGRATE_2026&companyId=xxx
+app.get('/_admin_fix/check-discrepancies', async (req, res) => {
+    if ((req.query.key || '') !== (process.env.ADMIN_MIGRATE_KEY || 'FIXPROMAX_MIGRATE_2026'))
+        return res.status(403).json({ ok: false, error: 'Clave incorrecta' });
+
+    const companyId = req.query.companyId;
+    if (!companyId) return res.status(400).json({ ok: false, error: 'companyId requerido' });
+
+    try {
+        const { CompanyDB } = require('./models/index');
+        const doc = await CompanyDB.findOne({ companyId }).lean();
+        if (!doc) return res.status(404).json({ ok: false, error: 'Empresa no encontrada' });
+
+        const invoices         = doc.invoices         || [];
+        const purchases        = doc.purchases        || [];
+        const accountMovements = doc.accountMovements || [];
+        const customers        = doc.customers        || [];
+        const suppliers        = doc.suppliers        || [];
+
+        const getName = (arr, id, fields) => {
+            const e = arr.find(x => x.id === id);
+            if (!e) return id;
+            return fields.map(f => e[f] || '').join(' ').trim() || id;
+        };
+
+        const invoiceById  = Object.fromEntries(invoices.map(i  => [i.id, i]));
+        const purchaseById = Object.fromEntries(purchases.map(p => [p.id, p]));
+
+        const cxc_anuladas   = [];
+        const cxc_faltantes  = [];
+        const cxp_anuladas   = [];
+        const cxp_faltantes  = [];
+
+        // CxC con invoiceId
+        for (const mov of accountMovements.filter(m => m.type === 'receivable' && m.invoiceId)) {
+            const inv = invoiceById[mov.invoiceId];
+            const customer = getName(customers, mov.entityId, ['firstName','lastName','name']);
+            if (!inv) {
+                cxc_faltantes.push({ movNumber: mov.number, movId: mov.id, invoiceId: mov.invoiceId,
+                    concept: mov.concept || '', customer, amount: mov.amount, currency: mov.currency,
+                    movStatus: mov.status, date: mov.date, reference: mov.reference || '' });
+            } else if (inv.status === 'Anulada') {
+                cxc_anuladas.push({ movNumber: mov.number, movId: mov.id,
+                    invoiceNumber: inv.number, invoiceId: inv.id,
+                    customer: getName(customers, inv.customerId, ['firstName','lastName','name']),
+                    amount: inv.total, currency: inv.currency, movStatus: mov.status,
+                    invStatus: inv.status, date: inv.date,
+                    product: Array.isArray(inv.items) ? (inv.items[0]?.productName || '') : '' });
+            }
+        }
+
+        // CxP con invoiceId
+        for (const mov of accountMovements.filter(m => m.type === 'payable' && m.invoiceId)) {
+            const pur = purchaseById[mov.invoiceId];
+            const supplier = getName(suppliers, mov.entityId, ['name','firstName']);
+            if (!pur) {
+                cxp_faltantes.push({ movNumber: mov.number, movId: mov.id, invoiceId: mov.invoiceId,
+                    concept: mov.concept || '', supplier, amount: mov.amount, currency: mov.currency,
+                    movStatus: mov.status, date: mov.date });
+            } else if (pur.status === 'Anulada') {
+                cxp_anuladas.push({ movNumber: mov.number, movId: mov.id,
+                    purchaseNumber: pur.number, purchaseId: pur.id,
+                    supplier: getName(suppliers, pur.supplierId, ['name','firstName']),
+                    amount: pur.total, currency: pur.currency, movStatus: mov.status,
+                    purStatus: pur.status, date: pur.date });
+            }
+        }
+
+        const totalProblemas = cxc_anuladas.length + cxc_faltantes.length + cxp_anuladas.length + cxp_faltantes.length;
+
+        res.json({
+            ok: true,
+            companyId,
+            stats: {
+                totalInvoices:    invoices.length,
+                anuladas:         invoices.filter(i => i.status === 'Anulada').length,
+                totalCxC:         accountMovements.filter(m => m.type === 'receivable').length,
+                totalCxP:         accountMovements.filter(m => m.type === 'payable').length,
+                totalProblemas,
+            },
+            cxc_anuladas,
+            cxc_faltantes,
+            cxp_anuladas,
+            cxp_faltantes,
+        });
+    } catch (e) {
+        console.error('[check-discrepancies] Error:', e.message);
+        res.status(500).json({ ok: false, error: e.message });
+    }
+});
+
 // ── Restaurar una factura anulada por error ─────────────────────────────────
 // POST /_admin_fix/restore-invoice?key=FIXPROMAX_MIGRATE_2026
 // Body: { "companyId": "xxx", "invoiceId": "xxx", "newStatus": "Pendiente" }
