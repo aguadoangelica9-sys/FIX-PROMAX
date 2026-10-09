@@ -444,6 +444,100 @@ app.get('/_admin_fix/disable-maintenance', async (req, res) => {
     }
 });
 
+// ── Restaurar TODAS las facturas anuladas que tienen CxC/CxP activa ──────────
+// POST /_admin_fix/restore-all-discrepancies?key=FIXPROMAX_MIGRATE_2026
+// Body: { "companyId": "xxx" }
+app.post('/_admin_fix/restore-all-discrepancies', async (req, res) => {
+    if ((req.query.key || '') !== (process.env.ADMIN_MIGRATE_KEY || 'FIXPROMAX_MIGRATE_2026'))
+        return res.status(403).json({ ok: false, error: 'Clave incorrecta' });
+
+    const companyId = req.body?.companyId;
+    if (!companyId) return res.status(400).json({ ok: false, error: 'companyId requerido' });
+
+    try {
+        const { CompanyDB } = require('./models/index');
+        const doc = await CompanyDB.findOne({ companyId }).lean();
+        if (!doc) return res.status(404).json({ ok: false, error: 'Empresa no encontrada' });
+
+        const db = doc;
+        if (!Array.isArray(db.invoices))         db.invoices         = [];
+        if (!Array.isArray(db.purchases))        db.purchases        = [];
+        if (!Array.isArray(db.accountMovements)) db.accountMovements = [];
+
+        const invoiceById  = Object.fromEntries(db.invoices.map(i  => [i.id, i]));
+        const purchaseById = Object.fromEntries(db.purchases.map(p => [p.id, p]));
+
+        const restored = [];
+
+        // CxC con invoiceId → factura Anulada
+        for (const mov of db.accountMovements.filter(m => m.type === 'receivable' && m.invoiceId)) {
+            const inv = invoiceById[mov.invoiceId];
+            if (inv && inv.status === 'Anulada') {
+                const idx = db.invoices.findIndex(i => i.id === inv.id);
+                if (idx !== -1) {
+                    // Calcular status correcto según pagos
+                    const paid  = Number(db.invoices[idx].paid)  || 0;
+                    const total = Number(db.invoices[idx].total) || 0;
+                    let newStatus = 'Pendiente';
+                    if (paid >= total && total > 0) newStatus = 'Pagada';
+                    else if (paid > 0)              newStatus = 'Parcial';
+
+                    db.invoices[idx].status    = newStatus;
+                    db.invoices[idx].updatedAt = new Date().toISOString();
+                    restored.push({
+                        type:          'factura',
+                        number:        inv.number,
+                        invoiceId:     inv.id,
+                        linkedMov:     mov.number,
+                        statusBefore:  'Anulada',
+                        statusAfter:   newStatus,
+                    });
+                }
+            }
+        }
+
+        // CxP con invoiceId → compra Anulada
+        for (const mov of db.accountMovements.filter(m => m.type === 'payable' && m.invoiceId)) {
+            const pur = purchaseById[mov.invoiceId];
+            if (pur && pur.status === 'Anulada') {
+                const idx = db.purchases.findIndex(p => p.id === pur.id);
+                if (idx !== -1) {
+                    const paid  = Number(db.purchases[idx].paid)  || 0;
+                    const total = Number(db.purchases[idx].total) || 0;
+                    let newStatus = 'Pendiente';
+                    if (paid >= total && total > 0) newStatus = 'Pagada';
+                    else if (paid > 0)              newStatus = 'Parcial';
+
+                    db.purchases[idx].status    = newStatus;
+                    db.purchases[idx].updatedAt = new Date().toISOString();
+                    restored.push({
+                        type:          'compra',
+                        number:        pur.number,
+                        purchaseId:    pur.id,
+                        linkedMov:     mov.number,
+                        statusBefore:  'Anulada',
+                        statusAfter:   newStatus,
+                    });
+                }
+            }
+        }
+
+        if (restored.length === 0)
+            return res.json({ ok: true, restored: 0, message: 'No se encontraron discrepancias que corregir' });
+
+        await CompanyDB.findOneAndUpdate(
+            { companyId },
+            { $set: { invoices: db.invoices, purchases: db.purchases, updatedAt: new Date().toISOString() } }
+        );
+
+        console.log(`[restore-all-discrepancies] companyId=${companyId} restauradas=${restored.length}`);
+        res.json({ ok: true, restored: restored.length, detail: restored });
+    } catch (e) {
+        console.error('[restore-all-discrepancies] Error:', e.message);
+        res.status(500).json({ ok: false, error: e.message });
+    }
+});
+
 // ── Diagnóstico: CxC/CxP vinculadas a facturas Anuladas o inexistentes ───────
 // GET /_admin_fix/check-discrepancies?key=FIXPROMAX_MIGRATE_2026&companyId=xxx
 app.get('/_admin_fix/check-discrepancies', async (req, res) => {
