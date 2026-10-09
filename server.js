@@ -444,6 +444,55 @@ app.get('/_admin_fix/disable-maintenance', async (req, res) => {
     }
 });
 
+// ── Listar facturas Anuladas sin ningún accountMovement vinculado ─────────────
+// GET /_admin_fix/list-orphan-anuladas?key=xxx&companyId=xxx
+app.get('/_admin_fix/list-orphan-anuladas', async (req, res) => {
+    if ((req.query.key || '') !== (process.env.ADMIN_MIGRATE_KEY || 'FIXPROMAX_MIGRATE_2026'))
+        return res.status(403).json({ ok: false, error: 'Clave incorrecta' });
+
+    const companyId = req.query.companyId;
+    if (!companyId) return res.status(400).json({ ok: false, error: 'companyId requerido' });
+
+    try {
+        const { CompanyDB } = require('./models/index');
+        const doc = await CompanyDB.findOne({ companyId }).lean();
+        if (!doc) return res.status(404).json({ ok: false, error: 'Empresa no encontrada' });
+
+        const invoices         = doc.invoices         || [];
+        const accountMovements = doc.accountMovements || [];
+        const customers        = doc.customers        || [];
+
+        // IDs referenciados por cualquier accountMovement
+        const referencedIds = new Set([
+            ...accountMovements.map(m => m.invoiceId).filter(Boolean),
+            ...accountMovements.map(m => m.legacyId).filter(Boolean),
+            ...accountMovements.map(m => m.reference).filter(Boolean),
+        ]);
+
+        const orphans = invoices
+            .filter(i => i.status === 'Anulada' && !referencedIds.has(i.id) && !referencedIds.has(i.number))
+            .map(i => {
+                const c = customers.find(c => c.id === i.customerId);
+                const name = c ? `${c.firstName || ''} ${c.lastName || ''}`.trim() : i.customerId;
+                return {
+                    invoiceId: i.id,
+                    number:    i.number,
+                    customer:  name,
+                    total:     i.total,
+                    paid:      i.paid || 0,
+                    currency:  i.currency,
+                    date:      i.date,
+                    notes:     i.notes || '',
+                    source:    i.source || '',
+                };
+            });
+
+        res.json({ ok: true, count: orphans.length, orphans });
+    } catch (e) {
+        res.status(500).json({ ok: false, error: e.message });
+    }
+});
+
 // ── Restaurar TODAS las facturas anuladas que tienen CxC/CxP activa ──────────
 // POST /_admin_fix/restore-all-discrepancies?key=FIXPROMAX_MIGRATE_2026
 // Body: { "companyId": "xxx" }
