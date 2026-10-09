@@ -444,6 +444,58 @@ app.get('/_admin_fix/disable-maintenance', async (req, res) => {
     }
 });
 
+// ── Restaurar una factura anulada por error ─────────────────────────────────
+// POST /_admin_fix/restore-invoice?key=FIXPROMAX_MIGRATE_2026
+// Body: { "companyId": "xxx", "invoiceId": "xxx", "newStatus": "Pendiente" }
+app.post('/_admin_fix/restore-invoice', async (req, res) => {
+    if ((req.query.key || '') !== (process.env.ADMIN_MIGRATE_KEY || 'FIXPROMAX_MIGRATE_2026'))
+        return res.status(403).json({ ok: false, error: 'Clave incorrecta' });
+
+    const { companyId, invoiceId, invoiceNumber, newStatus } = req.body || {};
+    if (!companyId) return res.status(400).json({ ok: false, error: 'companyId requerido' });
+    if (!invoiceId && !invoiceNumber) return res.status(400).json({ ok: false, error: 'invoiceId o invoiceNumber requerido' });
+
+    try {
+        const { CompanyDB } = require('./models/index');
+        const doc = await CompanyDB.findOne({ companyId }).lean();
+        if (!doc) return res.status(404).json({ ok: false, error: 'Empresa no encontrada' });
+
+        const db = doc;
+        if (!Array.isArray(db.invoices)) db.invoices = [];
+
+        // Buscar la factura por id o número
+        const idx = db.invoices.findIndex(i =>
+            (invoiceId && i.id === invoiceId) ||
+            (invoiceNumber && i.number === invoiceNumber)
+        );
+
+        if (idx === -1)
+            return res.status(404).json({ ok: false, error: `Factura no encontrada: ${invoiceId || invoiceNumber}` });
+
+        const before = db.invoices[idx].status;
+        db.invoices[idx].status    = newStatus || 'Pendiente';
+        db.invoices[idx].updatedAt = new Date().toISOString();
+
+        await CompanyDB.findOneAndUpdate(
+            { companyId },
+            { $set: { invoices: db.invoices, updatedAt: new Date().toISOString() } }
+        );
+
+        console.log(`[restore-invoice] companyId=${companyId} invoice=${db.invoices[idx].number} ${before} → ${db.invoices[idx].status}`);
+        res.json({
+            ok:      true,
+            invoice: db.invoices[idx].number,
+            before,
+            after:   db.invoices[idx].status,
+            customer: db.invoices[idx].customerId,
+            total:   db.invoices[idx].total,
+        });
+    } catch (e) {
+        console.error('[restore-invoice] Error:', e.message);
+        res.status(500).json({ ok: false, error: e.message });
+    }
+});
+
 // ══ MIDDLEWARE: Modo Mantenimiento ══════════════════════════════════════════
 // Solo bloquea si maintenanceMode=true Y la request no viene de un admin.
 // Las rutas esenciales siempre pasan. Fail-open si MongoDB no responde.
