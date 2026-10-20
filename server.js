@@ -444,6 +444,129 @@ app.get('/_admin_fix/disable-maintenance', async (req, res) => {
     }
 });
 
+// ── Buscar ventas por nombre de producto ─────────────────────────────────────
+// GET /_admin_fix/search-sales-by-product?key=xxx&companyId=xxx&query=biela
+app.get('/_admin_fix/search-sales-by-product', async (req, res) => {
+    if ((req.query.key || '') !== (process.env.ADMIN_MIGRATE_KEY || 'FIXPROMAX_MIGRATE_2026'))
+        return res.status(403).json({ ok: false, error: 'Clave incorrecta' });
+
+    const companyId = req.query.companyId;
+    const query = (req.query.query || '').toLowerCase();
+    if (!companyId || !query) return res.status(400).json({ ok: false, error: 'companyId y query requeridos' });
+
+    try {
+        const { CompanyDB } = require('./models/index');
+        const doc = await CompanyDB.findOne({ companyId }).lean();
+        if (!doc) return res.status(404).json({ ok: false, error: 'Empresa no encontrada' });
+
+        const products    = doc.products || [];
+        const invoices    = doc.invoices || [];
+        const sales       = doc.sales    || [];
+        const customers   = doc.customers || [];
+        const getCustomer = id => customers.find(c => c.id === id) || {};
+
+        // Buscar IDs de productos que contengan la query
+        const matchedProductIds = products
+            .filter(p => (p.name || '').toLowerCase().includes(query) ||
+                         (p.description || '').toLowerCase().includes(query) ||
+                         (p.sku || '').toLowerCase().includes(query))
+            .map(p => p.id);
+
+        // Resultados de ventas (sales)
+        const salesMatches = sales.filter(s => {
+            const items = s.items || [];
+            return items.some(item => matchedProductIds.includes(item.productId) ||
+                                     (item.productName || '').toLowerCase().includes(query));
+        }).map(s => ({
+            type: 'venta',
+            id: s.id,
+            date: s.date,
+            customer: getCustomer(s.customerId),
+            items: s.items.map(i => ({
+                productName: i.productName,
+                qty: i.qty,
+                price: i.price,
+                total: i.qty * (i.price || 0),
+            })),
+            total: s.total,
+            paid: s.paid || 0,
+            status: s.status,
+            source: s.source || '',
+        }));
+
+        // Resultados de facturas (invoices)
+        const invoiceMatches = invoices.filter(i => {
+            const items = i.items || [];
+            return items.some(item => matchedProductIds.includes(item.productId));
+        }).map(i => ({
+            type: 'factura',
+            id: i.id,
+            number: i.number,
+            date: i.date,
+            customer: getCustomer(i.customerId),
+            items: i.items.map(it => ({
+                productName: products.find(p => p.id === it.productId)?.name || it.productName,
+                qty: it.qty,
+                price: it.price,
+                total: it.qty * (it.price || 0),
+            })),
+            total: i.total,
+            paid: i.paid || 0,
+            status: i.status,
+            source: i.source || '',
+        }));
+
+        // Resultados de accountMovements que mencionen el producto en concept/notes
+        const amMatches = (doc.accountMovements || [])
+            .filter(m => (m.concept || '').toLowerCase().includes(query) ||
+                         (m.notes || '').toLowerCase().includes(query))
+            .map(m => ({
+                type: 'accountMovement',
+                subtype: m.type,
+                number: m.number,
+                date: m.date,
+                entity: m.type === 'receivable'
+                    ? getCustomer(m.entityId)
+                    : (doc.suppliers || []).find(s => s.id === m.entityId) || {},
+                concept: m.concept,
+                amount: m.amount,
+                paid: m.paid || 0,
+                status: m.status,
+                reference: m.reference,
+            }));
+
+        const productMatches = matchedProductIds.map(pid => {
+            const p = products.find(p => p.id === pid);
+            return p ? {
+                id: p.id,
+                name: p.name,
+                description: p.description,
+                sku: p.sku,
+                cost: p.cost,
+                price: p.price,
+                stock: p.stock,
+            } : null;
+        }).filter(Boolean);
+
+        res.json({
+            ok: true,
+            query,
+            stats: {
+                products: productMatches.length,
+                sales: salesMatches.length,
+                invoices: invoiceMatches.length,
+                accountMovements: amMatches.length,
+            },
+            products: productMatches,
+            sales: salesMatches,
+            invoices: invoiceMatches,
+            accountMovements: amMatches,
+        });
+    } catch (e) {
+        res.status(500).json({ ok: false, error: e.message });
+    }
+});
+
 // ── Listar facturas Anuladas sin ningún accountMovement vinculado ─────────────
 // GET /_admin_fix/list-orphan-anuladas?key=xxx&companyId=xxx
 app.get('/_admin_fix/list-orphan-anuladas', async (req, res) => {
