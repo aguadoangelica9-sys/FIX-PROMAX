@@ -5175,16 +5175,67 @@
                 </div>
             </div>
 
-            <div class="grid-3">
+            <div class="grid-4">
                 <div class="card" style="cursor:pointer;" onclick="generateReport('sales')"><div style="font-size:22px;margin-bottom:6px;">📊</div><div style="font-weight:700;">Ventas</div><div class="text-sm text-muted">Ingresos, tickets, ganancia</div></div>
                 <div class="card" style="cursor:pointer;" onclick="generateReport('inventory')"><div style="font-size:22px;margin-bottom:6px;">📦</div><div style="font-weight:700;">Inventario</div><div class="text-sm text-muted">Valor, rotación, márgenes</div></div>
                 <div class="card" style="cursor:pointer;" onclick="generateReport('customers')"><div style="font-size:22px;margin-bottom:6px;">👤</div><div style="font-weight:700;">Clientes</div><div class="text-sm text-muted">Cartera y cobros</div></div>
                 <div class="card" style="cursor:pointer;" onclick="generateReport('purchases')"><div style="font-size:22px;margin-bottom:6px;">📥</div><div style="font-weight:700;">Compras</div><div class="text-sm text-muted">Órdenes a proveedores</div></div>
                 <div class="card" style="cursor:pointer;" onclick="generateReport('expenses')"><div style="font-size:22px;margin-bottom:6px;">💸</div><div style="font-weight:700;">Gastos</div><div class="text-sm text-muted">Por categoría y moneda</div></div>
                 <div class="card" style="cursor:pointer;" onclick="generateReport('financial')"><div style="font-size:22px;margin-bottom:6px;">📒</div><div style="font-weight:700;">Financiero</div><div class="text-sm text-muted">Balance y resultados</div></div>
+                <div class="card" style="cursor:pointer;" onclick="openProductReportModal()"><div style="font-size:22px;margin-bottom:6px;">🔍</div><div style="font-weight:700;">Producto</div><div class="text-sm text-muted">Reporte específico</div></div>
             </div>
             <!-- Área de resultados del reporte -->
             <div id="reportResult" style="display:none;margin-top:16px;"></div>
+        </div>
+
+        <!-- Modal para reporte de producto específico -->
+        <div class="modal-overlay" id="productReportModal" style="display:none;">
+            <div class="modal" style="max-width:600px;">
+                <div class="modal-header">
+                    <h3>🔍 Reporte de Producto Específico</h3>
+                    <button class="modal-close" onclick="closeProductReportModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <div style="margin-bottom:20px;">
+                        <p class="text-sm text-muted">Busca un producto por nombre, SKU o descripción para generar un reporte detallado.</p>
+                    </div>
+                    
+                    <div style="margin-bottom:16px;">
+                        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Buscar producto</label>
+                        <div style="display:flex;gap:8px;">
+                            <input type="text" id="productSearchInput" 
+                                style="flex:1;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;outline:none;"
+                                placeholder="Ej: Gato de butaca, SKU-123, etc."
+                                onkeyup="searchProducts(this.value)"
+                                onfocus="this.style.borderColor='var(--primary)'" 
+                                onblur="this.style.borderColor='var(--border)'" />
+                            <button class="btn btn-primary" onclick="searchProducts(document.getElementById('productSearchInput').value)">
+                                🔍 Buscar
+                            </button>
+                        </div>
+                        <div id="productSearchResults" style="margin-top:12px;max-height:200px;overflow-y:auto;display:none;">
+                            <!-- Resultados de búsqueda se llenarán aquí -->
+                        </div>
+                    </div>
+                    
+                    <div id="selectedProductInfo" style="display:none;margin-bottom:20px;padding:16px;background:var(--surface-2);border-radius:8px;">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                            <div>
+                                <h4 style="font-size:16px;font-weight:700;margin-bottom:4px;" id="selectedProductName"></h4>
+                                <div style="font-size:13px;color:var(--text-2);" id="selectedProductDetails"></div>
+                            </div>
+                            <button class="btn btn-sm" onclick="clearSelectedProduct()">✕ Cambiar</button>
+                        </div>
+                    </div>
+                    
+                    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px;">
+                        <button class="btn" onclick="closeProductReportModal()">Cancelar</button>
+                        <button class="btn btn-primary" id="generateProductReportBtn" onclick="generateProductReport()" disabled>
+                            📊 Generar Reporte
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════
@@ -13838,6 +13889,364 @@
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         showToast('📥', filename + ' descargado');
+    }
+
+    /* ─── Reporte de Producto Específico ─── */
+    let selectedProductId = null;
+    let selectedProductData = null;
+
+    function openProductReportModal() {
+        document.getElementById('productReportModal').style.display = 'flex';
+        document.getElementById('productSearchInput').focus();
+        clearSelectedProduct();
+    }
+
+    function closeProductReportModal() {
+        document.getElementById('productReportModal').style.display = 'none';
+        document.getElementById('productSearchResults').style.display = 'none';
+        document.getElementById('productSearchResults').innerHTML = '';
+        document.getElementById('productSearchInput').value = '';
+        clearSelectedProduct();
+    }
+
+    function searchProducts(query) {
+        const resultsDiv = document.getElementById('productSearchResults');
+        if (!query || query.trim().length < 2) {
+            resultsDiv.style.display = 'none';
+            resultsDiv.innerHTML = '';
+            return;
+        }
+
+        const searchTerm = query.toLowerCase().trim();
+        const filteredProducts = data.products.filter(p => 
+            p.status !== 'anulado' && (
+                (p.name || '').toLowerCase().includes(searchTerm) ||
+                (p.description || '').toLowerCase().includes(searchTerm) ||
+                (p.sku || '').toLowerCase().includes(searchTerm)
+            )
+        ).slice(0, 10); // Limitar a 10 resultados
+
+        if (filteredProducts.length === 0) {
+            resultsDiv.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text-3);font-size:13px;">No se encontraron productos</div>';
+            resultsDiv.style.display = 'block';
+            return;
+        }
+
+        const html = filteredProducts.map(p => `
+            <div class="product-search-result" 
+                 style="padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.2s;"
+                 onmouseover="this.style.background='var(--surface-hover)'"
+                 onmouseout="this.style.background='transparent'"
+                 onclick="selectProduct('${p.id}')">
+                <div style="font-weight:600;font-size:14px;">${p.name}</div>
+                <div style="font-size:12px;color:var(--text-2);margin-top:2px;">
+                    ${p.sku ? `SKU: ${p.sku} • ` : ''}Precio: ${formatCurrency(p.price)} • Stock: ${p.stock}
+                </div>
+                ${p.description ? `<div style="font-size:11px;color:var(--text-3);margin-top:2px;">${p.description.substring(0, 80)}${p.description.length > 80 ? '...' : ''}</div>` : ''}
+            </div>
+        `).join('');
+
+        resultsDiv.innerHTML = html;
+        resultsDiv.style.display = 'block';
+    }
+
+    function selectProduct(productId) {
+        selectedProductId = productId;
+        selectedProductData = data.products.find(p => p.id === productId);
+        
+        if (!selectedProductData) {
+            clearSelectedProduct();
+            return;
+        }
+
+        // Mostrar información del producto seleccionado
+        document.getElementById('selectedProductName').textContent = selectedProductData.name;
+        document.getElementById('selectedProductDetails').innerHTML = `
+            ${selectedProductData.sku ? `<div>SKU: ${selectedProductData.sku}</div>` : ''}
+            <div>Precio: ${formatCurrency(selectedProductData.price)} • Costo: ${formatCurrency(selectedProductData.cost)}</div>
+            <div>Stock: ${selectedProductData.stock} • Margen: ${formatCurrency((selectedProductData.price || 0) - (selectedProductData.cost || 0))}</div>
+        `;
+        
+        document.getElementById('selectedProductInfo').style.display = 'block';
+        document.getElementById('generateProductReportBtn').disabled = false;
+        document.getElementById('productSearchResults').style.display = 'none';
+        document.getElementById('productSearchResults').innerHTML = '';
+    }
+
+    function clearSelectedProduct() {
+        selectedProductId = null;
+        selectedProductData = null;
+        document.getElementById('selectedProductInfo').style.display = 'none';
+        document.getElementById('generateProductReportBtn').disabled = true;
+        document.getElementById('productSearchInput').value = '';
+        document.getElementById('productSearchResults').style.display = 'none';
+        document.getElementById('productSearchResults').innerHTML = '';
+    }
+
+    async function generateProductReport() {
+        if (!selectedProductId) {
+            showToast('⚠️', 'Selecciona un producto primero');
+            return;
+        }
+
+        const btn = document.getElementById('generateProductReportBtn');
+        const originalText = btn.textContent;
+        btn.textContent = '📊 Generando...';
+        btn.disabled = true;
+
+        try {
+            const token = localStorage.getItem('fixpromax_token');
+            const response = await fetch(`${API_BASE}/api/reports/product/${selectedProductId}`, {
+                headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+            });
+
+            const result = await response.json();
+
+            if (!result.ok) {
+                showToast('❌', result.error || 'Error al generar el reporte');
+                btn.textContent = originalText;
+                btn.disabled = false;
+                return;
+            }
+
+            // Cerrar el modal
+            closeProductReportModal();
+
+            // Mostrar el reporte en el área de resultados
+            const reportResult = document.getElementById('reportResult');
+            reportResult.style.display = 'block';
+            reportResult.innerHTML = renderProductReport(result);
+
+            // Desplazarse al área de resultados
+            reportResult.scrollIntoView({ behavior: 'smooth' });
+
+            showToast('✅', 'Reporte generado correctamente');
+
+        } catch (error) {
+            console.error('Error generando reporte:', error);
+            showToast('❌', 'Error de conexión al servidor');
+        } finally {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    function renderProductReport(reportData) {
+        const product = reportData.product;
+        const stats = reportData.stats;
+        
+        return `
+            <div class="card">
+                <div class="card-header">
+                    <h3>🔍 Reporte de Producto: ${product.name}</h3>
+                    <div style="display:flex;gap:8px;">
+                        <button class="btn btn-sm" onclick="downloadProductReportCSV('${product.id}', '${product.name}')">⬇ Descargar CSV</button>
+                        <button class="btn btn-sm btn-primary" onclick="printProductReport()">🖨️ Imprimir</button>
+                    </div>
+                </div>
+                
+                <!-- Información básica del producto -->
+                <div class="grid-4" style="margin-bottom:20px;">
+                    <div class="card stat">
+                        <div class="icon-box blue">🏷️</div>
+                        <div class="content">
+                            <div class="value">${product.sku || 'Sin SKU'}</div>
+                            <div class="label">SKU</div>
+                        </div>
+                    </div>
+                    <div class="card stat">
+                        <div class="icon-box green">💰</div>
+                        <div class="content">
+                            <div class="value">${formatCurrency(product.price)}</div>
+                            <div class="label">Precio</div>
+                        </div>
+                    </div>
+                    <div class="card stat">
+                        <div class="icon-box red">💸</div>
+                        <div class="content">
+                            <div class="value">${formatCurrency(product.cost)}</div>
+                            <div class="label">Costo</div>
+                        </div>
+                    </div>
+                    <div class="card stat">
+                        <div class="icon-box purple">📦</div>
+                        <div class="content">
+                            <div class="value">${product.stock}</div>
+                            <div class="label">Stock</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estadísticas principales -->
+                <div class="grid-4" style="margin-bottom:20px;">
+                    <div class="card stat">
+                        <div class="icon-box green">📈</div>
+                        <div class="content">
+                            <div class="value">${stats.totalSoldQty}</div>
+                            <div class="label">Unidades vendidas</div>
+                        </div>
+                    </div>
+                    <div class="card stat">
+                        <div class="icon-box blue">📥</div>
+                        <div class="content">
+                            <div class="value">${stats.totalPurchasedQty}</div>
+                            <div class="label">Unidades compradas</div>
+                        </div>
+                    </div>
+                    <div class="card stat">
+                        <div class="icon-box green">💵</div>
+                        <div class="content">
+                            <div class="value">${formatCurrency(stats.totalSoldAmount)}</div>
+                            <div class="label">Ventas totales</div>
+                        </div>
+                    </div>
+                    <div class="card stat">
+                        <div class="icon-box purple">📊</div>
+                        <div class="content">
+                            <div class="value">${stats.marginPercentage}%</div>
+                            <div class="label">Margen</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ventas por mes -->
+                <div class="card" style="margin-bottom:20px;">
+                    <div class="card-header"><h4>📅 Ventas por mes (últimos 6 meses)</h4></div>
+                    <div class="table-wrap border-0">
+                        <table>
+                            <thead><tr><th>Mes</th><th>Cantidad</th><th>Monto</th><th>Promedio/unidad</th></tr></thead>
+                            <tbody>
+                                ${reportData.monthlySales.map(m => `
+                                    <tr>
+                                        <td>${m.month}</td>
+                                        <td style="font-weight:600;">${m.qty}</td>
+                                        <td>${formatCurrency(m.amount)}</td>
+                                        <td>${m.qty > 0 ? formatCurrency(m.amount / m.qty) : formatCurrency(0)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tabla de ventas recientes -->
+                <div class="card" style="margin-bottom:20px;">
+                    <div class="card-header"><h4>🛒 Ventas recientes</h4></div>
+                    <div class="table-wrap border-0">
+                        <table>
+                            <thead><tr><th>Fecha</th><th>Cliente</th><th>Cantidad</th><th>Monto</th><th>Estado</th></tr></thead>
+                            <tbody>
+                                ${reportData.recentSales.map(s => `
+                                    <tr>
+                                        <td>${s.date ? new Date(s.date).toLocaleDateString() : '—'}</td>
+                                        <td>${s.customer}</td>
+                                        <td style="font-weight:600;">${s.qty}</td>
+                                        <td>${formatCurrency(s.amount)}</td>
+                                        <td><span class="badge ${s.status === 'Pagada' ? 'badge-success' : 'badge-warning'}">${s.status}</span></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tabla de compras recientes -->
+                <div class="card" style="margin-bottom:20px;">
+                    <div class="card-header"><h4>📥 Compras recientes</h4></div>
+                    <div class="table-wrap border-0">
+                        <table>
+                            <thead><tr><th>Fecha</th><th>Proveedor</th><th>Cantidad</th><th>Monto</th><th>Estado</th></tr></thead>
+                            <tbody>
+                                ${reportData.recentPurchases.map(p => `
+                                    <tr>
+                                        <td>${p.date ? new Date(p.date).toLocaleDateString() : '—'}</td>
+                                        <td>${p.supplier}</td>
+                                        <td style="font-weight:600;">${p.qty}</td>
+                                        <td>${formatCurrency(p.amount)}</td>
+                                        <td><span class="badge ${p.status === 'Pagada' ? 'badge-success' : 'badge-warning'}">${p.status}</span></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Clientes principales -->
+                ${reportData.topCustomers.length > 0 ? `
+                <div class="card" style="margin-bottom:20px;">
+                    <div class="card-header"><h4>👥 Clientes principales</h4></div>
+                    <div class="table-wrap border-0">
+                        <table>
+                            <thead><tr><th>Cliente</th><th>Unidades compradas</th><th>Última compra</th></tr></thead>
+                            <tbody>
+                                ${reportData.topCustomers.map(c => `
+                                    <tr>
+                                        <td>${c.name}</td>
+                                        <td style="font-weight:600;">${c.totalQty}</td>
+                                        <td>${c.lastPurchase ? new Date(c.lastPurchase).toLocaleDateString() : '—'}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                ` : ''}
+
+                <!-- Proveedores -->
+                ${reportData.suppliers.length > 0 ? `
+                <div class="card">
+                    <div class="card-header"><h4>🏭 Proveedores</h4></div>
+                    <div class="table-wrap border-0">
+                        <table>
+                            <thead><tr><th>Proveedor</th><th>Unidades suministradas</th><th>Última compra</th></tr></thead>
+                            <tbody>
+                                ${reportData.suppliers.map(s => `
+                                    <tr>
+                                        <td>${s.name}</td>
+                                        <td style="font-weight:600;">${s.totalQty}</td>
+                                        <td>${s.lastPurchase ? new Date(s.lastPurchase).toLocaleDateString() : '—'}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    function downloadProductReportCSV(productId, productName) {
+        // Esta función puede extenderse para generar un CSV del reporte
+        showToast('📥', 'Funcionalidad de descarga CSV en desarrollo');
+    }
+
+    function printProductReport() {
+        const reportContent = document.getElementById('reportResult').innerHTML;
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Reporte de Producto</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; }
+                        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                        th { background-color: #f2f2f2; }
+                        .header { text-align: center; margin-bottom: 20px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>Reporte de Producto</h1>
+                        <p>Generado: ${new Date().toLocaleString()}</p>
+                    </div>
+                    ${reportContent}
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
     }
 
     /* ─── Módulo Finanzas / P&L ─── */

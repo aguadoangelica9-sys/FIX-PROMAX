@@ -2957,6 +2957,236 @@ app.get('/api/reports/:type', requireAuth, async (req, res) => {
     err(res, 'Tipo de reporte no reconocido', 400);
 });
 
+// ── Reporte de producto específico ─────────────────────────────────────
+// GET /api/reports/product/:productId?query=nombreProducto
+// Busca un producto por ID o por nombre y devuelve un reporte detallado
+app.get('/api/reports/product/:productId?', requireAuth, async (req, res) => {
+    try {
+        const db = await readDB();
+        const productId = req.params.productId;
+        const query = (req.query.query || '').toLowerCase().trim();
+        
+        let product = null;
+        
+        // Buscar por ID si se proporciona
+        if (productId && productId !== 'undefined') {
+            product = db.products.find(p => p.id === productId);
+        }
+        
+        // Si no se encontró por ID, buscar por nombre/query
+        if (!product && query) {
+            const matchedProducts = db.products.filter(p => 
+                (p.name || '').toLowerCase().includes(query) ||
+                (p.description || '').toLowerCase().includes(query) ||
+                (p.sku || '').toLowerCase().includes(query)
+            );
+            
+            if (matchedProducts.length > 0) {
+                // Tomar el primer producto que coincida
+                product = matchedProducts[0];
+            }
+        }
+        
+        if (!product) {
+            return res.status(404).json({ 
+                ok: false, 
+                error: 'Producto no encontrado',
+                suggestions: query ? db.products.filter(p => 
+                    (p.name || '').toLowerCase().includes(query) ||
+                    (p.description || '').toLowerCase().includes(query)
+                ).slice(0, 5).map(p => ({ id: p.id, name: p.name, sku: p.sku })) : []
+            });
+        }
+        
+        // Calcular estadísticas del producto
+        const productSales = db.sales.filter(s => 
+            (s.items || []).some(item => item.productId === product.id)
+        );
+        
+        const productPurchases = db.purchases.filter(p => 
+            (p.items || []).some(item => item.productId === product.id)
+        );
+        
+        const productInvoices = db.invoices.filter(i => 
+            (i.items || []).some(item => item.productId === product.id)
+        );
+        
+        // Calcular cantidades vendidas/compras
+        const totalSoldQty = productSales.reduce((sum, sale) => {
+            const saleItems = sale.items || [];
+            const productItems = saleItems.filter(item => item.productId === product.id);
+            return sum + productItems.reduce((s, item) => s + (item.qty || 0), 0);
+        }, 0);
+        
+        const totalPurchasedQty = productPurchases.reduce((sum, purchase) => {
+            const purchaseItems = purchase.items || [];
+            const productItems = purchaseItems.filter(item => item.productId === product.id);
+            return sum + productItems.reduce((s, item) => s + (item.qty || 0), 0);
+        }, 0);
+        
+        const totalSoldAmount = productSales.reduce((sum, sale) => {
+            const saleItems = sale.items || [];
+            const productItems = saleItems.filter(item => item.productId === product.id);
+            return sum + productItems.reduce((s, item) => s + (item.qty * (item.price || 0)), 0);
+        }, 0);
+        
+        const totalPurchasedAmount = productPurchases.reduce((sum, purchase) => {
+            const purchaseItems = purchase.items || [];
+            const productItems = purchaseItems.filter(item => item.productId === product.id);
+            return sum + productItems.reduce((s, item) => s + (item.qty * (item.price || 0)), 0);
+        }, 0);
+        
+        // Calcular margen
+        const marginPerUnit = (product.price || 0) - (product.cost || 0);
+        const marginPercentage = product.price > 0 ? (marginPerUnit / product.price * 100) : 0;
+        const totalMarginPotential = marginPerUnit * product.stock;
+        
+        // Ventas por mes (últimos 6 meses)
+        const last6MonthsSales = [];
+        const now = new Date();
+        for (let i = 5; i >= 0; i--) {
+            const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const monthStart = new Date(month.getFullYear(), month.getMonth(), 1);
+            const monthEnd = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+            
+            const monthSales = productSales.filter(s => {
+                const saleDate = new Date(s.date || s.createdAt || 0);
+                return saleDate >= monthStart && saleDate <= monthEnd;
+            });
+            
+            const monthQty = monthSales.reduce((sum, sale) => {
+                const saleItems = sale.items || [];
+                const productItems = saleItems.filter(item => item.productId === product.id);
+                return sum + productItems.reduce((s, item) => s + (item.qty || 0), 0);
+            }, 0);
+            
+            const monthAmount = monthSales.reduce((sum, sale) => {
+                const saleItems = sale.items || [];
+                const productItems = saleItems.filter(item => item.productId === product.id);
+                return sum + productItems.reduce((s, item) => s + (item.qty * (item.price || 0)), 0);
+            }, 0);
+            
+            last6MonthsSales.push({
+                month: month.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' }),
+                qty: monthQty,
+                amount: monthAmount
+            });
+        }
+        
+        // Clientes que han comprado este producto
+        const customersWhoBought = [];
+        productSales.forEach(sale => {
+            const customer = db.customers.find(c => c.id === sale.customerId);
+            if (customer && !customersWhoBought.some(c => c.id === customer.id)) {
+                const customerSales = productSales.filter(s => s.customerId === customer.id);
+                const totalCustomerQty = customerSales.reduce((sum, s) => {
+                    const saleItems = s.items || [];
+                    const productItems = saleItems.filter(item => item.productId === product.id);
+                    return sum + productItems.reduce((s, item) => s + (item.qty || 0), 0);
+                }, 0);
+                
+                customersWhoBought.push({
+                    id: customer.id,
+                    name: `${customer.firstName || ''} ${customer.lastName || ''}`.trim(),
+                    totalQty: totalCustomerQty,
+                    lastPurchase: customerSales.sort((a, b) => 
+                        new Date(b.date || b.createdAt || 0) - new Date(a.date || a.createdAt || 0)
+                    )[0]?.date
+                });
+            }
+        });
+        
+        // Proveedores de este producto
+        const productSuppliers = [];
+        productPurchases.forEach(purchase => {
+            const supplier = db.suppliers.find(s => s.id === purchase.supplierId);
+            if (supplier && !productSuppliers.some(s => s.id === supplier.id)) {
+                const supplierPurchases = productPurchases.filter(p => p.supplierId === supplier.id);
+                const totalSupplierQty = supplierPurchases.reduce((sum, p) => {
+                    const purchaseItems = p.items || [];
+                    const productItems = purchaseItems.filter(item => item.productId === product.id);
+                    return sum + productItems.reduce((s, item) => s + (item.qty || 0), 0);
+                }, 0);
+                
+                productSuppliers.push({
+                    id: supplier.id,
+                    name: supplier.name || 'Proveedor sin nombre',
+                    totalQty: totalSupplierQty,
+                    lastPurchase: supplierPurchases.sort((a, b) => 
+                        new Date(b.date || 0) - new Date(a.date || 0)
+                    )[0]?.date
+                });
+            }
+        });
+        
+        // Respuesta del reporte
+        return res.json({
+            ok: true,
+            product: {
+                id: product.id,
+                name: product.name,
+                sku: product.sku,
+                description: product.description,
+                cost: product.cost,
+                price: product.price,
+                stock: product.stock,
+                minStock: product.minStock,
+                status: product.status,
+                currency: product.currency,
+                category: product.category,
+                createdAt: product.createdAt,
+                updatedAt: product.updatedAt
+            },
+            stats: {
+                totalSoldQty,
+                totalPurchasedQty,
+                totalSoldAmount,
+                totalPurchasedAmount,
+                currentStock: product.stock,
+                marginPerUnit,
+                marginPercentage: marginPercentage.toFixed(2),
+                totalMarginPotential,
+                salesCount: productSales.length,
+                purchasesCount: productPurchases.length,
+                invoicesCount: productInvoices.length
+            },
+            monthlySales: last6MonthsSales,
+            topCustomers: customersWhoBought.sort((a, b) => b.totalQty - a.totalQty).slice(0, 10),
+            suppliers: productSuppliers,
+            recentSales: productSales
+                .sort((a, b) => new Date(b.date || b.createdAt || 0) - new Date(a.date || a.createdAt || 0))
+                .slice(0, 20)
+                .map(sale => ({
+                    id: sale.id,
+                    date: sale.date,
+                    customer: db.customers.find(c => c.id === sale.customerId)?.name || 'Cliente desconocido',
+                    qty: (sale.items || []).filter(item => item.productId === product.id)
+                        .reduce((sum, item) => sum + (item.qty || 0), 0),
+                    amount: (sale.items || []).filter(item => item.productId === product.id)
+                        .reduce((sum, item) => sum + (item.qty * (item.price || 0)), 0),
+                    status: sale.status
+                })),
+            recentPurchases: productPurchases
+                .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
+                .slice(0, 20)
+                .map(purchase => ({
+                    id: purchase.id,
+                    date: purchase.date,
+                    supplier: db.suppliers.find(s => s.id === purchase.supplierId)?.name || 'Proveedor desconocido',
+                    qty: (purchase.items || []).filter(item => item.productId === product.id)
+                        .reduce((sum, item) => sum + (item.qty || 0), 0),
+                    amount: (purchase.items || []).filter(item => item.productId === product.id)
+                        .reduce((sum, item) => sum + (item.qty * (item.price || 0)), 0),
+                    status: purchase.status
+                }))
+        });
+        
+    } catch (error) {
+        console.error('Error en reporte de producto:', error);
+        return res.status(500).json({ ok: false, error: 'Error interno del servidor' });
+    }
+});
+
 // ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
 // AI COPILOT "” respuestas basadas en los datos reales
 // ❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•❌•
