@@ -751,6 +751,65 @@ app.get('/_admin_fix/search-sales-by-product', async (req, res) => {
     }
 });
 
+// ── Buscar compras por nombre de producto ──────────────────────────────────────
+// GET /_admin_fix/search-purchases-by-product?key=xxx&companyId=xxx&query=gato%20butaca
+app.get('/_admin_fix/search-purchases-by-product', async (req, res) => {
+    if ((req.query.key || '') !== (process.env.ADMIN_MIGRATE_KEY || 'FIXPROMAX_MIGRATE_2026'))
+        return res.status(403).json({ ok: false, error: 'Clave incorrecta' });
+
+    const companyId = req.query.companyId;
+    const query = (req.query.query || '').toLowerCase();
+    if (!companyId || !query) return res.status(400).json({ ok: false, error: 'companyId y query requeridos' });
+
+    try {
+        const { CompanyDB } = require('./models/index');
+        const doc = await CompanyDB.findOne({ companyId }).lean();
+        if (!doc) return res.status(404).json({ ok: false, error: 'Empresa no encontrada' });
+
+        const products = doc.products || [];
+        const purchases = doc.purchases || [];
+        const suppliers = doc.suppliers || [];
+
+        const matchedProductIds = products
+            .filter(p => (p.name || '').toLowerCase().includes(query) ||
+                         (p.description || '').toLowerCase().includes(query))
+            .map(p => p.id);
+
+        const purchaseMatches = purchases.filter(p => {
+            const items = p.items || [];
+            return items.some(item => matchedProductIds.includes(item.productId));
+        }).map(p => ({
+            id: p.id,
+            number: p.number,
+            date: p.date,
+            supplier: suppliers.find(s => s.id === p.supplierId) || {},
+            items: p.items.map(it => ({
+                productName: products.find(pr => pr.id === it.productId)?.name || it.productName,
+                qty: it.qty,
+                price: it.price,
+                total: it.qty * (it.price || 0),
+            })),
+            total: p.total,
+            paid: p.paid || 0,
+            status: p.status,
+        }));
+
+        const totalQty = purchaseMatches.reduce((sum, p) => 
+            sum + p.items.reduce((s, i) => s + (Number(i.qty) || 0), 0), 0);
+        const totalAmount = purchaseMatches.reduce((sum, p) => 
+            sum + p.items.reduce((s, i) => s + (Number(i.total) || 0), 0), 0);
+
+        res.json({
+            ok: true,
+            query,
+            stats: { purchases: purchaseMatches.length, totalQty, totalAmount },
+            purchases: purchaseMatches,
+        });
+    } catch (e) {
+        res.status(500).json({ ok: false, error: e.message });
+    }
+});
+
 // ── Listar facturas Anuladas sin ningún accountMovement vinculado ─────────────
 // GET /_admin_fix/list-orphan-anuladas?key=xxx&companyId=xxx
 app.get('/_admin_fix/list-orphan-anuladas', async (req, res) => {
@@ -6514,53 +6573,7 @@ app.post('/api/run-migration', heavyLimiter, async (req, res) => {
         return res.status(403).json({ ok: false, error: 'Clave incorrecta' });
     }
     
-app.get("/_admin_fix/search-purchases-by-product", async (req, res) => {
-    if ((req.query.key || "") !== (process.env.ADMIN_MIGRATE_KEY || "FIXPROMAX_MIGRATE_2026"))
-        return res.status(403).json({ ok: false, error: "Clave incorrecta" });
-    const companyId = req.query.companyId;
-    const query = (req.query.query || "").toLowerCase();
-    if (!companyId || !query) return res.status(400).json({ ok: false, error: "companyId y query requeridos" });
-    try {
-        const { CompanyDB } = require("./models/index");
-        const doc = await CompanyDB.findOne({ companyId }).lean();
-        if (!doc) return res.status(404).json({ ok: false, error: "Empresa no encontrada" });
-        const products = doc.products || [];
-        const purchases = doc.purchases || [];
-        const suppliers = doc.suppliers || [];
-        const matchedProductIds = products
-            .filter(p => (p.name || "").toLowerCase().includes(query) ||
-                         (p.description || "").toLowerCase().includes(query))
-            .map(p => p.id);
-        const purchaseMatches = purchases.filter(p => {
-            const items = p.items || [];
-            return items.some(item => matchedProductIds.includes(item.productId));
-        }).map(p => ({
-            id: p.id,
-            number: p.number,
-            date: p.date,
-            supplier: suppliers.find(s => s.id === p.supplierId) || {},
-            items: p.items.map(it => ({
-                productName: products.find(pr => pr.id === it.productId)?.name || it.productName,
-                qty: it.qty,
-                price: it.price,
-                total: it.qty * (it.price || 0),
-            })),
-            total: p.total,
-            paid: p.paid || 0,
-            status: p.status,
-        }));
-        const totalQty = purchaseMatches.reduce((sum, p) => 
-            sum + p.items.reduce((s, i) => s + (Number(i.qty) || 0), 0), 0);
-        const totalAmount = purchaseMatches.reduce((sum, p) => 
-            sum + p.items.reduce((s, i) => s + (Number(i.total) || 0), 0), 0);
-        res.json({
-            ok: true,
-            query,
-            stats: { purchases: purchaseMatches.length, totalQty, totalAmount },
-            purchases: purchaseMatches,
-        });
-    } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
-});res.json({ ok: true, message: 'Migración iniciada. Revisa los logs de Render para ver el progreso.' });
+res.json({ ok: true, message: 'Migración iniciada. Revisa los logs de Render para ver el progreso.' });
 
     // Ejecutar migración en background
     setImmediate(async () => {
