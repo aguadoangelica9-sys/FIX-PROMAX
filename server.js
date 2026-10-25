@@ -444,6 +444,190 @@ app.get('/_admin_fix/disable-maintenance', async (req, res) => {
     }
 });
 
+// ── Análisis de ventas por producto agrupadas por mes ───────────────────────
+// GET /_admin_fix/sales-by-product-monthly?key=xxx&companyId=xxx&product=gato%20butaca
+app.get('/_admin_fix/sales-by-product-monthly', async (req, res) => {
+    if ((req.query.key || '') !== (process.env.ADMIN_MIGRATE_KEY || 'FIXPROMAX_MIGRATE_2026'))
+        return res.status(403).json({ ok: false, error: 'Clave incorrecta' });
+
+    const companyId = req.query.companyId;
+    const productQuery = (req.query.product || '').toLowerCase();
+    if (!companyId || !productQuery) return res.status(400).json({ ok: false, error: 'companyId y product requeridos' });
+
+    try {
+        const { CompanyDB } = require('./models/index');
+        const doc = await CompanyDB.findOne({ companyId }).lean();
+        if (!doc) return res.status(404).json({ ok: false, error: 'Empresa no encontrada' });
+
+        const products    = doc.products    || [];
+        const invoices    = doc.invoices    || [];
+        const sales       = doc.sales       || [];
+        const customers   = doc.customers   || [];
+        const suppliers   = doc.suppliers   || [];
+
+        // Buscar productos que coincidan con la query
+        const matchedProductIds = products
+            .filter(p => (p.name || '').toLowerCase().includes(productQuery) ||
+                         (p.description || '').toLowerCase().includes(productQuery) ||
+                         (p.sku || '').toLowerCase().includes(productQuery))
+            .map(p => p.id);
+
+        if (matchedProductIds.length === 0) {
+            return res.json({
+                ok: true,
+                productQuery,
+                message: 'No se encontraron productos que coincidan con la búsqueda',
+                monthlyStats: {},
+            });
+        }
+
+        // Función para extraer mes de una fecha (YYYY-MM)
+        const extractMonth = (dateStr) => {
+            if (!dateStr) return 'Sin fecha';
+            // Puede venir como "2026-08-27" o "2026-08-27T16:32:04.92Z"
+            const parts = dateStr.split(/[-T]/);
+            return parts.length >= 2 ? `${parts[0]}-${parts[1]}` : 'Sin fecha';
+        };
+
+        // Agrupar por mes
+        const monthlyStats = {};
+        const allSales = [];
+
+        // 1. Procesar sales
+        for (const sale of sales) {
+            const items = sale.items || [];
+            for (const item of items) {
+                if (matchedProductIds.includes(item.productId) ||
+                    (item.productName || '').toLowerCase().includes(productQuery)) {
+                    
+                    const month = extractMonth(sale.date);
+                    if (!monthlyStats[month]) {
+                        monthlyStats[month] = {
+                            salesCount: 0,
+                            invoicesCount: 0,
+                            totalQuantity: 0,
+                            totalAmount: 0,
+                            customers: new Set(),
+                            products: new Set(),
+                            sales: [],
+                            invoices: [],
+                        };
+                    }
+
+                    monthlyStats[month].salesCount++;
+                    monthlyStats[month].totalQuantity += Number(item.qty) || 0;
+                    monthlyStats[month].totalAmount += Number(item.price || 0) * Number(item.qty || 0);
+                    if (sale.customerId) monthlyStats[month].customers.add(sale.customerId);
+                    monthlyStats[month].products.add(item.productId || item.productName);
+                    
+                    allSales.push({
+                        type: 'sale',
+                        id: sale.id,
+                        date: sale.date,
+                        month,
+                        customerId: sale.customerId,
+                        customerName: customers.find(c => c.id === sale.customerId)?.firstName + ' ' + 
+                                    customers.find(c => c.id === sale.customerId)?.lastName,
+                        productId: item.productId,
+                        productName: item.productName || products.find(p => p.id === item.productId)?.name,
+                        quantity: item.qty,
+                        price: item.price,
+                        subtotal: (Number(item.qty) || 0) * (Number(item.price) || 0),
+                        total: sale.total,
+                        status: sale.status,
+                    });
+                }
+            }
+        }
+
+        // 2. Procesar invoices (por si hay facturas sin sale asociada)
+        for (const inv of invoices) {
+            const items = inv.items || [];
+            for (const item of items) {
+                if (matchedProductIds.includes(item.productId)) {
+                    const month = extractMonth(inv.date);
+                    if (!monthlyStats[month]) {
+                        monthlyStats[month] = {
+                            salesCount: 0,
+                            invoicesCount: 0,
+                            totalQuantity: 0,
+                            totalAmount: 0,
+                            customers: new Set(),
+                            products: new Set(),
+                            sales: [],
+                            invoices: [],
+                        };
+                    }
+
+                    monthlyStats[month].invoicesCount++;
+                    monthlyStats[month].totalQuantity += Number(item.qty) || 0;
+                    monthlyStats[month].totalAmount += Number(item.price || 0) * Number(item.qty || 0);
+                    if (inv.customerId) monthlyStats[month].customers.add(inv.customerId);
+                    monthlyStats[month].products.add(item.productId);
+
+                    allSales.push({
+                        type: 'invoice',
+                        id: inv.id,
+                        number: inv.number,
+                        date: inv.date,
+                        month,
+                        customerId: inv.customerId,
+                        customerName: customers.find(c => c.id === inv.customerId)?.firstName + ' ' + 
+                                    customers.find(c => c.id === inv.customerId)?.lastName,
+                        productId: item.productId,
+                        productName: item.productName || products.find(p => p.id === item.productId)?.name,
+                        quantity: item.qty,
+                        price: item.price,
+                        subtotal: (Number(item.qty) || 0) * (Number(item.price) || 0),
+                        total: inv.total,
+                        status: inv.status,
+                    });
+                }
+            }
+        }
+
+        // Convertir Sets a números y preparar respuesta
+        const formattedStats = {};
+        let totalQuantity = 0;
+        let totalAmount = 0;
+        let totalTransactions = 0;
+
+        for (const [month, stats] of Object.entries(monthlyStats)) {
+            formattedStats[month] = {
+                ventas: stats.salesCount,
+                facturas: stats.invoicesCount,
+                cantidadTotal: stats.totalQuantity,
+                montoTotal: stats.totalAmount,
+                clientesUnicos: stats.customers.size,
+                productosUnicos: stats.products.size,
+            };
+            totalQuantity += stats.totalQuantity;
+            totalAmount += stats.totalAmount;
+            totalTransactions += stats.salesCount + stats.invoicesCount;
+        }
+
+        // Ordenar meses cronológicamente
+        const sortedMonths = Object.keys(formattedStats).sort().reverse();
+
+        res.json({
+            ok: true,
+            productQuery,
+            totalStats: {
+                transaccionesTotales: totalTransactions,
+                cantidadTotal: totalQuantity,
+                montoTotal: totalAmount,
+                mesesConVentas: sortedMonths.length,
+            },
+            monthlyStats: formattedStats,
+            monthlyOrder: sortedMonths,
+            // Detalle completo para análisis
+            allSales: allSales.slice(0, 100), // limitar para no saturar respuesta
+        });
+    } catch (e) {
+        res.status(500).json({ ok: false, error: e.message });
+    }
+});
+
 // ── Buscar ventas por nombre de producto ─────────────────────────────────────
 // GET /_admin_fix/search-sales-by-product?key=xxx&companyId=xxx&query=biela
 app.get('/_admin_fix/search-sales-by-product', async (req, res) => {
